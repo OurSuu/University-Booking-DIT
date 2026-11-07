@@ -654,8 +654,8 @@ export default function Calendar() {
                                 }
                               >
                                 {jobFull
-                                  ? `เต็ม (${jobReg}/${jobCap})`
-                                  : `ว่าง ${jobCap - jobReg}/${jobCap}`}
+                                  ? `เต็มแล้ว (${jobReg}/${jobCap})`
+                                  : `ลงแล้ว ${jobReg}/${jobCap} (ว่าง ${jobCap - jobReg})`}
                               </span>
                             </div>
                             {!job.allow_kys && (
@@ -738,8 +738,8 @@ export default function Calendar() {
                               }
                             >
                               {jobFull
-                                ? `เต็ม (${jobReg}/${jobCap})`
-                                : `ว่าง ${jobCap - jobReg}/${jobCap} คน`}
+                                ? `เต็มแล้ว (${jobReg}/${jobCap} คน)`
+                                : `ลงแล้ว ${jobReg}/${jobCap} คน (ว่าง ${jobCap - jobReg} ที่)`}
                             </span>
                           </div>
                           <div className={styles.mobileAgendaTitle}>{job.title}</div>
