@@ -166,12 +166,22 @@ export default function BookingModal({
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget && !loading) onClose();
   };
 
   return (
     <div className={styles.backdrop} onClick={handleBackdropClick}>
       <div className={styles.modal}>
+        {loading && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.spinnerLarge} />
+            <p className={styles.loadingTitle}>
+              {isEditMode ? 'กำลังบันทึกการแก้ไขประกาศงาน...' : 'กำลังสร้างประกาศงานขึ้นปฏิทิน...'}
+            </p>
+            <span className={styles.loadingSub}>กรุณารอสักครู่ ระบบกำลังอัปเดตข้อมูล</span>
+          </div>
+        )}
+
         <div className={styles.modalHeader}>
           <div>
             <span className={styles.badgeRole}>สำหรับอาจารย์ผู้สร้างงาน</span>
@@ -388,10 +398,11 @@ export default function BookingModal({
           {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.actions}>
-            <button type="button" className={styles.cancelBtn} onClick={onClose}>
+            <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={loading}>
               ยกเลิก
             </button>
             <button type="submit" className={styles.submitBtn} disabled={loading}>
+              {loading && <span className={styles.btnSpinner} />}
               {loading
                 ? 'กำลังบันทึก...'
                 : isEditMode

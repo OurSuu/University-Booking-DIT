@@ -98,8 +98,10 @@ export default function DayDetailModal({
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
+  const isActionLoading = regLoading || cancelLoading;
+
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget && !isActionLoading) onClose();
   };
 
   const openRegistrationForm = (job: JobAnnouncement, shift: JobShift) => {
@@ -227,6 +229,18 @@ export default function DayDetailModal({
   return (
     <div className={styles.backdrop} onClick={handleBackdropClick}>
       <div className={styles.modal}>
+        {isActionLoading && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.spinnerLarge} />
+            <p className={styles.loadingTitle}>
+              {regLoading
+                ? 'กำลังบันทึกข้อมูลการลงทะเบียน...'
+                : 'กำลังถอนชื่อออกจากระบบ...'}
+            </p>
+            <span className={styles.loadingSub}>กรุณารอสักครู่ ระบบกำลังอัปเดตข้อมูลล่าสุด</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className={styles.modalHeader}>
           <div>
@@ -398,6 +412,7 @@ export default function DayDetailModal({
                     type="button"
                     className={styles.secondaryBtn}
                     onClick={() => setActiveShiftInfo(null)}
+                    disabled={regLoading}
                   >
                     ยกเลิก
                   </button>
@@ -406,6 +421,7 @@ export default function DayDetailModal({
                     className={styles.primaryBtn}
                     disabled={regLoading || Boolean(isKysBlockedInForm)}
                   >
+                    {regLoading && <span className={styles.btnSpinner} />}
                     {regLoading ? 'กำลังบันทึก...' : 'ยืนยันการลงทะเบียน'}
                   </button>
                 </div>
@@ -489,6 +505,7 @@ export default function DayDetailModal({
                       setCancellingReg(null);
                       setCancelError(null);
                     }}
+                    disabled={cancelLoading}
                   >
                     ย้อนกลับ
                   </button>
@@ -497,6 +514,7 @@ export default function DayDetailModal({
                     className={styles.dangerBtn}
                     disabled={cancelLoading}
                   >
+                    {cancelLoading && <span className={styles.btnSpinner} />}
                     {cancelLoading ? 'กำลังถอนชื่อ...' : 'ยืนยันการถอนชื่อ'}
                   </button>
                 </div>

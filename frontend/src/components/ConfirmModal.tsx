@@ -27,11 +27,12 @@ export default function ConfirmModal({
   const [pin, setPin] = useState('');
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onCancel();
+    if (e.target === e.currentTarget && !loading) onCancel();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (mode === 'pin' && !pin.trim()) return;
     onConfirm(pin.trim());
   };
@@ -39,6 +40,16 @@ export default function ConfirmModal({
   return (
     <div className={styles.backdrop} onClick={handleBackdropClick}>
       <div className={styles.modal}>
+        {loading && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.spinnerLarge} />
+            <p className={styles.loadingTitle}>
+              {mode === 'pin' ? 'กำลังตรวจสอบรหัส PIN...' : 'กำลังลบประกาศงาน...'}
+            </p>
+            <span className={styles.loadingSub}>กรุณารอสักครู่</span>
+          </div>
+        )}
+
         <div className={mode === 'pin' ? styles.iconWrapPin : styles.iconWrapDanger}>
           {mode === 'pin' ? (
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -89,6 +100,7 @@ export default function ConfirmModal({
               className={mode === 'pin' ? styles.primaryBtn : styles.confirmBtn}
               disabled={loading || (mode === 'pin' && !pin.trim())}
             >
+              {loading && <span className={styles.btnSpinner} />}
               {loading
                 ? 'กำลังดำเนินการ...'
                 : confirmText || (mode === 'pin' ? 'เข้าสู่โหมดอาจารย์' : 'ยืนยันการลบ')}
