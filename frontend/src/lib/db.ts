@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import {
   JobAnnouncement,
@@ -17,9 +18,13 @@ export function verifyTeacherPin(pin?: string): boolean {
   return Boolean(pin && pin.trim() === expectedPin.trim());
 }
 
-const hasPostgresUrl = Boolean(
-  process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0
-);
+const dbConnectionString = (
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  ''
+).trim();
+
+const hasPostgresUrl = dbConnectionString.length > 0;
 
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
@@ -29,8 +34,8 @@ const globalForDb = globalThis as unknown as {
 function getPool(): Pool {
   if (!globalForDb._pgPool) {
     globalForDb._pgPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes('localhost')
+      connectionString: dbConnectionString,
+      ssl: dbConnectionString.includes('localhost')
         ? false
         : { rejectUnauthorized: false },
     });
@@ -90,7 +95,12 @@ interface LocalDbData {
   registrations: Registration[];
 }
 
-const LOCAL_DB_DIR = path.join(process.cwd(), '.data');
+const isServerless = Boolean(
+  process.env.VERCEL || process.cwd().startsWith('/var/task')
+);
+const LOCAL_DB_DIR = isServerless
+  ? os.tmpdir()
+  : path.join(process.cwd(), '.data');
 const LOCAL_DB_FILE = path.join(LOCAL_DB_DIR, 'scholarship-db.json');
 
 function readLocalDb(): LocalDbData {
