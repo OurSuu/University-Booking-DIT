@@ -1,19 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-page: #f4f7fb;
+  /* DIT RSU Color Palette (Red • Charcoal Gray • White) */
+  --bg-page: #f5f6f8;
   --bg-surface: #ffffff;
-  --bg-subtle: #f8fafc;
-  --bg-muted: #f1f5f9;
+  --bg-subtle: #f9fafb;
+  --bg-muted: #eef0f4;
 
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-border: #bfdbfe;
+  /* Primary: DIT Crimson Red */
+  --primary: #c81e24;
+  --primary-hover: #a3151a;
+  --primary-light: #fef2f2;
+  --primary-border: #fecaca;
 
-  --accent-indigo: #4f46e5;
-  --accent-indigo-light: #eef2ff;
+  /* Secondary / Tech Accent: DIT Charcoal Gray */
+  --accent-indigo: #374151;
+  --accent-indigo-light: #f3f4f6;
 
+  /* Status Colors */
   --success: #059669;
   --success-light: #ecfdf5;
   --success-border: #a7f3d0;
@@ -22,22 +26,22 @@
   --warning-light: #fffbeb;
   --warning-border: #fde68a;
 
-  --danger: #e11d48;
-  --danger-hover: #be123c;
+  --danger: #b91c1c;
+  --danger-hover: #991b1b;
   --danger-light: #fff1f2;
   --danger-border: #fecdd3;
 
-  --text-main: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
+  --text-main: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
 
-  --border-color: #e2e8f0;
-  --border-strong: #cbd5e1;
+  --border-color: #e5e7eb;
+  --border-strong: #d1d5db;
 
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
-  --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-xl: 0 20px 35px -5px rgba(15, 23, 42, 0.14), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 1px 2px 0 rgba(31, 41, 55, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(31, 41, 55, 0.07), 0 2px 4px -2px rgba(31, 41, 55, 0.05);
+  --shadow-lg: 0 10px 25px -3px rgba(31, 41, 55, 0.08), 0 4px 6px -4px rgba(31, 41, 55, 0.04);
+  --shadow-xl: 0 20px 35px -5px rgba(31, 41, 55, 0.14), 0 8px 10px -6px rgba(31, 41, 55, 0.06);
 
   --font-heading: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Sarabun', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -61,7 +65,7 @@ html {
 body {
   min-height: 100vh;
   overflow-x: hidden;
-  background: radial-gradient(circle at 50% 0%, #e0e7ff 0%, #f4f7fb 45%, #f8fafc 100%);
+  background: radial-gradient(circle at 50% 0%, #fee2e2 0%, #f5f6f8 40%, #f9fafb 100%);
 }
 
 button,

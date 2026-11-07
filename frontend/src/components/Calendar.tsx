@@ -335,8 +335,21 @@ export default function Calendar() {
         {/* Top Navbar / Hero Banner */}
         <header className={styles.topBar}>
           <div className={styles.brandSection}>
-            <div className={styles.brandBadge}>🎓 SCHOLARSHIP WORK CALENDAR</div>
-            <h1 className={styles.mainTitle}>ระบบปฏิทินประกาศงานและลงทะเบียนชั่วโมงทุน</h1>
+            <div className={styles.brandHeaderRow}>
+              <img
+                src="/dit-logo.png"
+                alt="DIT RSU Logo"
+                className={styles.ditLogo}
+              />
+              <div>
+                <div className={styles.brandBadge}>
+                  วิทยาลัยนวัตกรรมดิจิทัลเทคโนโลยี • มหาวิทยาลัยรังสิต (DIT RSU)
+                </div>
+                <h1 className={styles.mainTitle}>
+                  ระบบปฏิทินประกาศงานและลงทะเบียนชั่วโมงทุน
+                </h1>
+              </div>
+            </div>
             <p className={styles.subTitle}>
               นักศึกษาสามารถเลือกดูงาน ชั่วโมงทุน และลงทะเบียนได้ทันที • ยกเลิกล่วงหน้าอย่างน้อย 2 วัน (หรือถอนชื่อภายในวันที่เพิ่งลงทะเบียน)
             </p>
@@ -346,7 +359,7 @@ export default function Calendar() {
             {isTeacherMode ? (
               <div className={styles.teacherActiveGroup}>
                 <span className={styles.teacherActivePill}>
-                  👨‍🏫 โหมดอาจารย์เปิดอยู่
+                  โหมดอาจารย์เปิดอยู่
                 </span>
                 <button
                   className={styles.primaryActionBtn}
@@ -374,7 +387,7 @@ export default function Calendar() {
                     setShowPinModal(true);
                   }}
                 >
-                  🔐 สำหรับอาจารย์ (ใส่ PIN)
+                  สำหรับอาจารย์ (PIN)
                 </button>
                 <button
                   className={styles.primaryActionBtn}
@@ -470,7 +483,7 @@ export default function Calendar() {
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="🔍 ค้นหางานที่ฉันลงไว้ (พิมพ์รหัส/ชื่อนักศึกษา)..."
+                placeholder="ค้นหางานที่ฉันลงไว้ (พิมพ์รหัส/ชื่อนักศึกษา)..."
                 className={styles.searchInput}
               />
               {studentSearch && (
@@ -490,7 +503,7 @@ export default function Calendar() {
           <section className={styles.searchResultBox}>
             <div className={styles.searchResultHeader}>
               <strong>
-                🔎 ผลการค้นหาการลงทะเบียนสำหรับ &ldquo;{studentSearch.trim()}&rdquo; (
+                ผลการค้นหาการลงทะเบียนสำหรับ &ldquo;{studentSearch.trim()}&rdquo; (
                 {myRegistrations.length} รายการ)
               </strong>
             </div>
@@ -507,7 +520,7 @@ export default function Calendar() {
                         {formatThaiDate(item.job.date)}
                       </span>
                       <strong>{item.job.title}</strong> — {item.shiftLabel} (
-                      {item.timeRange}) • 🎓 {item.hours} ชม.ทุน • ผู้ลง:{' '}
+                      {item.timeRange}) • {item.hours} ชม.ทุน • ผู้ลง:{' '}
                       {item.studentName} ({item.studentId})
                     </div>
                     <button
@@ -525,7 +538,7 @@ export default function Calendar() {
 
         {error && (
           <div className={styles.errorBanner}>
-            <span>⚠️ {error}</span>
+            <span>{error}</span>
             <button onClick={fetchJobs}>ลองใหม่</button>
           </div>
         )}
@@ -647,7 +660,7 @@ export default function Calendar() {
                           >
                             <div className={styles.jobChipTitle}>{job.title}</div>
                             <div className={styles.jobChipMeta}>
-                              <span className={styles.chipHours}>🎓 {hoursLabel}</span>
+                              <span className={styles.chipHours}>{hoursLabel}</span>
                               <span
                                 className={
                                   jobFull ? styles.chipCapFull : styles.chipCapOk
@@ -659,7 +672,7 @@ export default function Calendar() {
                               </span>
                             </div>
                             {!job.allow_kys && (
-                              <div className={styles.chipNoKys}>🚫 ไม่รับ กยศ.</div>
+                              <div className={styles.chipNoKys}>ไม่รับ กยศ.</div>
                             )}
                           </div>
                         );
@@ -676,7 +689,7 @@ export default function Calendar() {
         {!loading && (
           <section className={styles.mobileAgendaSection}>
             <div className={styles.mobileAgendaHeader}>
-              <h3>📋 รายการงานในเดือน{THAI_MONTH_NAMES[currentMonth]}</h3>
+              <h3>รายการงานในเดือน{THAI_MONTH_NAMES[currentMonth]}</h3>
               <span>แตะที่งานเพื่อดูรายละเอียดและลงทะเบียน</span>
             </div>
 
@@ -723,11 +736,11 @@ export default function Calendar() {
                         <div className={styles.mobileAgendaBody}>
                           <div className={styles.mobileAgendaTopRow}>
                             <span className={styles.mobileHoursBadge}>
-                              🎓 {hoursLabel}
+                              {hoursLabel}
                             </span>
                             {!job.allow_kys && (
                               <span className={styles.mobileNoKysBadge}>
-                                🚫 ไม่รับ กยศ.
+                                ไม่รับ กยศ.
                               </span>
                             )}
                             <span
@@ -765,7 +778,7 @@ export default function Calendar() {
             <span className={styles.dotFull} /> งานที่ลงทะเบียนครบจำนวนแล้ว
           </div>
           <div className={styles.legendItem}>
-            <span className={styles.dotNoKys} /> 🚫 งานที่ระบุว่าไม่รับนักศึกษาทุน กยศ.
+            <span className={styles.dotNoKys} /> งานที่ระบุว่าไม่รับนักศึกษาทุน กยศ.
           </div>
         </footer>
       </div>

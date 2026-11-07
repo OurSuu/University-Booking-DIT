@@ -174,7 +174,7 @@ export default function BookingModal({
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <div>
-            <span className={styles.badgeRole}>👨‍🏫 สำหรับอาจารย์ผู้สร้างงาน</span>
+            <span className={styles.badgeRole}>สำหรับอาจารย์ผู้สร้างงาน</span>
             <h2>{isEditMode ? 'แก้ไขประกาศงานชั่วโมงทุน' : 'สร้างประกาศงานชั่วโมงทุนใหม่'}</h2>
           </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="ปิดหน้าต่าง">
@@ -247,14 +247,14 @@ export default function BookingModal({
 
           {/* เงื่อนไขทุน */}
           <div className={styles.sectionBox}>
-            <div className={styles.sectionTitle}>🎓 เงื่อนไขประเภททุนที่รับสมัคร</div>
+            <div className={styles.sectionTitle}>เงื่อนไขประเภททุนที่รับสมัคร</div>
             <div className={styles.kysToggleRow}>
               <button
                 type="button"
                 className={`${styles.kysOption} ${allowKys ? styles.kysOptionActiveOk : ''}`}
                 onClick={() => setAllowKys(true)}
               >
-                <div className={styles.kysOptionTitle}>✅ รับทุกทุน (รวม กยศ.)</div>
+                <div className={styles.kysOptionTitle}>รับทุกทุน (รวม กยศ.)</div>
                 <div className={styles.kysOptionSub}>นักศึกษาทุน กยศ. และทุนอื่นๆ ลงทะเบียนได้ทั้งหมด</div>
               </button>
 
@@ -263,7 +263,7 @@ export default function BookingModal({
                 className={`${styles.kysOption} ${!allowKys ? styles.kysOptionActiveNo : ''}`}
                 onClick={() => setAllowKys(false)}
               >
-                <div className={styles.kysOptionTitle}>🚫 ไม่รับทุน กยศ.</div>
+                <div className={styles.kysOptionTitle}>ไม่รับทุน กยศ.</div>
                 <div className={styles.kysOptionSub}>บล็อกการลงทะเบียนหากนักศึกษาเลือกทุน กยศ.</div>
               </button>
             </div>
@@ -282,7 +282,7 @@ export default function BookingModal({
           <div className={styles.sectionBox}>
             <div className={styles.shiftsHeader}>
               <div>
-                <div className={styles.sectionTitle}>⏰ กำหนดกะ / ช่วงเวลาทำงาน และจำนวนที่รับ</div>
+                <div className={styles.sectionTitle}>กำหนดกะ / ช่วงเวลาทำงาน และจำนวนที่รับ</div>
                 <p className={styles.sectionSub}>
                   ตั้งค่าช่วงเวลา ชั่วโมงทุนที่จะได้รับ และจำกัดจำนวนนักศึกษาในแต่ละช่วงเวลา
                 </p>
@@ -363,7 +363,7 @@ export default function BookingModal({
                       disabled={shifts.length <= 1}
                       title="ลบช่วงเวลานี้"
                     >
-                      🗑️
+                      ✕
                     </button>
                   </div>
                 </div>
@@ -385,7 +385,7 @@ export default function BookingModal({
             </div>
           )}
 
-          {error && <div className={styles.error}>⚠️ {error}</div>}
+          {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.actions}>
             <button type="button" className={styles.cancelBtn} onClick={onClose}>

@@ -19,6 +19,7 @@
   gap: 1.5rem;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
+  border-top: 4px solid var(--primary);
   border-radius: 18px;
   padding: 1.5rem 1.75rem;
   box-shadow: var(--shadow-sm);
@@ -26,21 +27,35 @@
 }
 
 .brandSection {
-  max-width: 720px;
+  max-width: 740px;
+}
+
+.brandHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.ditLogo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .brandBadge {
   display: inline-block;
   font-family: var(--font-heading);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.03em;
   color: var(--primary);
   background: var(--primary-light);
   border: 1px solid var(--primary-border);
   padding: 0.22rem 0.65rem;
   border-radius: 999px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .mainTitle {
@@ -408,7 +423,8 @@
 .weekHeader {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  background: #1e293b;
+  background: #333840;
+  border-bottom: 3px solid var(--primary);
   color: #ffffff;
 }
 
@@ -464,12 +480,12 @@
 }
 
 .todayCell {
-  background: #eff6ff;
+  background: #fff5f5;
 }
 
 .highlightMyReg {
   box-shadow: inset 0 0 0 2px var(--primary);
-  background: #eff6ff;
+  background: #fff5f5;
 }
 
 .dayHeader {
@@ -535,19 +551,21 @@
 }
 
 .jobChip {
-  padding: 0.38rem 0.5rem;
+  padding: 0.42rem 0.55rem;
   border-radius: 8px;
-  background: var(--primary-light);
-  border: 1px solid var(--primary-border);
-  border-left: 3px solid var(--primary);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-left: 3.5px solid var(--primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
-  transition: transform 0.15s ease;
+  gap: 0.22rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .jobChip:hover {
   transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(200, 30, 36, 0.1);
 }
 
 .jobChipFull {
@@ -558,7 +576,7 @@
 
 .jobChipTitle {
   font-family: var(--font-heading);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-main);
   white-space: nowrap;
@@ -568,31 +586,43 @@
 
 .jobChipMeta {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   font-size: 0.68rem;
-  gap: 0.25rem;
+  gap: 0.15rem 0.4rem;
 }
 
 .chipHours {
   color: var(--accent-indigo);
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chipCapOk {
   color: var(--success);
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chipCapFull {
   color: var(--danger);
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chipNoKys {
   font-size: 0.64rem;
-  color: var(--danger);
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 1px 5px;
+  border-radius: 4px;
   font-weight: 600;
+  width: fit-content;
 }
 
 /* ===== FOOTER LEGEND ===== */

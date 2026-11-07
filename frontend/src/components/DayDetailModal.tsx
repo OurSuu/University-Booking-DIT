@@ -110,15 +110,15 @@ export default function DayDetailModal({
 
   const handleCopyParticipants = (job: JobAnnouncement) => {
     const lines: string[] = [];
-    lines.push(`📋 รายชื่อผู้ลงทะเบียนงาน: ${job.title}`);
-    lines.push(`📅 วันที่: ${formatThaiDate(job.date)}`);
-    lines.push(`👨‍🏫 อาจารย์ผู้รับผิดชอบ: ${job.teacher_name}`);
-    if (job.location) lines.push(`📍 สถานที่: ${job.location}`);
+    lines.push(`รายชื่อผู้ลงทะเบียนงาน: ${job.title}`);
+    lines.push(`วันที่: ${formatThaiDate(job.date)}`);
+    lines.push(`อาจารย์ผู้รับผิดชอบ: ${job.teacher_name}`);
+    if (job.location) lines.push(`สถานที่: ${job.location}`);
     lines.push('----------------------------------------');
 
     for (const s of job.shifts) {
       lines.push(
-        `\n⏰ ${s.label} (${s.time_range}) | ${s.hours} ชม.ทุน | ลงทะเบียน ${s.registrations.length}/${s.capacity} คน`
+        `\n${s.label} (${s.time_range}) | ${s.hours} ชม.ทุน | ลงทะเบียน ${s.registrations.length}/${s.capacity} คน`
       );
       if (s.registrations.length === 0) {
         lines.push('   (ยังไม่มีผู้ลงทะเบียน)');
@@ -277,7 +277,7 @@ export default function DayDetailModal({
             <div className={styles.regFormCard}>
               <div className={styles.regFormHeader}>
                 <div>
-                  <span className={styles.regStepBadge}>✍️ ลงทะเบียนรับงานชั่วโมงทุน</span>
+                  <span className={styles.regStepBadge}>ลงทะเบียนรับงานชั่วโมงทุน</span>
                   <h3>{activeShiftInfo.job.title}</h3>
                   <p className={styles.regSubInfo}>
                     ช่วงเวลา: <strong>{activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})</strong> • ได้รับ{' '}
@@ -295,7 +295,7 @@ export default function DayDetailModal({
 
               {!activeShiftInfo.job.allow_kys && (
                 <div className={styles.kysWarningBanner}>
-                  🚫 <strong>ข้อกำหนดสำคัญ:</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
+                  <strong>ข้อกำหนดสำคัญ:</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
                 </div>
               )}
 
@@ -370,7 +370,7 @@ export default function DayDetailModal({
                           } ${disabledKys ? styles.pillBtnDisabled : ''}`}
                           onClick={() => setScholarshipName(sch)}
                         >
-                          {disabledKys ? '🚫 กยศ. (งานนี้ไม่รับ)' : sch}
+                          {disabledKys ? 'กยศ. (งานนี้ไม่รับ)' : sch}
                         </button>
                       );
                     })}
@@ -379,16 +379,16 @@ export default function DayDetailModal({
 
                 {isKysBlockedInForm && (
                   <div className={styles.errorBox}>
-                    ⛔ ขออภัย งานนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกงานอื่นที่เปิดรับทุน กยศ.
+                    ขออภัย งานนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกงานอื่นที่เปิดรับทุน กยศ.
                   </div>
                 )}
 
                 {regError && !isKysBlockedInForm && (
-                  <div className={styles.errorBox}>⚠️ {regError}</div>
+                  <div className={styles.errorBox}>{regError}</div>
                 )}
 
                 <div className={styles.policyNote}>
-                  📌 <strong>เงื่อนไขการถอนชื่อ/ยกเลิกงาน:</strong> สามารถยกเลิกได้ล่วงหน้าอย่างน้อย{' '}
+                  <strong>เงื่อนไขการถอนชื่อ/ยกเลิกงาน:</strong> สามารถยกเลิกได้ล่วงหน้าอย่างน้อย{' '}
                   <strong>2 วัน</strong> ก่อนวันงานจริง (หากเหลือเพียง 1 วันแล้วเพิ่งมากรอกชื่อในวันนี้
                   สามารถถอนชื่อได้ภายในวันนี้เท่านั้น)
                 </div>
@@ -417,7 +417,7 @@ export default function DayDetailModal({
           {cancellingReg && (
             <div className={styles.cancelCard}>
               <div className={styles.cancelHeader}>
-                <h3>🗑️ ยืนยันการถอนชื่อจากงานชั่วโมงทุน</h3>
+                <h3>ยืนยันการถอนชื่อจากงานชั่วโมงทุน</h3>
                 <button
                   type="button"
                   className={styles.backBtn}
@@ -455,7 +455,7 @@ export default function DayDetailModal({
                         : styles.okNotice
                     }
                   >
-                    ℹ️ {eligibility.reason}
+                    {eligibility.reason}
                   </div>
                 );
               })()}
@@ -475,11 +475,11 @@ export default function DayDetailModal({
                   </div>
                 ) : (
                   <div className={styles.teacherOverrideNotice}>
-                    👨‍🏫 คุณกำลังลบรายชื่อด้วยสิทธิ์อาจารย์ (ไม่ต้องใช้รหัสนักศึกษา)
+                    คุณกำลังลบรายชื่อด้วยสิทธิ์อาจารย์ (ไม่ต้องใช้รหัสนักศึกษา)
                   </div>
                 )}
 
-                {cancelError && <div className={styles.errorBox}>⚠️ {cancelError}</div>}
+                {cancelError && <div className={styles.errorBox}>{cancelError}</div>}
 
                 <div className={styles.regFormActions}>
                   <button
@@ -507,7 +507,6 @@ export default function DayDetailModal({
           {/* รายการงานทั้งหมดในวันนี้ */}
           {jobs.length === 0 ? (
             <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>📅</div>
               <h3>ยังไม่มีประกาศงานในวันนี้</h3>
               {daysUntil >= 0 ? (
                 <>
@@ -543,7 +542,7 @@ export default function DayDetailModal({
                               job.allow_kys ? styles.badgeKysOk : styles.badgeKysNo
                             }
                           >
-                            {job.allow_kys ? '✅ รับทุกทุน (กยศ. ทำได้)' : '🚫 ไม่รับทุน กยศ.'}
+                            {job.allow_kys ? 'รับทุกทุน (กยศ. ทำได้)' : 'ไม่รับทุน กยศ.'}
                           </span>
                           <span
                             className={
@@ -565,7 +564,7 @@ export default function DayDetailModal({
                           onClick={() => handleCopyParticipants(job)}
                           title="คัดลอกรายชื่อผู้เข้าร่วมทั้งหมด"
                         >
-                          📋 คัดลอกรายชื่อ
+                          คัดลอกรายชื่อ
                         </button>
                         <button
                           type="button"
@@ -573,7 +572,7 @@ export default function DayDetailModal({
                           onClick={() => onEditJob(job)}
                           title="แก้ไขประกาศงาน (สำหรับอาจารย์)"
                         >
-                          ✏️ แก้ไข
+                          แก้ไข
                         </button>
                         <button
                           type="button"
@@ -581,15 +580,15 @@ export default function DayDetailModal({
                           onClick={() => onDeleteJob(job)}
                           title="ลบประกาศงาน (สำหรับอาจารย์)"
                         >
-                          🗑️
+                          ลบ
                         </button>
                       </div>
                     </div>
 
                     <div className={styles.jobMeta}>
-                      <span>👨‍🏫 <strong>อาจารย์ผู้ประกาศ:</strong> {job.teacher_name}</span>
+                      <span><strong>อาจารย์ผู้ประกาศ:</strong> {job.teacher_name}</span>
                       {job.location && (
-                        <span>📍 <strong>สถานที่:</strong> {job.location}</span>
+                        <span><strong>สถานที่:</strong> {job.location}</span>
                       )}
                     </div>
 
@@ -609,9 +608,9 @@ export default function DayDetailModal({
                             <div className={styles.shiftBoxHeader}>
                               <div className={styles.shiftInfoLeft}>
                                 <span className={styles.shiftName}>{shift.label}</span>
-                                <span className={styles.shiftTime}>🕒 {shift.time_range}</span>
+                                <span className={styles.shiftTime}>{shift.time_range}</span>
                                 <span className={styles.shiftHours}>
-                                  🎓 {shift.hours} ชม.ทุน
+                                  {shift.hours} ชม.ทุน
                                 </span>
                                 <span
                                   className={
@@ -620,7 +619,7 @@ export default function DayDetailModal({
                                       : styles.shiftCapOk
                                   }
                                 >
-                                  👥 {regCount}/{shift.capacity} คน{' '}
+                                  ลงแล้ว {regCount}/{shift.capacity} คน{' '}
                                   {shiftFull ? '(เต็ม)' : `(ว่าง ${remaining})`}
                                 </span>
                               </div>
@@ -632,10 +631,10 @@ export default function DayDetailModal({
                                     className={styles.registerBtn}
                                     onClick={() => openRegistrationForm(job, shift)}
                                   >
-                                    ✍️ ลงทะเบียนช่วงนี้
+                                    ลงทะเบียนช่วงนี้
                                   </button>
                                 ) : shiftFull ? (
-                                  <span className={styles.fullPill}>⛔ เต็มแล้ว</span>
+                                  <span className={styles.fullPill}>เต็มแล้ว</span>
                                 ) : (
                                   <span className={styles.pastPill}>ปิดรับสมัคร</span>
                                 )}
@@ -708,7 +707,7 @@ export default function DayDetailModal({
                                               className={styles.lockedCancelBadge}
                                               title={cancelCheck.reason}
                                             >
-                                              🔒 งดยกเลิก (&lt; 2 วัน)
+                                              งดยกเลิก (&lt; 2 วัน)
                                             </span>
                                           )}
                                         </div>
