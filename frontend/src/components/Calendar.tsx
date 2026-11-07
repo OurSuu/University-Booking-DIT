@@ -601,6 +601,25 @@ export default function Calendar() {
                       )}
                     </div>
 
+                    {/* Mobile Compact Indicator (แสดงเฉพาะบนจอมือถือ แทนข้อความยาวๆ ที่โดนบีบ) */}
+                    {dayJobs.length > 0 && (
+                      <div className={styles.mobileCellSummary}>
+                        <span
+                          className={
+                            cellFull
+                              ? styles.mobileCountPillFull
+                              : styles.mobileCountPillAvail
+                          }
+                        >
+                          {dayJobs.length} งาน
+                        </span>
+                        <span className={styles.mobileSeatText}>
+                          {cellFull ? 'เต็ม' : `ว่าง ${cellRemaining}`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Desktop Job Chips */}
                     <div className={styles.jobsInCell}>
                       {dayJobs.map((job) => {
                         const jobCap = job.shifts.reduce(
@@ -651,6 +670,90 @@ export default function Calendar() {
               })}
             </div>
           </div>
+        )}
+
+        {/* Mobile Agenda List (แสดงการ์ดรายการงานอ่านง่ายใต้ปฏิทินบนมือถือ) */}
+        {!loading && (
+          <section className={styles.mobileAgendaSection}>
+            <div className={styles.mobileAgendaHeader}>
+              <h3>📋 รายการงานในเดือน{THAI_MONTH_NAMES[currentMonth]}</h3>
+              <span>แตะที่งานเพื่อดูรายละเอียดและลงทะเบียน</span>
+            </div>
+
+            {(() => {
+              const monthJobsList = filteredJobs.filter((j) =>
+                j.date.startsWith(monthPrefix)
+              );
+              if (monthJobsList.length === 0) {
+                return (
+                  <div className={styles.mobileAgendaEmpty}>
+                    ยังไม่มีประกาศงานในเดือนนี้
+                  </div>
+                );
+              }
+              return (
+                <div className={styles.mobileAgendaList}>
+                  {monthJobsList.map((job) => {
+                    const jobCap = job.shifts.reduce((sum, s) => sum + s.capacity, 0);
+                    const jobReg = job.shifts.reduce(
+                      (sum, s) => sum + s.registrations.length,
+                      0
+                    );
+                    const jobFull = jobReg >= jobCap;
+                    const hoursArr = job.shifts.map((s) => s.hours);
+                    const minH = Math.min(...hoursArr);
+                    const maxH = Math.max(...hoursArr);
+                    const hoursLabel =
+                      minH === maxH ? `${minH} ชม.ทุน` : `${minH}-${maxH} ชม.ทุน`;
+                    const dayNum = Number(job.date.split('-')[2]);
+
+                    return (
+                      <div
+                        key={job.id}
+                        className={styles.mobileAgendaCard}
+                        onClick={() => setDayDetailDate(job.date)}
+                      >
+                        <div className={styles.mobileDateBox}>
+                          <span className={styles.mobileDateDay}>{dayNum}</span>
+                          <span className={styles.mobileDateMonth}>
+                            {THAI_MONTH_NAMES[currentMonth].slice(0, 4)}
+                          </span>
+                        </div>
+
+                        <div className={styles.mobileAgendaBody}>
+                          <div className={styles.mobileAgendaTopRow}>
+                            <span className={styles.mobileHoursBadge}>
+                              🎓 {hoursLabel}
+                            </span>
+                            {!job.allow_kys && (
+                              <span className={styles.mobileNoKysBadge}>
+                                🚫 ไม่รับ กยศ.
+                              </span>
+                            )}
+                            <span
+                              className={
+                                jobFull
+                                  ? styles.mobileCapBadgeFull
+                                  : styles.mobileCapBadgeOk
+                              }
+                            >
+                              {jobFull
+                                ? `เต็ม (${jobReg}/${jobCap})`
+                                : `ว่าง ${jobCap - jobReg}/${jobCap} คน`}
+                            </span>
+                          </div>
+                          <div className={styles.mobileAgendaTitle}>{job.title}</div>
+                          <div className={styles.mobileAgendaSub}>
+                            {job.shifts.map((s) => `${s.label} (${s.time_range})`).join(' • ')}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </section>
         )}
 
         {/* Legend / Quick Help */}

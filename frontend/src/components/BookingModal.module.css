@@ -375,6 +375,24 @@
 }
 
 @media (max-width: 680px) {
+  .backdrop {
+    padding: 0.4rem;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 92dvh;
+    border-radius: 16px 16px 12px 12px;
+  }
+
+  .modalHeader {
+    padding: 1rem;
+  }
+
+  .form {
+    padding: 1rem;
+  }
+
   .row2Col,
   .kysToggleRow {
     grid-template-columns: 1fr;

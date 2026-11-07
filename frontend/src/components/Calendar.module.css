@@ -525,6 +525,15 @@
   gap: 0.35rem;
 }
 
+/* Mobile-only elements (hidden on desktop) */
+.mobileCellSummary {
+  display: none;
+}
+
+.mobileAgendaSection {
+  display: none;
+}
+
 .jobChip {
   padding: 0.38rem 0.5rem;
   border-radius: 8px;
@@ -631,35 +640,351 @@
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
   .pageWrapper {
-    padding: 1rem 0.5rem 2rem;
+    padding: 0.75rem 0.65rem 2.5rem;
+    overflow-x: hidden;
+  }
+
+  .container {
+    gap: 0.9rem;
+    max-width: 100%;
   }
 
   .topBar {
-    padding: 1.15rem;
+    padding: 1.1rem;
+    gap: 1rem;
   }
 
   .mainTitle {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+  }
+
+  .subTitle {
+    font-size: 0.84rem;
+  }
+
+  .teacherToolbar,
+  .teacherActiveGroup {
+    width: 100%;
+  }
+
+  .teacherModeBtn,
+  .primaryActionBtn,
+  .lockBtn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.82rem;
   }
 
   .statsGrid {
     grid-template-columns: 1fr 1fr;
-    gap: 0.65rem;
+    gap: 0.6rem;
+  }
+
+  .statCard {
+    padding: 0.8rem 0.95rem;
+  }
+
+  .statLabel {
+    font-size: 0.75rem;
+  }
+
+  .statValue {
+    font-size: 1.15rem;
+  }
+
+  /* Control bar stacks cleanly without overflowing */
+  .controlBar {
+    padding: 0.85rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .monthNavGroup {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.4rem;
+  }
+
+  .monthTitle {
+    min-width: 0;
+    flex: 1;
+    font-size: 1.02rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .christianYear {
+    font-size: 0.85rem;
+  }
+
+  .todayBtn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+
+  .filterAndSearchGroup {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .filterTabs {
+    width: 100%;
+  }
+
+  .filterTab {
+    flex: 1;
+    text-align: center;
+    padding: 0.45rem 0.35rem;
+    font-size: 0.76rem;
+  }
+
+  .searchBox {
+    width: 100%;
   }
 
   .searchInput {
     width: 100%;
   }
 
-  .dayCell {
-    min-height: 92px;
-    padding: 0.3rem;
+  /* Compact Calendar Grid on Mobile */
+  .weekDay {
+    padding: 0.55rem 0.15rem;
+    font-size: 0.74rem;
   }
 
+  .dayCell {
+    min-height: 68px;
+    padding: 0.3rem 0.2rem;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem;
+  }
+
+  .dayHeader {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dayNumber {
+    font-size: 0.8rem;
+  }
+
+  .todayBadge {
+    width: 24px;
+    height: 24px;
+    font-size: 0.74rem;
+  }
+
+  /* Hide desktop badges & long chips inside narrow mobile cells */
   .cellBadgeAvail,
-  .cellBadgeFull {
+  .cellBadgeFull,
+  .jobsInCell {
     display: none;
+  }
+
+  /* Show compact mobile summary inside the calendar cell */
+  .mobileCellSummary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+  }
+
+  .mobileCountPillAvail,
+  .mobileCountPillFull {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+
+  .mobileCountPillAvail {
+    background: var(--primary);
+    color: #ffffff;
+  }
+
+  .mobileCountPillFull {
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+  }
+
+  .mobileSeatText {
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--success);
+    white-space: nowrap;
+  }
+
+  /* Mobile Agenda List below Calendar */
+  .mobileAgendaSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mobileAgendaHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.65rem;
+  }
+
+  .mobileAgendaHeader h3 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .mobileAgendaHeader span {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .mobileAgendaEmpty {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+  }
+
+  .mobileAgendaList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .mobileAgendaCard {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-subtle);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobileAgendaCard:active {
+    transform: scale(0.99);
+    background: var(--primary-light);
+  }
+
+  .mobileDateBox {
+    width: 48px;
+    height: 52px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .mobileDateDay {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .mobileDateMonth {
+    font-size: 0.68rem;
+    opacity: 0.9;
+  }
+
+  .mobileAgendaBody {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mobileAgendaTopRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  .mobileHoursBadge,
+  .mobileNoKysBadge,
+  .mobileCapBadgeOk,
+  .mobileCapBadgeFull {
+    font-family: var(--font-heading);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.12rem 0.45rem;
+    border-radius: 6px;
+  }
+
+  .mobileHoursBadge {
+    background: var(--accent-indigo-light);
+    color: var(--accent-indigo);
+  }
+
+  .mobileNoKysBadge {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+
+  .mobileCapBadgeOk {
+    background: var(--success-light);
+    color: var(--success);
+  }
+
+  .mobileCapBadgeFull {
+    background: var(--bg-muted);
+    color: var(--text-muted);
+  }
+
+  .mobileAgendaTitle {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobileAgendaSub {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .footerLegend {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    font-size: 0.78rem;
   }
 }

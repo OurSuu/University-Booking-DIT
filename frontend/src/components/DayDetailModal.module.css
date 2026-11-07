@@ -800,13 +800,57 @@
 }
 
 @media (max-width: 680px) {
+  .backdrop {
+    padding: 0.4rem;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 92dvh;
+    border-radius: 16px 16px 12px 12px;
+  }
+
   .modalHeader {
+    padding: 1rem;
     flex-direction: column;
     align-items: stretch;
   }
 
+  .title {
+    font-size: 1.08rem;
+  }
+
   .headerActions {
     justify-content: space-between;
+  }
+
+  .content {
+    padding: 0.9rem;
+    gap: 1rem;
+  }
+
+  .jobCard {
+    padding: 0.95rem;
+  }
+
+  .jobTeacherActions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .shiftBoxHeader {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .shiftActionRight,
+  .registerBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .participantsSection {
+    padding: 0.6rem 0.75rem;
   }
 
   .formGrid2 {
