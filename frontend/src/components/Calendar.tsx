@@ -647,7 +647,13 @@ export default function Calendar() {
                         >
                           {dayJobs.length} งาน
                         </span>
-                        <span className={styles.mobileSeatText}>
+                        <span
+                          className={
+                            cellFull
+                              ? styles.mobileSeatTextFull
+                              : styles.mobileSeatText
+                          }
+                        >
                           {cellFull ? 'เต็ม' : `ว่าง ${cellRemaining}`}
                         </span>
                       </div>
@@ -747,7 +753,11 @@ export default function Calendar() {
                         className={styles.mobileAgendaCard}
                         onClick={() => setDayDetailDate(job.date)}
                       >
-                        <div className={styles.mobileDateBox}>
+                        <div
+                          className={`${styles.mobileDateBox} ${
+                            jobFull ? styles.mobileDateBoxFull : ''
+                          }`}
+                        >
                           <span className={styles.mobileDateDay}>{dayNum}</span>
                           <span className={styles.mobileDateMonth}>
                             {THAI_MONTH_NAMES[currentMonth].slice(0, 4)}

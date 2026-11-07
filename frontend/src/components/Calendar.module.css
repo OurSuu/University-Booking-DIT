@@ -854,11 +854,19 @@
     border: 1px solid var(--border-strong);
   }
 
-  .mobileSeatText {
+  .mobileSeatText,
+  .mobileSeatTextFull {
     font-size: 0.58rem;
     font-weight: 600;
-    color: var(--success);
     white-space: nowrap;
+  }
+
+  .mobileSeatText {
+    color: var(--success);
+  }
+
+  .mobileSeatTextFull {
+    color: var(--text-muted);
   }
 
   /* Mobile Agenda List below Calendar */
@@ -927,13 +935,17 @@
     width: 48px;
     height: 52px;
     border-radius: 10px;
-    background: var(--primary);
+    background: var(--success);
     color: #ffffff;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+  }
+
+  .mobileDateBoxFull {
+    background: #64748b;
   }
 
   .mobileDateDay {
