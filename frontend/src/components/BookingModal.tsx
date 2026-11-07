@@ -11,7 +11,7 @@ interface Props {
   teacherPin: string;
   onPinVerified: (pin: string) => void;
   onClose: () => void;
-  onSuccess: (action: 'created' | 'updated') => void;
+  onSuccess: (action: 'created' | 'updated', savedJob?: JobAnnouncement) => void;
 }
 
 export default function BookingModal({
@@ -157,7 +157,7 @@ export default function BookingModal({
         onPinVerified(activePin);
       }
 
-      onSuccess(isEditMode ? 'updated' : 'created');
+      onSuccess(isEditMode ? 'updated' : 'created', data);
     } catch {
       setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
       showToast('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้', 'error');

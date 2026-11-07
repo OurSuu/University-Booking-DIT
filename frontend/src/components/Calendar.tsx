@@ -63,7 +63,7 @@ export default function Calendar() {
 
   const fetchJobs = useCallback(async () => {
     try {
-      const res = await fetch('/api/jobs', { cache: 'no-store' });
+      const res = await fetch(`/api/jobs?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setJobs(data);
@@ -320,10 +320,22 @@ export default function Calendar() {
     setDeletingJob(null);
   };
 
-  const handleJobFormSuccess = (action: 'created' | 'updated') => {
+  const handleJobFormSuccess = (
+    action: 'created' | 'updated',
+    savedJob?: JobAnnouncement
+  ) => {
     setShowJobFormModal(false);
     setEditingJob(null);
     setSelectedDateForCreate(null);
+    if (savedJob) {
+      setJobs((prev) => {
+        const exists = prev.some((j) => j.id === savedJob.id);
+        const next = exists
+          ? prev.map((j) => (j.id === savedJob.id ? savedJob : j))
+          : [...prev, savedJob];
+        return next.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+      });
+    }
     fetchJobs();
     showToast(
       action === 'created'

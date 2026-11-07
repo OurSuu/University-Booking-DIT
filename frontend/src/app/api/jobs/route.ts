@@ -7,7 +7,13 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const jobs = await getAllJobs();
-    return NextResponse.json(jobs);
+    return NextResponse.json(jobs, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    });
   } catch (error) {
     console.error('GET /api/jobs error:', error);
     return NextResponse.json(

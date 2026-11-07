@@ -256,7 +256,7 @@ export default function DayDetailModal({
           </div>
 
           <div className={styles.headerActions}>
-            {daysUntil >= 0 && (
+            {daysUntil >= 0 && !activeShiftInfo && !cancellingReg && (
               <button
                 className={styles.createJobBtn}
                 onClick={() => onCreateJobForDate(dateStr)}
@@ -504,26 +504,27 @@ export default function DayDetailModal({
             </div>
           )}
 
-          {/* รายการงานทั้งหมดในวันนี้ */}
-          {jobs.length === 0 ? (
-            <div className={styles.emptyState}>
-              <h3>ยังไม่มีประกาศงานในวันนี้</h3>
-              {daysUntil >= 0 ? (
-                <>
-                  <p>หากคุณเป็นอาจารย์ สามารถกดปุ่มด้านล่างเพื่อสร้างประกาศรับนักศึกษาช่วยงานได้ทันที</p>
-                  <button
-                    className={styles.emptyCreateBtn}
-                    onClick={() => onCreateJobForDate(dateStr)}
-                  >
-                    + สร้างประกาศงานในวันนี้
-                  </button>
-                </>
-              ) : (
-                <p>วันที่ผ่านมาแล้ว ไม่สามารถสร้างประกาศงานย้อนหลังได้</p>
-              )}
-            </div>
-          ) : (
-            <div className={styles.jobsList}>
+          {/* รายการงานทั้งหมดในวันนี้ (ซ่อนเมื่อกำลังเปิดฟอร์มลงทะเบียนหรือฟอร์มถอนชื่อ) */}
+          {!activeShiftInfo && !cancellingReg && (
+            jobs.length === 0 ? (
+              <div className={styles.emptyState}>
+                <h3>ยังไม่มีประกาศงานในวันนี้</h3>
+                {daysUntil >= 0 ? (
+                  <>
+                    <p>หากคุณเป็นอาจารย์ สามารถกดปุ่มด้านล่างเพื่อสร้างประกาศรับนักศึกษาช่วยงานได้ทันที</p>
+                    <button
+                      className={styles.emptyCreateBtn}
+                      onClick={() => onCreateJobForDate(dateStr)}
+                    >
+                      + สร้างประกาศงานในวันนี้
+                    </button>
+                  </>
+                ) : (
+                  <p>วันที่ผ่านมาแล้ว ไม่สามารถสร้างประกาศงานย้อนหลังได้</p>
+                )}
+              </div>
+            ) : (
+              <div className={styles.jobsList}>
               {jobs.map((job) => {
                 const totalCap = job.shifts.reduce((sum, s) => sum + s.capacity, 0);
                 const totalReg = job.shifts.reduce(
@@ -724,7 +725,8 @@ export default function DayDetailModal({
                   </div>
                 );
               })}
-            </div>
+              </div>
+            )
           )}
         </div>
       </div>
