@@ -63,7 +63,13 @@ export default function Calendar() {
 
   const fetchJobs = useCallback(async (silent = false) => {
     try {
-      const res = await fetch(`/api/jobs?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/jobs?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+      });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setJobs(data);
@@ -82,25 +88,37 @@ export default function Calendar() {
   useEffect(() => {
     fetchJobs(false);
 
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        fetchJobs(true);
-      }
-    }, 4000);
-
-    const handleFocusOrVisible = () => {
-      if (document.visibilityState === 'visible') {
+    let lastFetchTime = Date.now();
+    const triggerBackgroundSync = () => {
+      if (document.visibilityState !== 'hidden') {
+        lastFetchTime = Date.now();
         fetchJobs(true);
       }
     };
 
-    window.addEventListener('focus', handleFocusOrVisible);
-    document.addEventListener('visibilitychange', handleFocusOrVisible);
+    const intervalId = setInterval(() => {
+      triggerBackgroundSync();
+    }, 2000);
+
+    const handleTouchOrPointer = () => {
+      if (Date.now() - lastFetchTime > 1500) {
+        triggerBackgroundSync();
+      }
+    };
+
+    window.addEventListener('focus', triggerBackgroundSync);
+    window.addEventListener('pageshow', triggerBackgroundSync);
+    window.addEventListener('online', triggerBackgroundSync);
+    document.addEventListener('visibilitychange', triggerBackgroundSync);
+    window.addEventListener('touchstart', handleTouchOrPointer, { passive: true });
 
     return () => {
       clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocusOrVisible);
-      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+      window.removeEventListener('focus', triggerBackgroundSync);
+      window.removeEventListener('pageshow', triggerBackgroundSync);
+      window.removeEventListener('online', triggerBackgroundSync);
+      document.removeEventListener('visibilitychange', triggerBackgroundSync);
+      window.removeEventListener('touchstart', handleTouchOrPointer);
     };
   }, [fetchJobs]);
 

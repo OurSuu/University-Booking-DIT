@@ -567,37 +567,77 @@ export async function registerStudent(
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
-    const res = await pool.query(
-      `INSERT INTO scholarship_registrations
-        (job_id, shift_id, student_id, student_name, faculty, scholarship_name, registered_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [
-        job.id,
-        shift.id,
-        studentIdClean,
-        studentNameClean,
-        facultyClean,
-        scholarshipClean,
-        todayStr,
-      ]
-    );
-    const row = res.rows[0];
-    const updatedJob = await getJobById(job.id);
-    return {
-      registration: {
-        id: Number(row.id),
-        job_id: Number(row.job_id),
-        shift_id: Number(row.shift_id),
-        student_id: row.student_id,
-        student_name: row.student_name,
-        faculty: row.faculty,
-        scholarship_name: row.scholarship_name || '',
-        registered_date: formatDateStr(row.registered_date),
-        created_at: row.created_at ? new Date(row.created_at).toISOString() : '',
-      },
-      job: updatedJob!,
-    };
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // ล็อกแถวของกะงานนี้ (Row-level Lock) เพื่อป้องกันกรณีคนกดลงทะเบียนพร้อมกันในเสี้ยววินาทีเดียวกัน
+      const lockedShiftRes = await client.query(
+        'SELECT id, capacity FROM scholarship_shifts WHERE id = $1 AND job_id = $2 FOR UPDATE',
+        [shift.id, job.id]
+      );
+      if (lockedShiftRes.rowCount === 0) {
+        throw new Error('ไม่พบช่วงเวลา/กะที่เลือก');
+      }
+      const latestCapacity = Number(lockedShiftRes.rows[0].capacity);
+
+      const currentRegsRes = await client.query(
+        'SELECT student_id, student_name FROM scholarship_registrations WHERE shift_id = $1',
+        [shift.id]
+      );
+
+      if (currentRegsRes.rows.length >= latestCapacity) {
+        throw new Error('ขออภัย มีผู้ลงทะเบียนที่นั่งสุดท้ายตัดหน้าไปเมื่อสักครู่ ช่วงเวลานี้เต็มแล้ว');
+      }
+
+      const dupInTx = currentRegsRes.rows.some(
+        (r) =>
+          String(r.student_id || '').trim().toLowerCase() === studentIdClean.toLowerCase() ||
+          String(r.student_name || '').trim().toLowerCase() === studentNameClean.toLowerCase()
+      );
+      if (dupInTx) {
+        throw new Error('รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในช่วงเวลานี้ไปแล้ว');
+      }
+
+      const res = await client.query(
+        `INSERT INTO scholarship_registrations
+          (job_id, shift_id, student_id, student_name, faculty, scholarship_name, registered_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [
+          job.id,
+          shift.id,
+          studentIdClean,
+          studentNameClean,
+          facultyClean,
+          scholarshipClean,
+          todayStr,
+        ]
+      );
+
+      await client.query('COMMIT');
+      const row = res.rows[0];
+      const updatedJob = await getJobById(job.id);
+      return {
+        registration: {
+          id: Number(row.id),
+          job_id: Number(row.job_id),
+          shift_id: Number(row.shift_id),
+          student_id: row.student_id,
+          student_name: row.student_name,
+          faculty: row.faculty,
+          scholarship_name: row.scholarship_name || '',
+          registered_date: formatDateStr(row.registered_date),
+          created_at: row.created_at ? new Date(row.created_at).toISOString() : '',
+        },
+        job: updatedJob!,
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   // Local fallback
