@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { JobAnnouncement, ShiftInput, PRESET_SHIFTS, getTodayStr } from '@/types';
+import { JobAnnouncement, ShiftInput, PRESET_SHIFTS, getTodayStr, getDaysUntilJob } from '@/types';
 import { useToast } from './Toast';
 import styles from './BookingModal.module.css';
 
@@ -108,6 +108,11 @@ export default function BookingModal({
       return;
     }
 
+    if (!isEditMode && getDaysUntilJob(date) < 0) {
+      setError('ไม่สามารถสร้างประกาศงานในวันที่ผ่านมาแล้วได้');
+      return;
+    }
+
     if (shifts.length === 0) {
       setError('กรุณาเพิ่มกะหรือช่วงเวลาทำงานอย่างน้อย 1 ช่วงเวลา');
       return;
@@ -184,6 +189,7 @@ export default function BookingModal({
               <input
                 id="job-date"
                 type="date"
+                min={getTodayStr()}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required

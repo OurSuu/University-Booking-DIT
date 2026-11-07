@@ -454,7 +454,13 @@
 }
 
 .pastDay {
-  background: #fafafa;
+  background: #f1f5f9;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pastDay:hover {
+  background: #f1f5f9;
 }
 
 .todayCell {

@@ -267,10 +267,12 @@ export default function Calendar() {
     jobs.filter((j) => j.date === dateStr);
 
   const handleOpenCreateJob = (dateStr?: string) => {
+    const targetDate =
+      dateStr && getDaysUntilJob(dateStr, todayStr) >= 0 ? dateStr : todayStr;
     requireTeacherAuth(() => {
       setDayDetailDate(null);
       setEditingJob(null);
-      setSelectedDateForCreate(dateStr || todayStr);
+      setSelectedDateForCreate(targetDate);
       setShowJobFormModal(true);
     });
   };
@@ -574,7 +576,10 @@ export default function Calendar() {
                   <div
                     key={idx}
                     className={cellClass}
-                    onClick={() => setDayDetailDate(cell.dateStr)}
+                    onClick={() => {
+                      if (isPast && dayJobs.length === 0) return;
+                      setDayDetailDate(cell.dateStr);
+                    }}
                   >
                     <div className={styles.dayHeader}>
                       <span

@@ -125,7 +125,7 @@ export default function DayDetailModal({
       } else {
         s.registrations.forEach((r, i) => {
           lines.push(
-            `   ${i + 1}. ${r.student_id} - ${r.student_name} (${r.faculty})${
+            `   ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา: ${r.faculty})${
               r.scholarship_name ? ` [ทุน: ${r.scholarship_name}]` : ''
             }`
           );
@@ -256,12 +256,14 @@ export default function DayDetailModal({
           </div>
 
           <div className={styles.headerActions}>
-            <button
-              className={styles.createJobBtn}
-              onClick={() => onCreateJobForDate(dateStr)}
-            >
-              + ประกาศงานวันนี้ {isTeacherMode ? '' : '(อาจารย์)'}
-            </button>
+            {daysUntil >= 0 && (
+              <button
+                className={styles.createJobBtn}
+                onClick={() => onCreateJobForDate(dateStr)}
+              >
+                + ประกาศงานวันนี้ {isTeacherMode ? '' : '(อาจารย์)'}
+              </button>
+            )}
             <button className={styles.closeBtn} onClick={onClose} aria-label="ปิด">
               ✕
             </button>
@@ -323,12 +325,12 @@ export default function DayDetailModal({
                 </div>
 
                 <div className={styles.field}>
-                  <label>คณะ *</label>
+                  <label>สาขา *</label>
                   <input
                     type="text"
                     value={faculty}
                     onChange={(e) => setFaculty(e.target.value)}
-                    placeholder="เลือกจากปุ่มด้านล่าง หรือพิมพ์ชื่อคณะ..."
+                    placeholder="เลือกจากปุ่มด้านล่าง หรือพิมพ์ชื่อสาขา..."
                     required
                   />
                   <div className={styles.quickPills}>
@@ -507,13 +509,19 @@ export default function DayDetailModal({
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>📅</div>
               <h3>ยังไม่มีประกาศงานในวันนี้</h3>
-              <p>หากคุณเป็นอาจารย์ สามารถกดปุ่มด้านล่างเพื่อสร้างประกาศรับนักศึกษาช่วยงานได้ทันที</p>
-              <button
-                className={styles.emptyCreateBtn}
-                onClick={() => onCreateJobForDate(dateStr)}
-              >
-                + สร้างประกาศงานในวันนี้
-              </button>
+              {daysUntil >= 0 ? (
+                <>
+                  <p>หากคุณเป็นอาจารย์ สามารถกดปุ่มด้านล่างเพื่อสร้างประกาศรับนักศึกษาช่วยงานได้ทันที</p>
+                  <button
+                    className={styles.emptyCreateBtn}
+                    onClick={() => onCreateJobForDate(dateStr)}
+                  >
+                    + สร้างประกาศงานในวันนี้
+                  </button>
+                </>
+              ) : (
+                <p>วันที่ผ่านมาแล้ว ไม่สามารถสร้างประกาศงานย้อนหลังได้</p>
+              )}
             </div>
           ) : (
             <div className={styles.jobsList}>
@@ -667,7 +675,7 @@ export default function DayDetailModal({
                                             รหัส: {reg.student_id}
                                           </span>
                                           <span className={styles.participantFaculty}>
-                                            {reg.faculty}
+                                            สาขา: {reg.faculty}
                                           </span>
                                           {reg.scholarship_name && (
                                             <span className={styles.participantScholarship}>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllJobs, createJob, verifyTeacherPin } from '@/lib/db';
+import { getDaysUntilJob } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,13 @@ export async function POST(request: NextRequest) {
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json(
         { error: 'กรุณาระบุวันที่จัดงานให้ถูกต้อง (YYYY-MM-DD)' },
+        { status: 400 }
+      );
+    }
+
+    if (getDaysUntilJob(date) < 0) {
+      return NextResponse.json(
+        { error: 'ไม่สามารถสร้างประกาศงานในวันที่ผ่านมาแล้วได้' },
         { status: 400 }
       );
     }

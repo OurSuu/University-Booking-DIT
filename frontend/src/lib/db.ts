@@ -527,7 +527,7 @@ export async function registerStudent(
   const scholarshipClean = (payload.scholarship_name || '').trim();
 
   if (!studentIdClean || !studentNameClean || !facultyClean) {
-    throw new Error('กรุณากรอก รหัสนักศึกษา, ชื่อ-นามสกุล และคณะ ให้ครบถ้วน');
+    throw new Error('กรุณากรอก รหัสนักศึกษา, ชื่อ-นามสกุล และสาขา ให้ครบถ้วน');
   }
 
   if (job.require_scholarship_name && !scholarshipClean) {
