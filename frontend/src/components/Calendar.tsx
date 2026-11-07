@@ -24,8 +24,6 @@ const THAI_MONTH_NAMES = [
   'ธันวาคม',
 ];
 
-type FilterMode = 'all' | 'available' | 'kys_only';
-
 export default function Calendar() {
   const today = new Date();
   const { showToast } = useToast();
@@ -37,7 +35,8 @@ export default function Calendar() {
   const [error, setError] = useState<string | null>(null);
 
   // Filters & Student lookup
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [filterAvailableOnly, setFilterAvailableOnly] = useState(false);
+  const [filterKysOnly, setFilterKysOnly] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
 
   // Teacher mode state
@@ -156,11 +155,11 @@ export default function Calendar() {
       );
       const hasAvailable = totalReg < totalCap;
 
-      if (filterMode === 'available' && !hasAvailable) return false;
-      if (filterMode === 'kys_only' && !job.allow_kys) return false;
+      if (filterAvailableOnly && !hasAvailable) return false;
+      if (filterKysOnly && !job.allow_kys) return false;
       return true;
     });
-  }, [jobs, filterMode]);
+  }, [jobs, filterAvailableOnly, filterKysOnly]);
 
   // Student search matches
   const myRegistrations = useMemo(() => {
@@ -454,25 +453,30 @@ export default function Calendar() {
             <div className={styles.filterTabs}>
               <button
                 className={`${styles.filterTab} ${
-                  filterMode === 'all' ? styles.filterTabActive : ''
+                  !filterAvailableOnly && !filterKysOnly
+                    ? styles.filterTabActive
+                    : ''
                 }`}
-                onClick={() => setFilterMode('all')}
+                onClick={() => {
+                  setFilterAvailableOnly(false);
+                  setFilterKysOnly(false);
+                }}
               >
                 ทั้งหมด
               </button>
               <button
                 className={`${styles.filterTab} ${
-                  filterMode === 'available' ? styles.filterTabActive : ''
+                  filterAvailableOnly ? styles.filterTabActive : ''
                 }`}
-                onClick={() => setFilterMode('available')}
+                onClick={() => setFilterAvailableOnly((prev) => !prev)}
               >
                 เฉพาะที่ยังว่าง
               </button>
               <button
                 className={`${styles.filterTab} ${
-                  filterMode === 'kys_only' ? styles.filterTabActive : ''
+                  filterKysOnly ? styles.filterTabActive : ''
                 }`}
-                onClick={() => setFilterMode('kys_only')}
+                onClick={() => setFilterKysOnly((prev) => !prev)}
               >
                 กยศ. ทำได้
               </button>
