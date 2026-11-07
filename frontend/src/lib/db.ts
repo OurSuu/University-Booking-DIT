@@ -18,13 +18,15 @@ export function verifyTeacherPin(pin?: string): boolean {
   return Boolean(pin && pin.trim() === expectedPin.trim());
 }
 
-const dbConnectionString = (
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  ''
-).trim();
-
-const hasPostgresUrl = dbConnectionString.length > 0;
+function getDbConnectionString(): string {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.NEON_DATABASE_URL ||
+    ''
+  ).trim();
+}
 
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
@@ -33,9 +35,10 @@ const globalForDb = globalThis as unknown as {
 
 function getPool(): Pool {
   if (!globalForDb._pgPool) {
+    const rawUrl = getDbConnectionString();
     globalForDb._pgPool = new Pool({
-      connectionString: dbConnectionString,
-      ssl: dbConnectionString.includes('localhost')
+      connectionString: rawUrl,
+      ssl: rawUrl.includes('localhost')
         ? false
         : { rejectUnauthorized: false },
     });
@@ -154,7 +157,7 @@ function formatDateStr(val: unknown): string {
 // ==========================================
 
 export async function getAllJobs(): Promise<JobAnnouncement[]> {
-  if (hasPostgresUrl) {
+  if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
     const jobsRes = await pool.query(
@@ -254,7 +257,7 @@ export interface CreateJobPayload {
 }
 
 export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncement> {
-  if (hasPostgresUrl) {
+  if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
     const client = await pool.connect();
@@ -345,7 +348,7 @@ export async function updateJob(
   const existing = await getJobById(jobId);
   if (!existing) return null;
 
-  if (hasPostgresUrl) {
+  if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
     const client = await pool.connect();
@@ -484,7 +487,7 @@ export async function updateJob(
 }
 
 export async function deleteJob(jobId: number): Promise<boolean> {
-  if (hasPostgresUrl) {
+  if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
     const res = await pool.query(
@@ -561,7 +564,7 @@ export async function registerStudent(
     throw new Error('รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในช่วงเวลานี้ไปแล้ว');
   }
 
-  if (hasPostgresUrl) {
+  if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
     const res = await pool.query(
@@ -661,7 +664,7 @@ export async function cancelRegistration(
     }
   }
 
-  if (hasPostgresUrl) {
+  if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
     await pool.query('DELETE FROM scholarship_registrations WHERE id = $1', [

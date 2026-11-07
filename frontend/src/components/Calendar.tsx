@@ -63,7 +63,7 @@ export default function Calendar() {
 
   const fetchJobs = useCallback(async () => {
     try {
-      const res = await fetch('/api/jobs');
+      const res = await fetch('/api/jobs', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setJobs(data);
@@ -301,10 +301,15 @@ export default function Calendar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacherPin }),
       });
-      if (!res.ok) {
+      if (res.status === 404) {
+        setJobs((prev) => prev.filter((j) => j.id !== deletingJob.id));
+        showToast('ลบประกาศงานเรียบร้อยแล้ว', 'success');
+        fetchJobs();
+      } else if (!res.ok) {
         const data = await res.json();
         showToast(data.error || 'ไม่สามารถลบประกาศงานได้', 'error');
       } else {
+        setJobs((prev) => prev.filter((j) => j.id !== deletingJob.id));
         showToast('ลบประกาศงานเรียบร้อยแล้ว', 'success');
         fetchJobs();
       }
