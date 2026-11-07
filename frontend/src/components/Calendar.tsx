@@ -61,7 +61,7 @@ export default function Calendar() {
   const isTeacherMode = Boolean(teacherPin);
   const todayStr = getTodayStr();
 
-  const fetchJobs = useCallback(async () => {
+  const fetchJobs = useCallback(async (silent = false) => {
     try {
       const res = await fetch(`/api/jobs?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed');
@@ -69,14 +69,39 @@ export default function Calendar() {
       setJobs(data);
       setError(null);
     } catch {
-      setError('ไม่สามารถดึงข้อมูลปฏิทินงานจากเซิร์ฟเวอร์ได้');
+      if (!silent) {
+        setError('ไม่สามารถดึงข้อมูลปฏิทินงานจากเซิร์ฟเวอร์ได้');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchJobs();
+    fetchJobs(false);
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchJobs(true);
+      }
+    }, 4000);
+
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchJobs(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+    };
   }, [fetchJobs]);
 
   const requireTeacherAuth = (action: () => void) => {
@@ -560,7 +585,7 @@ export default function Calendar() {
         {error && (
           <div className={styles.errorBanner}>
             <span>{error}</span>
-            <button onClick={fetchJobs}>ลองใหม่</button>
+            <button onClick={() => fetchJobs(false)}>ลองใหม่</button>
           </div>
         )}
 
@@ -613,6 +638,7 @@ export default function Calendar() {
                     onClick={() => {
                       if (isPast && dayJobs.length === 0) return;
                       setDayDetailDate(cell.dateStr);
+                      fetchJobs(true);
                     }}
                   >
                     <div className={styles.dayHeader}>

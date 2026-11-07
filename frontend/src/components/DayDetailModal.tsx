@@ -108,7 +108,18 @@ export default function DayDetailModal({
     setActiveShiftInfo({ job, shift });
     setCancellingReg(null);
     setRegError(null);
+    onRefresh();
   };
+
+  const liveJob = activeShiftInfo
+    ? jobs.find((j) => j.id === activeShiftInfo.job.id) || activeShiftInfo.job
+    : null;
+  const liveShift = liveJob && activeShiftInfo
+    ? liveJob.shifts.find((s) => s.id === activeShiftInfo.shift.id) || activeShiftInfo.shift
+    : null;
+  const isLiveShiftFull = Boolean(
+    liveShift && liveShift.registrations.length >= liveShift.capacity
+  );
 
   const handleCopyParticipants = (job: JobAnnouncement) => {
     const lines: string[] = [];
@@ -174,6 +185,7 @@ export default function DayDetailModal({
         setRegError(data.error || 'ไม่สามารถลงทะเบียนได้');
         showToast(data.error || 'ลงทะเบียนไม่สำเร็จ', 'error');
         setRegLoading(false);
+        onRefresh();
         return;
       }
 
@@ -212,6 +224,7 @@ export default function DayDetailModal({
         setCancelError(data.error || 'ไม่สามารถถอนชื่อได้');
         showToast(data.error || 'ไม่สามารถถอนชื่อได้', 'error');
         setCancelLoading(false);
+        onRefresh();
         return;
       }
 
@@ -296,6 +309,16 @@ export default function DayDetailModal({
                   <p className={styles.regSubInfo}>
                     ช่วงเวลา: <strong>{activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})</strong> • ได้รับ{' '}
                     <strong>{activeShiftInfo.shift.hours} ชั่วโมงทุน</strong>
+                    {liveShift && (
+                      <>
+                        {' '}• สถานะล่าสุด:{' '}
+                        <strong>
+                          {isLiveShiftFull
+                            ? `เต็มแล้ว (${liveShift.registrations.length}/${liveShift.capacity} คน)`
+                            : `ว่าง ${Math.max(0, liveShift.capacity - liveShift.registrations.length)} ที่ (ลงแล้ว ${liveShift.registrations.length}/${liveShift.capacity} คน)`}
+                        </strong>
+                      </>
+                    )}
                   </p>
                 </div>
                 <button
@@ -391,6 +414,12 @@ export default function DayDetailModal({
                   </div>
                 </div>
 
+                {isLiveShiftFull && (
+                  <div className={styles.errorBox}>
+                    ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในช่วงเวลานี้ครบจำนวนแล้ว กรุณากดย้อนกลับเพื่อเลือกช่วงเวลาอื่น
+                  </div>
+                )}
+
                 {isKysBlockedInForm && (
                   <div className={styles.errorBox}>
                     ขออภัย งานนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกงานอื่นที่เปิดรับทุน กยศ.
@@ -419,10 +448,14 @@ export default function DayDetailModal({
                   <button
                     type="submit"
                     className={styles.primaryBtn}
-                    disabled={regLoading || Boolean(isKysBlockedInForm)}
+                    disabled={regLoading || Boolean(isKysBlockedInForm) || isLiveShiftFull}
                   >
                     {regLoading && <span className={styles.btnSpinner} />}
-                    {regLoading ? 'กำลังบันทึก...' : 'ยืนยันการลงทะเบียน'}
+                    {regLoading
+                      ? 'กำลังบันทึก...'
+                      : isLiveShiftFull
+                      ? 'ช่วงเวลานี้เต็มแล้ว'
+                      : 'ยืนยันการลงทะเบียน'}
                   </button>
                 </div>
               </form>
