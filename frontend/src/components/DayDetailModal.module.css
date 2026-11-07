@@ -1,0 +1,815 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  width: 100%;
+  max-width: 860px;
+  max-height: 92vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.dayStatusFuture,
+.dayStatusToday,
+.dayStatusPast,
+.jobCountBadge {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+}
+
+.dayStatusFuture {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.dayStatusToday {
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.dayStatusPast {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.jobCountBadge {
+  background: #ffffff;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.createJobBtn {
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.createJobBtn:hover {
+  background: var(--primary-hover);
+}
+
+.closeBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.content {
+  padding: 1.25rem 1.5rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Registration Form Card */
+.regFormCard,
+.cancelCard {
+  background: #eff6ff;
+  border: 2px solid var(--primary-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.cancelCard {
+  background: var(--danger-light);
+  border-color: var(--danger-border);
+}
+
+.regFormHeader,
+.cancelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.regStepBadge {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: #ffffff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-border);
+  margin-bottom: 0.35rem;
+}
+
+.regFormHeader h3,
+.cancelHeader h3 {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.regSubInfo {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+.backBtn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.kysWarningBanner {
+  padding: 0.7rem 0.95rem;
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.regForm,
+.cancelForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.formGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field label {
+  font-family: var(--font-heading);
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.field input {
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  background: #ffffff;
+  outline: none;
+}
+
+.field input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.quickPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.pillBtn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pillBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pillBtnActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.pillBtnDisabled {
+  background: var(--danger-light);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.policyNote {
+  padding: 0.65rem 0.9rem;
+  background: #ffffff;
+  border: 1px solid var(--primary-border);
+  border-radius: 10px;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.errorBox {
+  padding: 0.65rem 0.9rem;
+  background: #ffffff;
+  border: 1.5px solid var(--danger);
+  border-radius: 10px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.regFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.dangerBtn {
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primaryBtn {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: #ffffff;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.dangerBtn {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: #ffffff;
+}
+
+.cancelDetails {
+  background: #ffffff;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--danger-border);
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.graceNotice,
+.okNotice,
+.teacherOverrideNotice {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.graceNotice {
+  background: var(--warning-light);
+  border: 1px solid var(--warning-border);
+  color: #92400e;
+}
+
+.okNotice {
+  background: var(--success-light);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+}
+
+.teacherOverrideNotice {
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--bg-subtle);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 14px;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.emptyState h3 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--text-main);
+  margin-bottom: 0.35rem;
+}
+
+.emptyState p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.emptyCreateBtn {
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Jobs List */
+.jobsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.jobCard {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.jobCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.jobBadgesRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.4rem;
+}
+
+.badgeKysOk,
+.badgeKysNo,
+.badgeAvailable,
+.badgeFull {
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.badgeKysOk {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.badgeKysNo {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.badgeAvailable {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.badgeFull {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.jobTitle {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.jobTeacherActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.copyBtn,
+.editJobBtn,
+.deleteJobBtn {
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.copyBtn {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.copyBtn:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.editJobBtn {
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+
+.deleteJobBtn {
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+.jobMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.jobDesc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+  line-height: 1.5;
+}
+
+/* Shifts */
+.shiftsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.shiftBox {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+
+.shiftBoxHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.shiftInfoLeft {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.shiftName {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.shiftTime {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.shiftHours {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-indigo);
+  background: var(--accent-indigo-light);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.shiftCapOk,
+.shiftCapFull {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.shiftCapOk {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.shiftCapFull {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.registerBtn {
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.registerBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.fullPill,
+.pastPill {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+}
+
+.fullPill {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.pastPill {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+}
+
+/* Participants List */
+.participantsSection {
+  padding: 0.65rem 1rem;
+}
+
+.noParticipants {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.25rem 0;
+}
+
+.participantsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.participantRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.participantInfo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.participantIndex {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.participantName {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.participantCode {
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.participantFaculty {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.participantScholarship {
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.sameDayBadge {
+  color: #b45309;
+  background: var(--warning-light);
+  border: 1px solid var(--warning-border);
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.withdrawBtn {
+  padding: 0.28rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.withdrawBtn:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.lockedCancelBadge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-muted);
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  cursor: help;
+}
+
+@media (max-width: 680px) {
+  .modalHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    justify-content: space-between;
+  }
+
+  .formGrid2 {
+    grid-template-columns: 1fr;
+  }
+}
