@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   JobAnnouncement,
-  DIT_MAJORS,
   normalizeMajorName,
   getTodayStr,
   getDaysUntilJob,
@@ -45,7 +44,6 @@ export default function Calendar() {
   const [filterAvailableOnly, setFilterAvailableOnly] = useState(false);
   const [filterKysOnly, setFilterKysOnly] = useState(false);
   const [filterNonKysOnly, setFilterNonKysOnly] = useState(false);
-  const [facultyFilter, setFacultyFilter] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
 
   // Teacher mode state
@@ -241,17 +239,9 @@ export default function Calendar() {
       if (filterAvailableOnly && !hasAvailable) return false;
       if (filterKysOnly && !job.allow_kys) return false;
       if (filterNonKysOnly && job.allow_kys) return false;
-      if (facultyFilter) {
-        const hasFacultyReg = job.shifts.some((s) =>
-          s.registrations.some(
-            (r) => normalizeMajorName(r.faculty) === facultyFilter
-          )
-        );
-        if (!hasFacultyReg) return false;
-      }
       return true;
     });
-  }, [jobs, filterAvailableOnly, filterKysOnly, filterNonKysOnly, facultyFilter]);
+  }, [jobs, filterAvailableOnly, filterKysOnly, filterNonKysOnly]);
 
   // Student search matches (strictly student ID only for PDPA privacy)
   const myRegistrations = useMemo(() => {
@@ -318,51 +308,6 @@ export default function Calendar() {
       nonKysCount,
     };
   }, [jobs, monthPrefix]);
-
-  // Faculty monthly breakdown statistics
-  const facultyMonthStats = useMemo(() => {
-    if (!facultyFilter) return null;
-    const monthJobs = jobs.filter((j) => j.date.startsWith(monthPrefix));
-    const uniqueStudentIds = new Set<string>();
-    let totalRegCount = 0;
-    let totalHours = 0;
-    const records: {
-      jobTitle: string;
-      date: string;
-      shiftLabel: string;
-      studentName: string;
-      studentId: string;
-      hours: number;
-    }[] = [];
-
-    for (const job of monthJobs) {
-      for (const shift of job.shifts) {
-        for (const reg of shift.registrations) {
-          if (normalizeMajorName(reg.faculty) === facultyFilter) {
-            uniqueStudentIds.add(reg.student_id);
-            totalRegCount++;
-            totalHours += shift.hours;
-            records.push({
-              jobTitle: job.title,
-              date: job.date,
-              shiftLabel: shift.label,
-              studentName: reg.student_name,
-              studentId: reg.student_id,
-              hours: shift.hours,
-            });
-          }
-        }
-      }
-    }
-
-    return {
-      majorName: facultyFilter,
-      uniqueStudentsCount: uniqueStudentIds.size,
-      totalRegCount,
-      totalHours,
-      records,
-    };
-  }, [jobs, monthPrefix, facultyFilter]);
 
   // Build calendar cells (42 cells)
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -691,31 +636,6 @@ export default function Calendar() {
               </button>
             </div>
 
-            <div className={styles.facultyFilterBox}>
-              <select
-                value={facultyFilter}
-                onChange={(e) => setFacultyFilter(e.target.value)}
-                className={styles.facultySelect}
-                aria-label="กรองเฉพาะสาขา/คณะ"
-              >
-                <option value="">ทุกสาขา (DIT)</option>
-                {DIT_MAJORS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-              {facultyFilter && (
-                <button
-                  className={styles.clearFacultyBtn}
-                  onClick={() => setFacultyFilter('')}
-                  title="ล้างตัวกรองสาขา"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
             <div className={styles.searchBox}>
               <input
                 type="text"
@@ -735,82 +655,6 @@ export default function Calendar() {
             </div>
           </div>
         </section>
-
-        {/* Faculty Month Statistics Drawer */}
-        {facultyMonthStats && (
-          <section className={styles.facultyStatsDrawer}>
-            <div className={styles.facultyStatsHeader}>
-              <div className={styles.facultyStatsTitleWrap}>
-                <h3>สถิติการปฏิบัติงานชั่วโมงทุน</h3>
-                <span className={styles.facultyBadge}>{facultyMonthStats.majorName}</span>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  ประจำเดือน {THAI_MONTH_NAMES[currentMonth]} {currentYear + 543}
-                </span>
-              </div>
-              <button
-                className={styles.clearFacultyBtn}
-                onClick={() => setFacultyFilter('')}
-              >
-                ✕ ปิดสรุปสาขา
-              </button>
-            </div>
-
-            <div className={styles.facultyMetricPills}>
-              <div className={styles.facultyMetricPill}>
-                <span>นักศึกษาที่มาทำงานในเดือนนี้</span>
-                <strong>{facultyMonthStats.uniqueStudentsCount} คน</strong>
-              </div>
-              <div className={styles.facultyMetricPill}>
-                <span>การลงทะเบียนทั้งหมด</span>
-                <strong>{facultyMonthStats.totalRegCount} ครั้ง</strong>
-              </div>
-              <div className={styles.facultyMetricPill}>
-                <span>ชั่วโมงทุนสะสม</span>
-                <strong>{facultyMonthStats.totalHours} ชม.</strong>
-              </div>
-            </div>
-
-            {facultyMonthStats.records.length > 0 ? (
-              <div className={styles.facultyRegList}>
-                <div className={styles.facultyRegListTitle}>
-                  รายชื่อนักศึกษาที่ลงทะเบียนในเดือนนี้ ({facultyMonthStats.records.length} รายการ):
-                </div>
-                <div className={styles.searchResultList}>
-                  {facultyMonthStats.records.map((rec, idx) => (
-                    <div key={idx} className={styles.searchResultItem}>
-                      <div>
-                        <span className={styles.searchDateBadge}>
-                          {formatThaiDate(rec.date)}
-                        </span>
-                        {isTeacherMode ? (
-                          <>
-                            <strong>{rec.studentName}</strong> ({rec.studentId}) — งาน:{' '}
-                            {rec.jobTitle} [{rec.shiftLabel}] • {rec.hours} ชม.ทุน
-                          </>
-                        ) : (
-                          <>
-                            รหัส นศ.: <strong>{rec.studentId}</strong> — งาน:{' '}
-                            {rec.jobTitle} [{rec.shiftLabel}] • {rec.hours} ชม.ทุน
-                          </>
-                        )}
-                      </div>
-                      <button
-                        className={styles.openDayBtn}
-                        onClick={() => setDayDetailDate(rec.date)}
-                      >
-                        ดูในปฏิทิน
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className={styles.noSearchMatch}>
-                ยังไม่มีนักศึกษาจากสาขานี้ลงทะเบียนปฏิบัติงานในเดือนนี้
-              </p>
-            )}
-          </section>
-        )}
 
         {/* Student Search Results Drawer */}
         {studentSearch.trim() && (
