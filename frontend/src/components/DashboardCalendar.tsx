@@ -272,6 +272,15 @@ export default function DashboardCalendar({
                   )}
                 </div>
 
+                {/* Mobile-only compact job count badge */}
+                {dayJobs.length > 0 && (
+                  <div className={styles.mobileJobIndicator}>
+                    <span className={cellFull ? styles.mobileIndicatorFull : styles.mobileIndicatorAvail}>
+                      {dayJobs.length} งาน
+                    </span>
+                  </div>
+                )}
+
                 {/* Job Chips in Cell */}
                 <div className={styles.jobsInCell}>
                   {dayJobs.map((job) => {

@@ -346,6 +346,10 @@
 .dotFull { background: var(--danger); }
 .dotSelected { background: var(--primary); }
 
+.mobileJobIndicator {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .dayCell {
     min-height: 85px;
@@ -358,24 +362,108 @@
 
 @media (max-width: 640px) {
   .calendarSection {
-    padding: 1rem;
+    padding: 0.85rem;
   }
   .calendarHeader {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .headerTitleGroup {
+    text-align: left;
   }
   .monthNavGroup {
     width: 100%;
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0.5rem;
   }
   .monthTitle {
     min-width: auto;
+    font-size: 0.88rem;
+  }
+  .navIconBtn {
+    width: 36px;
+    height: 36px;
+  }
+  .activeFilterBanner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 0.75rem;
+  }
+  .filterBannerLeft {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 0.4rem;
+  }
+  .openModalBtn {
+    width: 100%;
+    padding: 0.55rem;
+    font-size: 0.82rem;
+  }
+  .clearDateBtn {
+    width: 100%;
+    padding: 0.45rem;
+    text-align: center;
   }
   .dayCell {
-    min-height: 55px;
-    padding: 0.25rem;
+    min-height: 58px;
+    padding: 0.25rem 0.15rem;
   }
-  .jobChip {
+  .dayHeader {
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+  }
+  .dayNumber {
+    font-size: 0.76rem;
+  }
+  .todayBadge {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+  .badgeAvail,
+  .badgeFull {
+    font-size: 0.56rem;
+    padding: 0.05rem 0.25rem;
+  }
+  .jobsInCell {
     display: none;
+  }
+  .mobileJobIndicator {
+    display: flex;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .mobileIndicatorAvail {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+  }
+  .mobileIndicatorFull {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+  .footerLegend {
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.76rem;
   }
 }

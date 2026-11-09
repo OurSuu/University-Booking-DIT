@@ -615,24 +615,26 @@ function DashboardInner() {
             {/* Metric Selector Tabs */}
             <div className={styles.metricTabs}>
               <span className={styles.metricLabel}>ข้อมูลในกราฟ:</span>
-              <button
-                className={`${styles.metricBtn} ${metric === 'registrations' ? styles.metricBtnActive : ''}`}
-                onClick={() => setMetric('registrations')}
-              >
-                จำนวนคนลงทะเบียน
-              </button>
-              <button
-                className={`${styles.metricBtn} ${metric === 'hours' ? styles.metricBtnActive : ''}`}
-                onClick={() => setMetric('hours')}
-              >
-                ชั่วโมงทุนสะสม
-              </button>
-              <button
-                className={`${styles.metricBtn} ${metric === 'jobs' ? styles.metricBtnActive : ''}`}
-                onClick={() => setMetric('jobs')}
-              >
-                จำนวนงาน
-              </button>
+              <div className={styles.metricBtnGroup}>
+                <button
+                  className={`${styles.metricBtn} ${metric === 'registrations' ? styles.metricBtnActive : ''}`}
+                  onClick={() => setMetric('registrations')}
+                >
+                  จำนวนคนลงทะเบียน
+                </button>
+                <button
+                  className={`${styles.metricBtn} ${metric === 'hours' ? styles.metricBtnActive : ''}`}
+                  onClick={() => setMetric('hours')}
+                >
+                  ชั่วโมงทุนสะสม
+                </button>
+                <button
+                  className={`${styles.metricBtn} ${metric === 'jobs' ? styles.metricBtnActive : ''}`}
+                  onClick={() => setMetric('jobs')}
+                >
+                  จำนวนงาน
+                </button>
+              </div>
             </div>
           </div>
 
@@ -641,20 +643,26 @@ function DashboardInner() {
             {viewMode === 'day' && (
               <>
                 <div className={styles.dateInputsRow}>
-                  <label htmlFor="start-date">ตั้งแต่วันที่:</label>
-                  <input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                  <label htmlFor="end-date">ถึงวันที่:</label>
-                  <input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+                  <div className={styles.dateInputsFlex}>
+                    <div className={styles.dateInputItem}>
+                      <label htmlFor="start-date">ตั้งแต่วันที่:</label>
+                      <input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.dateInputItem}>
+                      <label htmlFor="end-date">ถึงวันที่:</label>
+                      <input
+                        id="end-date"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className={styles.presetPills}>
@@ -691,7 +699,7 @@ function DashboardInner() {
             )}
 
             {/* Filter by Major */}
-            <div className={styles.dateInputsRow} style={{ marginLeft: 'auto' }}>
+            <div className={styles.majorFilterGroup}>
               <label htmlFor="major-filter">กรองเฉพาะสาขาวิชา:</label>
               <select
                 id="major-filter"
@@ -831,7 +839,7 @@ function DashboardInner() {
           selectedMajor={selectedMajor}
         />
 
-        {/* Detailed Registrations Table */}
+        {/* Detailed Registrations Section */}
         <section className={styles.tableCard}>
           <div className={styles.tableHeaderRow}>
             <div className={styles.sectionHeader} style={{ borderBottom: 'none', paddingBottom: 0 }}>
@@ -841,7 +849,7 @@ function DashboardInner() {
                 ({tableRows.length} รายการ)
               </h3>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className={styles.tableHeaderActions}>
               {calendarSelectedDate && (
                 <button
                   type="button"
@@ -857,12 +865,12 @@ function DashboardInner() {
                 placeholder="ค้นหาชื่อ, รหัส, สาขา, ชื่องาน..."
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
-                className={styles.filterSelect}
-                style={{ minWidth: '240px' }}
+                className={`${styles.filterSelect} ${styles.tableSearchInput}`}
               />
             </div>
           </div>
 
+          {/* Desktop/Tablet Table View */}
           <div className={styles.tableWrapper}>
             {tableRows.length === 0 ? (
               <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
@@ -906,6 +914,53 @@ function DashboardInner() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+
+          {/* Mobile Card List View */}
+          <div className={styles.mobileCardList}>
+            {tableRows.length === 0 ? (
+              <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
+            ) : (
+              tableRows.map((r, i) => (
+                <div key={`m-${r.regId}-${i}`} className={styles.mobileRegCard}>
+                  <div className={styles.mobileCardTopRow}>
+                    <span className={styles.mobileCardDateBadge}>
+                      {formatThaiDate(r.jobDate)}
+                    </span>
+                    <div className={styles.mobileCardBadges}>
+                      <span className={styles.mobileHoursBadge}>{r.hours} ชม.ทุน</span>
+                      <span className={`${styles.tableTag} ${isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther}`}>
+                        {r.scholarshipName || 'ไม่ระบุ'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.mobileCardJob}>
+                    <strong className={styles.mobileCardJobTitle}>{r.jobTitle}</strong>
+                    <span className={styles.mobileCardJobShift}>{r.shiftLabel} ({r.timeRange})</span>
+                  </div>
+
+                  <div className={styles.mobileCardStudent}>
+                    <div className={styles.mobileStudentName}>{r.studentName}</div>
+                    <div className={styles.mobileStudentMeta}>
+                      <span className={styles.mobileStudentId}>รหัส: {r.studentId}</span>
+                      <span className={styles.mobileStudentMajor}>• {r.faculty}</span>
+                    </div>
+                  </div>
+
+                  {r.phone && (
+                    <div className={styles.mobileCardActionRow}>
+                      <a href={`tel:${r.phone}`} className={styles.mobileCallBtn}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        โทร {r.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
         </section>

@@ -329,6 +329,42 @@
   background: #fee2e2;
 }
 
+@media (max-width: 640px) {
+  .backdrop {
+    padding: 0.5rem;
+    align-items: flex-end;
+  }
+  .modalBox {
+    max-height: 94vh;
+    border-radius: 18px 18px 0 0;
+  }
+  .modalHeader {
+    padding: 1rem;
+  }
+  .tabBar {
+    padding: 0.5rem 0.75rem 0;
+    gap: 0.25rem;
+  }
+  .tabBtn {
+    flex: 1;
+    padding: 0.5rem 0.2rem;
+    font-size: 0.76rem;
+    text-align: center;
+  }
+  .modalContent {
+    padding: 1rem 0.85rem;
+    gap: 1rem;
+  }
+  .pinsTable {
+    min-width: 480px;
+  }
+  .pinsTable th,
+  .pinsTable td {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.78rem;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
