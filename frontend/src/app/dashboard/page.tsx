@@ -1081,7 +1081,7 @@ function DashboardInner() {
                 <div className={styles.majorBarTop}>
                   <span className={styles.majorName}>{m.name}</span>
                   <span className={styles.majorCounts}>
-                    <strong>{m.regs} คน</strong> ({m.hours} ชม.ทุน) • {m.percentage}%
+                    <strong>{m.regs} คน</strong> • {m.percentage}%
                   </span>
                 </div>
                 <div className={styles.barTrack}>

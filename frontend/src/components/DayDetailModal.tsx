@@ -695,32 +695,34 @@ export default function DayDetailModal({
                         <h3 className={styles.jobTitle}>{job.title}</h3>
                       </div>
 
-                      <div className={styles.jobTeacherActions}>
-                        <button
-                          type="button"
-                          className={styles.copyBtn}
-                          onClick={() => handleCopyParticipants(job)}
-                          title="คัดลอกรายชื่อผู้เข้าร่วมทั้งหมด"
-                        >
-                          คัดลอกรายชื่อ
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.editJobBtn}
-                          onClick={() => onEditJob(job)}
-                          title="แก้ไขประกาศงาน (สำหรับอาจารย์)"
-                        >
-                          แก้ไข
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.deleteJobBtn}
-                          onClick={() => onDeleteJob(job)}
-                          title="ลบประกาศงาน (สำหรับอาจารย์)"
-                        >
-                          ลบ
-                        </button>
-                      </div>
+                      {isTeacherMode && (
+                        <div className={styles.jobTeacherActions}>
+                          <button
+                            type="button"
+                            className={styles.copyBtn}
+                            onClick={() => handleCopyParticipants(job)}
+                            title="คัดลอกรายชื่อผู้เข้าร่วมทั้งหมด"
+                          >
+                            คัดลอกรายชื่อ
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.editJobBtn}
+                            onClick={() => onEditJob(job)}
+                            title="แก้ไขประกาศงาน (สำหรับอาจารย์)"
+                          >
+                            แก้ไข
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.deleteJobBtn}
+                            onClick={() => onDeleteJob(job)}
+                            title="ลบประกาศงาน (สำหรับอาจารย์)"
+                          >
+                            ลบ
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className={styles.jobMeta}>
@@ -796,34 +798,51 @@ export default function DayDetailModal({
                                       key={reg.id}
                                       className={styles.participantRow}
                                     >
-                                      <div className={styles.participantInfo}>
-                                        <span className={styles.participantIndex}>
-                                          #{index + 1}
-                                        </span>
-                                        <span className={styles.participantName}>
-                                          {reg.student_name}
-                                        </span>
-                                        <span className={styles.participantCode}>
-                                          รหัส: {reg.student_id}
-                                        </span>
-                                        <span className={styles.participantFaculty}>
-                                          สาขา: {reg.faculty}
-                                        </span>
-                                        {reg.phone && (
-                                          <a
-                                            href={`tel:${reg.phone}`}
-                                            className={styles.participantPhone}
-                                            title="โทรติดต่อนักศึกษา"
-                                          >
-                                            โทร: {reg.phone}
-                                          </a>
-                                        )}
-                                        {reg.scholarship_name && (
-                                          <span className={styles.participantScholarship}>
-                                            ทุน: {reg.scholarship_name}
+                                      {isTeacherMode ? (
+                                        <div className={styles.participantInfo}>
+                                          <span className={styles.participantIndex}>
+                                            #{index + 1}
                                           </span>
-                                        )}
-                                      </div>
+                                          <span className={styles.participantName}>
+                                            {reg.student_name}
+                                          </span>
+                                          <span className={styles.participantCode}>
+                                            รหัส: {reg.student_id}
+                                          </span>
+                                          <span className={styles.participantFaculty}>
+                                            สาขา: {reg.faculty}
+                                          </span>
+                                          {reg.phone && (
+                                            <a
+                                              href={`tel:${reg.phone}`}
+                                              className={styles.participantPhone}
+                                              title="โทรติดต่อนักศึกษา"
+                                            >
+                                              โทร: {reg.phone}
+                                            </a>
+                                          )}
+                                          {reg.scholarship_name && (
+                                            <span className={styles.participantScholarship}>
+                                              ทุน: {reg.scholarship_name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className={styles.participantInfo}>
+                                          <span className={styles.participantIndex}>
+                                            #{index + 1}
+                                          </span>
+                                          <span className={styles.participantCode}>
+                                            รหัสนักศึกษา: <strong>{reg.student_id}</strong>
+                                          </span>
+                                          <span
+                                            className={styles.pdpaProtectedBadge}
+                                            title="สงวนข้อมูลชื่อ สาขา และเบอร์โทรศัพท์ ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)"
+                                          >
+                                            สงวนข้อมูลส่วนตัว (PDPA)
+                                          </span>
+                                        </div>
+                                      )}
 
                                       <div className={styles.participantActions}>
                                         {isTeacherMode && (

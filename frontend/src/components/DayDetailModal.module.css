@@ -1010,6 +1010,19 @@
   font-weight: 600;
 }
 
+.pdpaProtectedBadge {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.12rem 0.5rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .sameDayBadge {
   color: #b45309;
   background: var(--warning-light);

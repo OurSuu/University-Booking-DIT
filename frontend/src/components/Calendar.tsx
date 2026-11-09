@@ -253,7 +253,7 @@ export default function Calendar() {
     });
   }, [jobs, filterAvailableOnly, filterKysOnly, filterNonKysOnly, facultyFilter]);
 
-  // Student search matches (supports student name, student ID, or faculty)
+  // Student search matches (strictly student ID only for PDPA privacy)
   const myRegistrations = useMemo(() => {
     const q = studentSearch.trim().toLowerCase();
     if (!q) return [];
@@ -271,12 +271,7 @@ export default function Calendar() {
     for (const job of jobs) {
       for (const shift of job.shifts) {
         for (const reg of shift.registrations) {
-          const normFaculty = normalizeMajorName(reg.faculty);
-          if (
-            reg.student_id.toLowerCase().includes(q) ||
-            reg.student_name.toLowerCase().includes(q) ||
-            normFaculty.toLowerCase().includes(q)
-          ) {
+          if (reg.student_id.toLowerCase().includes(q)) {
             results.push({
               job,
               shiftLabel: shift.label,
@@ -284,7 +279,7 @@ export default function Calendar() {
               hours: shift.hours,
               studentName: reg.student_name,
               studentId: reg.student_id,
-              faculty: normFaculty,
+              faculty: normalizeMajorName(reg.faculty),
               scholarshipName: reg.scholarship_name,
             });
           }
@@ -726,7 +721,7 @@ export default function Calendar() {
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="ค้นหางานที่ฉันลงไว้ (พิมพ์รหัส/ชื่อนักศึกษา/สาขา)..."
+                placeholder="ค้นหางานที่ฉันลงไว้ (พิมพ์รหัสนักศึกษา เช่น 66010001)..."
                 className={styles.searchInput}
               />
               {studentSearch && (
@@ -787,8 +782,17 @@ export default function Calendar() {
                         <span className={styles.searchDateBadge}>
                           {formatThaiDate(rec.date)}
                         </span>
-                        <strong>{rec.studentName}</strong> ({rec.studentId}) — งาน:{' '}
-                        {rec.jobTitle} [{rec.shiftLabel}] • {rec.hours} ชม.ทุน
+                        {isTeacherMode ? (
+                          <>
+                            <strong>{rec.studentName}</strong> ({rec.studentId}) — งาน:{' '}
+                            {rec.jobTitle} [{rec.shiftLabel}] • {rec.hours} ชม.ทุน
+                          </>
+                        ) : (
+                          <>
+                            รหัส นศ.: <strong>{rec.studentId}</strong> — งาน:{' '}
+                            {rec.jobTitle} [{rec.shiftLabel}] • {rec.hours} ชม.ทุน
+                          </>
+                        )}
                       </div>
                       <button
                         className={styles.openDayBtn}
@@ -813,13 +817,13 @@ export default function Calendar() {
           <section className={styles.searchResultBox}>
             <div className={styles.searchResultHeader}>
               <strong>
-                ผลการค้นหาการลงทะเบียนสำหรับ &ldquo;{studentSearch.trim()}&rdquo; (
+                ผลการค้นหาการลงทะเบียนสำหรับรหัสนักศึกษา &ldquo;{studentSearch.trim()}&rdquo; (
                 {myRegistrations.length} รายการ)
               </strong>
             </div>
             {myRegistrations.length === 0 ? (
               <p className={styles.noSearchMatch}>
-                ไม่พบประวัติการลงทะเบียนที่ตรงกับรหัสหรือชื่อนักศึกษานี้
+                ไม่พบประวัติการลงทะเบียนที่ตรงกับรหัสนักศึกษานี้
               </p>
             ) : (
               <div className={styles.searchResultList}>
@@ -830,14 +834,22 @@ export default function Calendar() {
                         {formatThaiDate(item.job.date)}
                       </span>
                       <strong>{item.job.title}</strong> — {item.shiftLabel} (
-                      {item.timeRange}) • {item.hours} ชม.ทุน • ผู้ลง:{' '}
-                      {item.studentName} ({item.studentId})
+                      {item.timeRange}) • {item.hours} ชม.ทุน •{' '}
+                      {isTeacherMode ? (
+                        <>
+                          ผู้ลง: <strong>{item.studentName}</strong> (รหัส: {item.studentId}) — {item.faculty}
+                        </>
+                      ) : (
+                        <>
+                          รหัสนักศึกษา: <strong>{item.studentId}</strong>
+                        </>
+                      )}
                     </div>
                     <button
                       className={styles.openDayBtn}
                       onClick={() => setDayDetailDate(item.job.date)}
                     >
-                      ดูรายละเอียด / ถอนชื่อ
+                      ดูในปฏิทิน
                     </button>
                   </div>
                 ))}
