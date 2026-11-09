@@ -618,6 +618,47 @@ function DashboardInner() {
     );
   }, [filteredData.registrations, tableSearch, calendarSelectedDate]);
 
+  const isAllMetricsSelected = selectedMetrics.length === DASHBOARD_METRICS.length;
+
+  const activeMetricConfigs = useMemo(() => {
+    return DASHBOARD_METRICS.filter((m) => selectedMetrics.includes(m.key as MetricType));
+  }, [selectedMetrics]);
+
+  const viewModeText = viewMode === 'day' ? 'รายวัน' : viewMode === 'month' ? 'รายเดือน' : 'รายปี';
+
+  const chartTitle = useMemo(() => {
+    if (selectedMetrics.length === 3) {
+      return `แนวโน้มข้อมูลภาพรวม 3 ด้านพร้อมกัน (${viewModeText})`;
+    }
+    if (selectedMetrics.length === 2) {
+      const names = activeMetricConfigs.map((m) => m.label).join(' และ ');
+      return `เปรียบเทียบ ${names} (${viewModeText})`;
+    }
+    if (selectedMetrics.length === 1) {
+      return `แนวโน้ม ${activeMetricConfigs[0]?.label || ''} (${viewModeText})`;
+    }
+    return `แนวโน้มข้อมูล (${viewModeText})`;
+  }, [selectedMetrics, activeMetricConfigs, viewModeText]);
+
+  const handleSelectAllMetrics = () => {
+    setSelectedMetrics(['announcedHours', 'registrations', 'jobs']);
+  };
+
+  const handleSelectSingleMetric = (key: MetricType) => {
+    setSelectedMetrics([key]);
+  };
+
+  const handleToggleMetric = (key: string) => {
+    const metricKey = key as MetricType;
+    if (selectedMetrics.includes(metricKey)) {
+      if (selectedMetrics.length > 1) {
+        setSelectedMetrics(selectedMetrics.filter((k) => k !== metricKey));
+      }
+    } else {
+      setSelectedMetrics([...selectedMetrics, metricKey]);
+    }
+  };
+
   if (!isAuthChecked) {
     return null;
   }
@@ -666,47 +707,6 @@ function DashboardInner() {
       </div>
     );
   }
-
-  const isAllMetricsSelected = selectedMetrics.length === DASHBOARD_METRICS.length;
-
-  const activeMetricConfigs = useMemo(() => {
-    return DASHBOARD_METRICS.filter((m) => selectedMetrics.includes(m.key as MetricType));
-  }, [selectedMetrics]);
-
-  const viewModeText = viewMode === 'day' ? 'รายวัน' : viewMode === 'month' ? 'รายเดือน' : 'รายปี';
-
-  const chartTitle = useMemo(() => {
-    if (selectedMetrics.length === 3) {
-      return `แนวโน้มข้อมูลภาพรวม 3 ด้านพร้อมกัน (${viewModeText})`;
-    }
-    if (selectedMetrics.length === 2) {
-      const names = activeMetricConfigs.map((m) => m.label).join(' และ ');
-      return `เปรียบเทียบ ${names} (${viewModeText})`;
-    }
-    if (selectedMetrics.length === 1) {
-      return `แนวโน้ม ${activeMetricConfigs[0]?.label || ''} (${viewModeText})`;
-    }
-    return `แนวโน้มข้อมูล (${viewModeText})`;
-  }, [selectedMetrics, activeMetricConfigs, viewModeText]);
-
-  const handleSelectAllMetrics = () => {
-    setSelectedMetrics(['announcedHours', 'registrations', 'jobs']);
-  };
-
-  const handleSelectSingleMetric = (key: MetricType) => {
-    setSelectedMetrics([key]);
-  };
-
-  const handleToggleMetric = (key: string) => {
-    const metricKey = key as MetricType;
-    if (selectedMetrics.includes(metricKey)) {
-      if (selectedMetrics.length > 1) {
-        setSelectedMetrics(selectedMetrics.filter((k) => k !== metricKey));
-      }
-    } else {
-      setSelectedMetrics([...selectedMetrics, metricKey]);
-    }
-  };
 
   return (
     <div className={styles.dashboardWrapper}>

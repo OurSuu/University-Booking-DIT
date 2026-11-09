@@ -176,8 +176,13 @@ export default function RechartsLineChart({
       {!isMulti ? (
         // Single Metric KPI bar
         (() => {
-          const m = activeMetrics[0];
-          const summary = metricSummaries[m.key] || { total: 0, avg: 0, peak: 0 };
+          const m = activeMetrics[0] || allMetrics[0] || {
+            key: 'value',
+            label: 'ข้อมูล',
+            unit: '',
+            color: '#c81e24',
+          };
+          const summary = (m && metricSummaries[m.key]) || { total: 0, avg: 0, peak: 0 };
           return (
             <div className={styles.kpiBar}>
               <div className={styles.kpiItem}>
@@ -235,7 +240,7 @@ export default function RechartsLineChart({
           <div className={styles.legendBadges}>
             {allMetrics.map((m) => {
               const isActive = activeMetrics.some((am) => am.key === m.key);
-              const summary = metricSummaries[m.key];
+              const summary = metricSummaries[m.key] || { total: 0, avg: 0, peak: 0 };
               return (
                 <button
                   key={m.key}
