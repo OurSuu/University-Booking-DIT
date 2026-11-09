@@ -12,6 +12,8 @@ import {
 import { ToastProvider, useToast } from '@/components/Toast';
 import RechartsLineChart, { ChartDataPoint } from '@/components/RechartsLineChart';
 import PinManagementModal from '@/components/PinManagementModal';
+import DashboardCalendar from '@/components/DashboardCalendar';
+import DayDetailModal, { formatThaiDate } from '@/components/DayDetailModal';
 import styles from './dashboard.module.css';
 
 const THAI_MONTH_SHORT = [
@@ -91,8 +93,10 @@ function DashboardInner() {
   // Selected year for month mode
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
-  // Search in table
+  // Search & Calendar Date Filter in table
   const [tableSearch, setTableSearch] = useState<string>('');
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | null>(null);
+  const [modalDetailDate, setModalDetailDate] = useState<string | null>(null);
 
   // 1. Check Session Storage for PIN on Mount and verify Admin role
   useEffect(() => {
@@ -474,11 +478,15 @@ function DashboardInner() {
     };
   }, [filteredData]);
 
-  // Table rows with search filter
+  // Table rows with search filter and calendar date filter
   const tableRows = useMemo(() => {
+    let rows = filteredData.registrations;
+    if (calendarSelectedDate) {
+      rows = rows.filter((r) => r.jobDate === calendarSelectedDate);
+    }
     const q = tableSearch.trim().toLowerCase();
-    if (!q) return filteredData.registrations;
-    return filteredData.registrations.filter(
+    if (!q) return rows;
+    return rows.filter(
       (r) =>
         r.studentId.toLowerCase().includes(q) ||
         r.studentName.toLowerCase().includes(q) ||
@@ -486,7 +494,7 @@ function DashboardInner() {
         r.jobTitle.toLowerCase().includes(q) ||
         r.scholarshipName.toLowerCase().includes(q)
     );
-  }, [filteredData.registrations, tableSearch]);
+  }, [filteredData.registrations, tableSearch, calendarSelectedDate]);
 
   if (!isAuthChecked) {
     return null;
@@ -814,20 +822,45 @@ function DashboardInner() {
           </div>
         </section>
 
+        {/* Interactive Month Calendar Section synced with Table */}
+        <DashboardCalendar
+          jobs={jobs}
+          selectedDate={calendarSelectedDate}
+          onSelectDate={(d) => setCalendarSelectedDate(d)}
+          onOpenDayDetail={(d) => setModalDetailDate(d)}
+          selectedMajor={selectedMajor}
+        />
+
         {/* Detailed Registrations Table */}
         <section className={styles.tableCard}>
           <div className={styles.tableHeaderRow}>
             <div className={styles.sectionHeader} style={{ borderBottom: 'none', paddingBottom: 0 }}>
-              <h3>รายชื่อนักศึกษาที่ลงทะเบียนปฏิบัติงานในช่วงเวลา ({tableRows.length} รายการ)</h3>
+              <h3>
+                รายชื่อนักศึกษาที่ลงทะเบียนปฏิบัติงาน
+                {calendarSelectedDate ? ` ประจำวันที่ ${formatThaiDate(calendarSelectedDate)}` : ' ในช่วงเวลา'}
+                ({tableRows.length} รายการ)
+              </h3>
             </div>
-            <input
-              type="text"
-              placeholder="ค้นหาชื่อ, รหัส, สาขา, ชื่องาน..."
-              value={tableSearch}
-              onChange={(e) => setTableSearch(e.target.value)}
-              className={styles.filterSelect}
-              style={{ minWidth: '240px' }}
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              {calendarSelectedDate && (
+                <button
+                  type="button"
+                  onClick={() => setCalendarSelectedDate(null)}
+                  className={styles.resetDateFilterBtn}
+                  title="แสดงข้อมูลนักศึกษาทุกวัน"
+                >
+                  ✕ แสดงทุกวัน
+                </button>
+              )}
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อ, รหัส, สาขา, ชื่องาน..."
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                className={styles.filterSelect}
+                style={{ minWidth: '240px' }}
+              />
+            </div>
           </div>
 
           <div className={styles.tableWrapper}>
@@ -890,6 +923,21 @@ function DashboardInner() {
         onClose={() => setShowPinManageModal(false)}
         showToast={showToast}
       />
+
+      {/* Day Detail Modal for full drill-down directly in Dashboard */}
+      {modalDetailDate && (
+        <DayDetailModal
+          dateStr={modalDetailDate}
+          jobs={jobs.filter((j) => j.date === modalDetailDate)}
+          isTeacherMode={true}
+          teacherPin={teacherPin}
+          onClose={() => setModalDetailDate(null)}
+          onCreateJobForDate={() => {}}
+          onEditJob={() => {}}
+          onDeleteJob={() => {}}
+          onRefresh={fetchJobs}
+        />
+      )}
     </div>
   );
 }

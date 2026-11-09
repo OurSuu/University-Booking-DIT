@@ -1,0 +1,381 @@
+.calendarSection {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.headerTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subtitle {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.monthNavGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.6rem;
+  border-radius: 12px;
+}
+
+.navIconBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  transition: all 0.15s ease;
+}
+
+.navIconBtn:hover {
+  background: var(--bg-muted);
+  border-color: var(--border-strong);
+}
+
+.monthTitle {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  min-width: 155px;
+  text-align: center;
+}
+
+.christianYear {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.todayBtn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.todayBtn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+/* Active Selected Filter Banner */
+.activeFilterBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: var(--primary-light);
+  border: 1.5px solid var(--primary-border);
+  border-radius: 12px;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.filterBannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.filterDateBadge {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--primary);
+  color: #ffffff;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+}
+
+.openModalBtn {
+  padding: 0.35rem 0.8rem;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.openModalBtn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.clearDateBtn {
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clearDateBtn:hover {
+  background: #ffffff;
+}
+
+/* Calendar Card & Grid */
+.calendarWrapper {
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.weekHeader {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: #333840;
+  border-bottom: 3px solid var(--primary);
+  color: #ffffff;
+}
+
+.weekDay {
+  padding: 0.65rem 0.35rem;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--border-color);
+  gap: 1px;
+}
+
+.dayCell {
+  min-height: 105px;
+  padding: 0.45rem;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  position: relative;
+}
+
+.dayCell:hover {
+  background: #f8fafc;
+}
+
+.otherMonth {
+  background: #f8fafc;
+  opacity: 0.55;
+}
+
+.todayCell {
+  background: #fff8f8;
+}
+
+.selectedCell {
+  background: #fef2f2 !important;
+  box-shadow: inset 0 0 0 2.5px var(--primary);
+}
+
+.dayHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.dayNumber {
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.todayBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.72rem;
+}
+
+.badgeAvail,
+.badgeFull {
+  font-family: var(--font-heading);
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 0.08rem 0.38rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badgeAvail {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.badgeFull {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.jobsInCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.jobChip {
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  background: #f0fdf4;
+  border: 1px solid var(--success-border);
+  border-left: 3px solid var(--success);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: all 0.15s ease;
+}
+
+.jobChipFull {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+  border-left-color: var(--text-muted);
+}
+
+.jobChipTitle {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jobChipMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.footerLegend {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dotAvail,
+.dotFull,
+.dotSelected {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dotAvail { background: var(--success); }
+.dotFull { background: var(--danger); }
+.dotSelected { background: var(--primary); }
+
+@media (max-width: 900px) {
+  .dayCell {
+    min-height: 85px;
+    padding: 0.35rem;
+  }
+  .jobChipMeta {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendarSection {
+    padding: 1rem;
+  }
+  .calendarHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .monthNavGroup {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .monthTitle {
+    min-width: auto;
+  }
+  .dayCell {
+    min-height: 55px;
+    padding: 0.25rem;
+  }
+  .jobChip {
+    display: none;
+  }
+}

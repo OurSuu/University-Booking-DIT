@@ -456,6 +456,24 @@
 }
 
 /* Activity Table */
+.resetDateFilterBtn {
+  padding: 0.45rem 0.85rem;
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resetDateFilterBtn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
 .tableCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
