@@ -30,6 +30,7 @@ export interface JobAnnouncement {
   location: string;                 // สถานที่นัดหมาย/ทำงาน
   require_scholarship_name: boolean;// บังคับระบุชื่อทุนหรือไม่
   allow_kys: boolean;               // อนุญาตทุน กยศ. หรือไม่ (false = กยศ. ทำไม่ได้)
+  job_type?: 'internal' | 'external'; // 'internal' = ภายในคณะ, 'external' = ภายนอกคณะ
   created_at: string;
   shifts: JobShift[];
 }

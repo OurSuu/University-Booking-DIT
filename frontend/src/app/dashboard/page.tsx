@@ -47,7 +47,8 @@ const THAI_MONTH_FULL = [
 ];
 
 type ViewMode = 'day' | 'month' | 'year';
-type MetricType = 'registrations' | 'hours' | 'jobs';
+type MetricType = 'announcedHours' | 'registrations' | 'jobs';
+type ScopeFilter = 'all' | 'internal' | 'external';
 
 export default function DashboardPage() {
   return (
@@ -72,8 +73,11 @@ function DashboardInner() {
 
   // Filter States
   const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const [metric, setMetric] = useState<MetricType>('registrations');
+  const [metric, setMetric] = useState<MetricType>('announcedHours');
+  const [selectedScope, setSelectedScope] = useState<ScopeFilter>('all');
   const [selectedMajor, setSelectedMajor] = useState<string>('');
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  const [activeDetailTab, setActiveDetailTab] = useState<'jobs' | 'students'>('jobs');
 
   const todayStr = getTodayStr();
   const currentYear = new Date().getFullYear();
@@ -222,16 +226,48 @@ function DashboardInner() {
     setEndDate(end);
   };
 
-  // Filtered registrations in the active time frame
+  // Extract unique teacher names
+  const allTeacherNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const j of jobs) {
+      if (j.teacher_name?.trim()) set.add(j.teacher_name.trim());
+    }
+    return Array.from(set).sort();
+  }, [jobs]);
+
+  // Extract non-DIT faculties from registrations
+  const nonDitFaculties = useMemo(() => {
+    const set = new Set<string>();
+    for (const j of jobs) {
+      for (const s of j.shifts) {
+        for (const r of s.registrations) {
+          const norm = normalizeMajorName(r.faculty);
+          if (!DIT_MAJORS.includes(norm as any) && norm) {
+            set.add(norm);
+          }
+        }
+      }
+    }
+    return Array.from(set).sort();
+  }, [jobs]);
+
+  // Filtered registrations and jobs in the active time frame & filters
   const filteredData = useMemo(() => {
     const filteredJobs = jobs.filter((j) => {
       if (viewMode === 'day') {
-        return j.date >= startDate && j.date <= endDate;
+        if (j.date < startDate || j.date > endDate) return false;
+      } else if (viewMode === 'month') {
+        if (!j.date.startsWith(String(selectedYear))) return false;
       }
-      if (viewMode === 'month') {
-        return j.date.startsWith(String(selectedYear));
-      }
-      return true; // year mode takes all
+
+      // Filter by Scope (Internal vs External)
+      const jScope = j.job_type === 'external' ? 'external' : 'internal';
+      if (selectedScope !== 'all' && jScope !== selectedScope) return false;
+
+      // Filter by Teacher
+      if (selectedTeacher && j.teacher_name.trim() !== selectedTeacher) return false;
+
+      return true;
     });
 
     const registrationsList: {
@@ -239,6 +275,9 @@ function DashboardInner() {
       jobId: number;
       jobTitle: string;
       jobDate: string;
+      jobScope: 'internal' | 'external';
+      teacherName: string;
+      location: string;
       shiftLabel: string;
       timeRange: string;
       hours: number;
@@ -251,6 +290,7 @@ function DashboardInner() {
     }[] = [];
 
     for (const job of filteredJobs) {
+      const jScope = job.job_type === 'external' ? 'external' : 'internal';
       for (const shift of job.shifts) {
         for (const reg of shift.registrations) {
           const normFaculty = normalizeMajorName(reg.faculty);
@@ -260,6 +300,9 @@ function DashboardInner() {
               jobId: job.id,
               jobTitle: job.title,
               jobDate: job.date,
+              jobScope: jScope,
+              teacherName: job.teacher_name,
+              location: job.location,
               shiftLabel: shift.label,
               timeRange: shift.time_range,
               hours: shift.hours,
@@ -279,31 +322,54 @@ function DashboardInner() {
       jobs: filteredJobs,
       registrations: registrationsList,
     };
-  }, [jobs, viewMode, startDate, endDate, selectedYear, selectedMajor]);
+  }, [jobs, viewMode, startDate, endDate, selectedYear, selectedScope, selectedTeacher, selectedMajor]);
 
   // Overall KPI metrics
   const kpis = useMemo(() => {
-    const totalRegs = filteredData.registrations.length;
-    const totalHours = filteredData.registrations.reduce((sum, r) => sum + r.hours, 0);
-    const uniqueStudents = new Set(filteredData.registrations.map((r) => r.studentId)).size;
-    const totalJobs = filteredData.jobs.length;
+    let totalAnnouncedHours = 0;
+    let internalAnnouncedHours = 0;
+    let externalAnnouncedHours = 0;
 
     let totalCapacity = 0;
     let totalFilled = 0;
+
+    let internalJobsCount = 0;
+    let externalJobsCount = 0;
+
     for (const j of filteredData.jobs) {
+      const isExt = j.job_type === 'external';
+      if (isExt) externalJobsCount++;
+      else internalJobsCount++;
+
       for (const s of j.shifts) {
+        totalAnnouncedHours += s.hours;
+        if (isExt) externalAnnouncedHours += s.hours;
+        else internalAnnouncedHours += s.hours;
+
         totalCapacity += s.capacity;
         totalFilled += s.registrations.length;
       }
     }
+
+    const totalRegs = filteredData.registrations.length;
+    const uniqueStudents = new Set(filteredData.registrations.map((r) => r.studentId)).size;
+    const totalStudentHours = filteredData.registrations.reduce((sum, r) => sum + r.hours, 0);
+    const totalJobs = filteredData.jobs.length;
     const occupancyRate =
       totalCapacity > 0 ? Math.round((totalFilled / totalCapacity) * 100) : 0;
 
     return {
-      totalRegs,
-      totalHours,
-      uniqueStudents,
+      totalAnnouncedHours,
+      internalAnnouncedHours,
+      externalAnnouncedHours,
       totalJobs,
+      internalJobsCount,
+      externalJobsCount,
+      totalRegs,
+      uniqueStudents,
+      totalStudentHours,
+      totalCapacity,
+      totalFilled,
       occupancyRate,
     };
   }, [filteredData]);
@@ -324,25 +390,41 @@ function DashboardInner() {
         const d = String(cur.getDate()).padStart(2, '0');
         const dateStr = `${y}-${m}-${d}`;
 
-        const dayRegs = filteredData.registrations.filter((r) => r.jobDate === dateStr);
         const dayJobs = filteredData.jobs.filter((j) => j.date === dateStr);
-        const dayHours = dayRegs.reduce((acc, r) => acc + r.hours, 0);
+        const dayRegs = filteredData.registrations.filter((r) => r.jobDate === dateStr);
+
+        const dayAnnouncedHours = dayJobs.reduce(
+          (acc, j) => acc + j.shifts.reduce((sAcc, s) => sAcc + s.hours, 0),
+          0
+        );
 
         let val = 0;
-        if (metric === 'registrations') val = dayRegs.length;
-        else if (metric === 'hours') val = dayHours;
-        else if (metric === 'jobs') val = dayJobs.length;
+        let secVal = 0;
+        let secLabel = '';
+
+        if (metric === 'announcedHours') {
+          val = dayAnnouncedHours;
+          secVal = dayRegs.length;
+          secLabel = 'คนลงทะเบียน';
+        } else if (metric === 'registrations') {
+          val = dayRegs.length;
+          secVal = dayAnnouncedHours;
+          secLabel = 'ชม.ทุนที่ประกาศ';
+        } else if (metric === 'jobs') {
+          val = dayJobs.length;
+          secVal = dayAnnouncedHours;
+          secLabel = 'ชม.ทุนที่ประกาศ';
+        }
 
         const dayNum = cur.getDate();
         const monthShort = THAI_MONTH_SHORT[cur.getMonth()];
-        const thaiYearShort = String((y + 543) % 100).padStart(2, '0');
 
         points.push({
           label: `${dayNum} ${monthShort}`,
           fullDate: `วันที่ ${dayNum} ${THAI_MONTH_FULL[cur.getMonth()]} ${y + 543}`,
           value: val,
-          secondaryValue: dayHours,
-          secondaryLabel: 'ชั่วโมงทุนรวม',
+          secondaryValue: secVal,
+          secondaryLabel: secLabel,
         });
 
         cur.setDate(cur.getDate() + 1);
@@ -354,48 +436,60 @@ function DashboardInner() {
       const points: ChartDataPoint[] = [];
       for (let m = 0; m < 12; m++) {
         const monthStr = `${selectedYear}-${String(m + 1).padStart(2, '0')}`;
-        const monthRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(monthStr));
         const monthJobs = filteredData.jobs.filter((j) => j.date.startsWith(monthStr));
-        const monthHours = monthRegs.reduce((acc, r) => acc + r.hours, 0);
+        const monthRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(monthStr));
+
+        const monthAnnouncedHours = monthJobs.reduce(
+          (acc, j) => acc + j.shifts.reduce((sAcc, s) => sAcc + s.hours, 0),
+          0
+        );
 
         let val = 0;
-        if (metric === 'registrations') val = monthRegs.length;
-        else if (metric === 'hours') val = monthHours;
-        else if (metric === 'jobs') val = monthJobs.length;
+        let secVal = 0;
+        let secLabel = '';
+
+        if (metric === 'announcedHours') {
+          val = monthAnnouncedHours;
+          secVal = monthRegs.length;
+          secLabel = 'คนลงทะเบียน';
+        } else if (metric === 'registrations') {
+          val = monthRegs.length;
+          secVal = monthAnnouncedHours;
+          secLabel = 'ชม.ทุนที่ประกาศ';
+        } else if (metric === 'jobs') {
+          val = monthJobs.length;
+          secVal = monthAnnouncedHours;
+          secLabel = 'ชม.ทุนที่ประกาศ';
+        }
 
         points.push({
           label: THAI_MONTH_SHORT[m],
           fullDate: `เดือน${THAI_MONTH_FULL[m]} ${selectedYear + 543}`,
           value: val,
-          secondaryValue: monthHours,
-          secondaryLabel: 'ชั่วโมงทุนรวม',
+          secondaryValue: secVal,
+          secondaryLabel: secLabel,
         });
       }
       return points;
     }
 
     if (viewMode === 'year') {
-      const yearMap = new Map<number, { regs: number; hours: number; jobs: number }>();
+      const yearMap = new Map<number, { jobs: number; announcedHours: number; regs: number }>();
       const currentBE = currentYear;
       for (let y = currentBE - 2; y <= currentBE + 1; y++) {
-        yearMap.set(y, { regs: 0, hours: 0, jobs: 0 });
+        yearMap.set(y, { jobs: 0, announcedHours: 0, regs: 0 });
       }
 
-      for (const j of jobs) {
+      for (const j of filteredData.jobs) {
         const y = Number(j.date.slice(0, 4));
         if (!yearMap.has(y)) {
-          yearMap.set(y, { regs: 0, hours: 0, jobs: 0 });
+          yearMap.set(y, { jobs: 0, announcedHours: 0, regs: 0 });
         }
         const item = yearMap.get(y)!;
         item.jobs++;
         for (const s of j.shifts) {
-          for (const r of s.registrations) {
-            const normFaculty = normalizeMajorName(r.faculty);
-            if (!selectedMajor || normFaculty === selectedMajor) {
-              item.regs++;
-              item.hours += s.hours;
-            }
-          }
+          item.announcedHours += s.hours;
+          item.regs += s.registrations.length;
         }
       }
 
@@ -403,22 +497,67 @@ function DashboardInner() {
       return sortedYears.map((y) => {
         const item = yearMap.get(y)!;
         let val = 0;
-        if (metric === 'registrations') val = item.regs;
-        else if (metric === 'hours') val = item.hours;
-        else if (metric === 'jobs') val = item.jobs;
+        let secVal = 0;
+        let secLabel = '';
+
+        if (metric === 'announcedHours') {
+          val = item.announcedHours;
+          secVal = item.regs;
+          secLabel = 'คนลงทะเบียน';
+        } else if (metric === 'registrations') {
+          val = item.regs;
+          secVal = item.announcedHours;
+          secLabel = 'ชม.ทุนที่ประกาศ';
+        } else if (metric === 'jobs') {
+          val = item.jobs;
+          secVal = item.announcedHours;
+          secLabel = 'ชม.ทุนที่ประกาศ';
+        }
 
         return {
           label: `ปี ${y + 543}`,
           fullDate: `ปี พ.ศ. ${y + 543} (${y})`,
           value: val,
-          secondaryValue: item.hours,
-          secondaryLabel: 'ชั่วโมงทุนรวม',
+          secondaryValue: secVal,
+          secondaryLabel: secLabel,
         };
       });
     }
 
     return [];
-  }, [viewMode, metric, startDate, endDate, selectedYear, filteredData, jobs, currentYear, selectedMajor]);
+  }, [viewMode, metric, startDate, endDate, selectedYear, filteredData, currentYear]);
+
+  // Scope breakdown (งานภายในคณะ vs งานภายนอกคณะ)
+  const scopeBreakdown = useMemo(() => {
+    let internalRegs = 0;
+    let externalRegs = 0;
+    let internalCap = 0;
+    let externalCap = 0;
+
+    for (const j of filteredData.jobs) {
+      const isExt = j.job_type === 'external';
+      for (const s of j.shifts) {
+        if (isExt) {
+          externalCap += s.capacity;
+          externalRegs += s.registrations.length;
+        } else {
+          internalCap += s.capacity;
+          internalRegs += s.registrations.length;
+        }
+      }
+    }
+
+    return {
+      internalJobs: kpis.internalJobsCount,
+      externalJobs: kpis.externalJobsCount,
+      internalHours: kpis.internalAnnouncedHours,
+      externalHours: kpis.externalAnnouncedHours,
+      internalRegs,
+      externalRegs,
+      internalCap,
+      externalCap,
+    };
+  }, [filteredData, kpis]);
 
   // Major distribution breakdown
   const majorBreakdown = useMemo(() => {
@@ -429,56 +568,65 @@ function DashboardInner() {
 
     for (const r of filteredData.registrations) {
       const major = normalizeMajorName(r.faculty);
-      if (counts[major]) {
-        counts[major].regs++;
-        counts[major].hours += r.hours;
-      } else {
-        counts[major] = {
-          regs: 1,
-          hours: r.hours,
-        };
+      if (!counts[major]) {
+        counts[major] = { regs: 0, hours: 0 };
       }
+      counts[major].regs++;
+      counts[major].hours += r.hours;
     }
 
     const total = filteredData.registrations.length || 1;
-    return DIT_MAJORS.map((m) => {
-      const stat = counts[m] || { regs: 0, hours: 0 };
-      const pct = Math.round((stat.regs / total) * 100);
-      return {
-        name: m,
-        regs: stat.regs,
-        hours: stat.hours,
-        percentage: pct,
-      };
-    }).sort((a, b) => b.regs - a.regs);
+    return Object.keys(counts)
+      .map((m) => {
+        const stat = counts[m] || { regs: 0, hours: 0 };
+        const pct = Math.round((stat.regs / total) * 100);
+        return {
+          name: m,
+          regs: stat.regs,
+          hours: stat.hours,
+          percentage: pct,
+        };
+      })
+      .sort((a, b) => b.regs - a.regs);
   }, [filteredData]);
 
-  // Scholarship distribution breakdown
-  const scholarshipBreakdown = useMemo(() => {
-    let kysCount = 0;
-    let otherCount = 0;
-    let kysHours = 0;
-    let otherHours = 0;
-
-    for (const r of filteredData.registrations) {
-      if (isKysScholarship(r.scholarshipName)) {
-        kysCount++;
-        kysHours += r.hours;
-      } else {
-        otherCount++;
-        otherHours += r.hours;
+  // Location Breakdown (Top Places)
+  const locationBreakdown = useMemo(() => {
+    const map = new Map<string, { jobs: number; hours: number; regs: number }>();
+    for (const j of filteredData.jobs) {
+      const loc = j.location?.trim() || 'ไม่ระบุสถานที่';
+      const item = map.get(loc) || { jobs: 0, hours: 0, regs: 0 };
+      item.jobs++;
+      for (const s of j.shifts) {
+        item.hours += s.hours;
+        item.regs += s.registrations.length;
       }
+      map.set(loc, item);
     }
-
-    return {
-      kysCount,
-      otherCount,
-      kysHours,
-      otherHours,
-    };
+    return Array.from(map.entries())
+      .map(([location, stat]) => ({ location, ...stat }))
+      .sort((a, b) => b.jobs - a.jobs)
+      .slice(0, 5);
   }, [filteredData]);
 
-  // Table rows with search filter and calendar date filter
+  // Filtered Jobs rows for Detailed Table/Cards
+  const jobRows = useMemo(() => {
+    let list = filteredData.jobs;
+    if (calendarSelectedDate) {
+      list = list.filter((j) => j.date === calendarSelectedDate);
+    }
+    const q = tableSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (j) =>
+        j.title.toLowerCase().includes(q) ||
+        j.teacher_name.toLowerCase().includes(q) ||
+        j.location.toLowerCase().includes(q) ||
+        (j.job_type === 'external' ? 'ภายนอก' : 'ภายใน').includes(q)
+    );
+  }, [filteredData.jobs, tableSearch, calendarSelectedDate]);
+
+  // Filtered Student Registrations rows
   const tableRows = useMemo(() => {
     let rows = filteredData.registrations;
     if (calendarSelectedDate) {
@@ -546,13 +694,14 @@ function DashboardInner() {
   }
 
   const metricLabel =
-    metric === 'registrations'
+    metric === 'announcedHours'
+      ? 'ชั่วโมงทุนที่อาจารย์ประกาศ'
+      : metric === 'registrations'
       ? 'จำนวนนักศึกษาลงทะเบียน'
-      : metric === 'hours'
-      ? 'ชั่วโมงทุนสะสม'
       : 'จำนวนประกาศงาน';
 
-  const metricUnit = metric === 'registrations' ? 'คน' : metric === 'hours' ? 'ชม.' : 'งาน';
+  const metricUnit =
+    metric === 'announcedHours' ? 'ชม.' : metric === 'registrations' ? 'คน' : 'งาน';
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -617,22 +766,22 @@ function DashboardInner() {
               <span className={styles.metricLabel}>ข้อมูลในกราฟ:</span>
               <div className={styles.metricBtnGroup}>
                 <button
+                  className={`${styles.metricBtn} ${metric === 'announcedHours' ? styles.metricBtnActive : ''}`}
+                  onClick={() => setMetric('announcedHours')}
+                >
+                  ชั่วโมงทุนที่อาจารย์ประกาศ
+                </button>
+                <button
                   className={`${styles.metricBtn} ${metric === 'registrations' ? styles.metricBtnActive : ''}`}
                   onClick={() => setMetric('registrations')}
                 >
-                  จำนวนคนลงทะเบียน
-                </button>
-                <button
-                  className={`${styles.metricBtn} ${metric === 'hours' ? styles.metricBtnActive : ''}`}
-                  onClick={() => setMetric('hours')}
-                >
-                  ชั่วโมงทุนสะสม
+                  จำนวนเด็กที่เข้าร่วม
                 </button>
                 <button
                   className={`${styles.metricBtn} ${metric === 'jobs' ? styles.metricBtnActive : ''}`}
                   onClick={() => setMetric('jobs')}
                 >
-                  จำนวนงาน
+                  จำนวนงานที่ประกาศ
                 </button>
               </div>
             </div>
@@ -698,60 +847,112 @@ function DashboardInner() {
               </div>
             )}
 
+            {/* Filter by Scope (Internal vs External) */}
+            <div className={styles.majorFilterGroup}>
+              <label htmlFor="scope-filter">ขอบเขตงาน:</label>
+              <select
+                id="scope-filter"
+                value={selectedScope}
+                onChange={(e) => setSelectedScope(e.target.value as ScopeFilter)}
+                className={styles.filterSelect}
+              >
+                <option value="all">ทุกประเภทงาน (ทั้งหมด)</option>
+                <option value="internal">เฉพาะงานภายในคณะ (DIT)</option>
+                <option value="external">เฉพาะงานภายนอกคณะ</option>
+              </select>
+            </div>
+
             {/* Filter by Major */}
             <div className={styles.majorFilterGroup}>
-              <label htmlFor="major-filter">กรองเฉพาะสาขาวิชา:</label>
+              <label htmlFor="major-filter">กรองคณะ/สาขาวิชา:</label>
               <select
                 id="major-filter"
                 value={selectedMajor}
                 onChange={(e) => setSelectedMajor(e.target.value)}
                 className={styles.filterSelect}
               >
-                <option value="">ทุกสาขาวิชาในคณะ</option>
-                {DIT_MAJORS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
+                <option value="">ทุกสาขาวิชา/คณะ</option>
+                <optgroup label="สาขาวิชาในวิทยาลัยนวัตกรรมดิจิทัล (DIT)">
+                  {DIT_MAJORS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </optgroup>
+                {nonDitFaculties.length > 0 && (
+                  <optgroup label="คณะอื่นๆ ที่นักศึกษาเข้าร่วม">
+                    {nonDitFaculties.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
+
+            {/* Filter by Teacher */}
+            {allTeacherNames.length > 0 && (
+              <div className={styles.majorFilterGroup}>
+                <label htmlFor="teacher-filter">อาจารย์ผู้ประกาศ:</label>
+                <select
+                  id="teacher-filter"
+                  value={selectedTeacher}
+                  onChange={(e) => setSelectedTeacher(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  <option value="">อาจารย์ทุกคน</option>
+                  {allTeacherNames.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </section>
 
         {/* KPI Cards */}
         <section className={styles.kpiGrid}>
           <div className={styles.kpiCard}>
-            <span className={styles.kpiLabel}>ยอดการลงทะเบียนรับงานรวม</span>
-            <strong className={`${styles.kpiValue} ${styles.kpiPrimary}`}>
-              {kpis.totalRegs.toLocaleString()} <span style={{ fontSize: '1rem' }}>คน</span>
-            </strong>
-            <span className={styles.kpiSub}>นักศึกษาไม่ซ้ำคน: {kpis.uniqueStudents} คน</span>
-          </div>
-
-          <div className={styles.kpiCard}>
-            <span className={styles.kpiLabel}>ชั่วโมงทุนสะสมที่ได้รับ</span>
+            <span className={styles.kpiLabel}>ชั่วโมงทุนที่อาจารย์ประกาศเปิดรับ</span>
             <strong className={`${styles.kpiValue} ${styles.kpiSuccess}`}>
-              {kpis.totalHours.toLocaleString()} <span style={{ fontSize: '1rem' }}>ชม.</span>
+              {kpis.totalAnnouncedHours.toLocaleString()} <span style={{ fontSize: '1rem' }}>ชม.</span>
             </strong>
             <span className={styles.kpiSub}>
-              เฉลี่ย {kpis.totalRegs > 0 ? (kpis.totalHours / kpis.totalRegs).toFixed(1) : 0} ชม./คน
+              ภายในคณะ: {kpis.internalAnnouncedHours} ชม. • ภายนอก: {kpis.externalAnnouncedHours} ชม.
             </span>
           </div>
 
           <div className={styles.kpiCard}>
-            <span className={styles.kpiLabel}>จำนวนงานที่จัดในช่วงเวลา</span>
-            <strong className={styles.kpiValue}>
+            <span className={styles.kpiLabel}>จำนวนงานที่ประกาศทั้งหมด</span>
+            <strong className={`${styles.kpiValue} ${styles.kpiPrimary}`}>
               {kpis.totalJobs.toLocaleString()} <span style={{ fontSize: '1rem' }}>งาน</span>
             </strong>
-            <span className={styles.kpiSub}>ครอบคลุมทุกกะและกิจกรรม</span>
+            <span className={styles.kpiSub}>
+              ภายในคณะ: {kpis.internalJobsCount} งาน • ภายนอก: {kpis.externalJobsCount} งาน
+            </span>
           </div>
 
           <div className={styles.kpiCard}>
-            <span className={styles.kpiLabel}>อัตราการเต็มของที่นั่งงาน</span>
+            <span className={styles.kpiLabel}>จำนวนนักศึกษาที่เข้าร่วม</span>
+            <strong className={styles.kpiValue}>
+              {kpis.totalRegs.toLocaleString()} <span style={{ fontSize: '1rem' }}>คน</span>
+            </strong>
+            <span className={styles.kpiSub}>
+              ไม่ซ้ำคน: {kpis.uniqueStudents} คน (รวมทำไป {kpis.totalStudentHours} ชม.)
+            </span>
+          </div>
+
+          <div className={styles.kpiCard}>
+            <span className={styles.kpiLabel}>จำนวนที่นั่งรับและอัตราการเต็ม</span>
             <strong className={styles.kpiValue}>
               {kpis.occupancyRate}%
             </strong>
-            <span className={styles.kpiSub}>สัดส่วนผู้ลงทะเบียนเทียบกับที่รับได้</span>
+            <span className={styles.kpiSub}>
+              รับได้ {kpis.totalCapacity} ที่ (ลงแล้ว {kpis.totalFilled}, ว่าง {Math.max(0, kpis.totalCapacity - kpis.totalFilled)} ที่)
+            </span>
           </div>
         </section>
 
@@ -765,104 +966,179 @@ function DashboardInner() {
             title={`แนวโน้ม ${metricLabel} (${viewMode === 'day' ? 'รายวัน' : viewMode === 'month' ? 'รายเดือน' : 'รายปี'})`}
             subtitle={
               selectedMajor
-                ? `แสดงเฉพาะนักศึกษาสาขา: ${selectedMajor}`
-                : 'แสดงข้อมูลนักศึกษาทุกสาขาวิชาในวิทยาลัยนวัตกรรมดิจิทัลเทคโนโลยี'
+                ? `แสดงเฉพาะคณะ/สาขาวิชา: ${selectedMajor}`
+                : selectedScope === 'internal'
+                ? 'แสดงเฉพาะงานภายในคณะ (DIT)'
+                : selectedScope === 'external'
+                ? 'แสดงเฉพาะงานภายนอกคณะ'
+                : 'แสดงข้อมูลงานและนักศึกษาทุกประเภทในระบบ'
             }
           />
         </section>
 
-        {/* Breakdown Section: Majors & Scholarships */}
+        {/* Breakdown Section: Scope (Internal vs External) & Top Places & Major breakdown */}
         <section className={styles.breakdownGrid}>
-          {/* Major Breakdown */}
+          {/* Internal vs External Jobs Breakdown */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>สถิติการลงทะเบียนแยกตามสาขาวิชา</h3>
-              <span>{filteredData.registrations.length} คนรวม</span>
+              <h3>สถิติขอบเขตงาน: งานภายในคณะ vs งานภายนอกคณะ</h3>
+              <span>{filteredData.jobs.length} งานรวม</span>
             </div>
 
-            <div className={styles.majorBarList}>
-              {majorBreakdown.map((m) => (
-                <div key={m.name} className={styles.majorBarItem}>
-                  <div className={styles.majorBarTop}>
-                    <span className={styles.majorName}>{m.name}</span>
-                    <span className={styles.majorCounts}>
-                      <strong>{m.regs} คน</strong> ({m.hours} ชม.) • {m.percentage}%
-                    </span>
-                  </div>
-                  <div className={styles.barTrack}>
-                    <div className={styles.barFill} style={{ width: `${m.percentage}%` }} />
+            <div className={styles.scopeCardGrid}>
+              <div className={styles.scopeCard}>
+                <div className={styles.scopeCardTop}>
+                  <div className={styles.scopeCardTitle}>
+                    <span>งานภายในคณะ (DIT)</span>
+                    <span className={styles.badgeScopeInternal}>ภายในวิทยาลัย</span>
                   </div>
                 </div>
-              ))}
+                <div className={styles.scopeMetricsRow}>
+                  <div className={styles.scopeMetricCol}>
+                    <span className={styles.scopeMetricColLabel}>งานที่ประกาศ</span>
+                    <strong className={styles.scopeMetricColVal}>{scopeBreakdown.internalJobs} งาน</strong>
+                  </div>
+                  <div className={styles.scopeMetricCol}>
+                    <span className={styles.scopeMetricColLabel}>ชม.ทุนประกาศ</span>
+                    <strong className={`${styles.scopeMetricColVal} ${styles.kpiSuccess}`}>
+                      {scopeBreakdown.internalHours} ชม.
+                    </strong>
+                  </div>
+                  <div className={styles.scopeMetricCol}>
+                    <span className={styles.scopeMetricColLabel}>เด็กเข้าร่วม</span>
+                    <strong className={`${styles.scopeMetricColVal} ${styles.kpiPrimary}`}>
+                      {scopeBreakdown.internalRegs} คน
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.scopeCard}>
+                <div className={styles.scopeCardTop}>
+                  <div className={styles.scopeCardTitle}>
+                    <span>งานภายนอกคณะ</span>
+                    <span className={styles.badgeScopeExternal}>ภายนอกวิทยาลัย</span>
+                  </div>
+                </div>
+                <div className={styles.scopeMetricsRow}>
+                  <div className={styles.scopeMetricCol}>
+                    <span className={styles.scopeMetricColLabel}>งานที่ประกาศ</span>
+                    <strong className={styles.scopeMetricColVal}>{scopeBreakdown.externalJobs} งาน</strong>
+                  </div>
+                  <div className={styles.scopeMetricCol}>
+                    <span className={styles.scopeMetricColLabel}>ชม.ทุนประกาศ</span>
+                    <strong className={`${styles.scopeMetricColVal} ${styles.kpiSuccess}`}>
+                      {scopeBreakdown.externalHours} ชม.
+                    </strong>
+                  </div>
+                  <div className={styles.scopeMetricCol}>
+                    <span className={styles.scopeMetricColLabel}>เด็กเข้าร่วม</span>
+                    <strong className={`${styles.scopeMetricColVal} ${styles.kpiPrimary}`}>
+                      {scopeBreakdown.externalRegs} คน
+                    </strong>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Scholarship Breakdown */}
+          {/* Top Places / Sources */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>สัดส่วนประเภททุนการศึกษา</h3>
-              <span>กยศ. vs ทุนอื่นๆ</span>
+              <h3>แหล่งที่มาของงาน (มาจากที่ไหนบ้าง)</h3>
+              <span>5 อันดับสถานที่จัดงาน</span>
             </div>
 
-            <div className={styles.scholarshipList}>
-              <div className={styles.scholarshipCardItem}>
-                <div>
-                  <div className={styles.schName}>นักศึกษาทุน กยศ.</div>
-                  <div className={styles.schSub}>กองทุนเงินให้กู้ยืมเพื่อการศึกษา</div>
+            <div className={styles.locationList}>
+              {locationBreakdown.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>
+                  ยังไม่มีข้อมูลสถานที่จัดงาน
                 </div>
-                <div className={styles.schStatNum}>
-                  <strong>{scholarshipBreakdown.kysCount} คน</strong>
-                  <div className={styles.schSub}>{scholarshipBreakdown.kysHours} ชม.ทุน</div>
-                </div>
-              </div>
-
-              <div className={styles.scholarshipCardItem}>
-                <div>
-                  <div className={styles.schName}>นักศึกษาทุนประเภทอื่นๆ</div>
-                  <div className={styles.schSub}>ทุน 50%, ทุนเรียนดี, ทุนกิจกรรม ฯลฯ</div>
-                </div>
-                <div className={styles.schStatNum}>
-                  <strong>{scholarshipBreakdown.otherCount} คน</strong>
-                  <div className={styles.schSub}>{scholarshipBreakdown.otherHours} ชม.ทุน</div>
-                </div>
-              </div>
+              ) : (
+                locationBreakdown.map((loc) => (
+                  <div key={loc.location} className={styles.locationItem}>
+                    <span className={styles.locationName}>{loc.location}</span>
+                    <span className={styles.locationStat}>
+                      <strong>{loc.jobs} งาน</strong> ({loc.hours} ชม.ทุน • {loc.regs} คน)
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
+          </div>
+        </section>
+
+        {/* Major & Faculty Breakdown Section */}
+        <section className={styles.cardSection}>
+          <div className={styles.sectionHeader}>
+            <h3>สถิตินักศึกษาที่เข้าร่วมแยกตาม คณะ / สาขาวิชา</h3>
+            <span>{filteredData.registrations.length} คน-ครั้ง</span>
+          </div>
+
+          <div className={styles.majorBarList}>
+            {majorBreakdown.map((m) => (
+              <div key={m.name} className={styles.majorBarItem}>
+                <div className={styles.majorBarTop}>
+                  <span className={styles.majorName}>{m.name}</span>
+                  <span className={styles.majorCounts}>
+                    <strong>{m.regs} คน</strong> ({m.hours} ชม.ทุน) • {m.percentage}%
+                  </span>
+                </div>
+                <div className={styles.barTrack}>
+                  <div className={styles.barFill} style={{ width: `${m.percentage}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Interactive Month Calendar Section synced with Table */}
         <DashboardCalendar
-          jobs={jobs}
+          jobs={filteredData.jobs}
           selectedDate={calendarSelectedDate}
           onSelectDate={(d) => setCalendarSelectedDate(d)}
           onOpenDayDetail={(d) => setModalDetailDate(d)}
           selectedMajor={selectedMajor}
         />
 
-        {/* Detailed Registrations Section */}
+        {/* Detailed Section: Toggle between Jobs List and Registrations List */}
         <section className={styles.tableCard}>
           <div className={styles.tableHeaderRow}>
-            <div className={styles.sectionHeader} style={{ borderBottom: 'none', paddingBottom: 0 }}>
-              <h3>
-                รายชื่อนักศึกษาที่ลงทะเบียนปฏิบัติงาน
-                {calendarSelectedDate ? ` ประจำวันที่ ${formatThaiDate(calendarSelectedDate)}` : ' ในช่วงเวลา'}
-                ({tableRows.length} รายการ)
-              </h3>
+            <div className={styles.viewSwitchBar}>
+              <button
+                type="button"
+                className={`${styles.viewSwitchBtn} ${activeDetailTab === 'jobs' ? styles.viewSwitchBtnActive : ''}`}
+                onClick={() => setActiveDetailTab('jobs')}
+              >
+                รายการงานที่ประกาศ ({jobRows.length} งาน)
+              </button>
+              <button
+                type="button"
+                className={`${styles.viewSwitchBtn} ${activeDetailTab === 'students' ? styles.viewSwitchBtnActive : ''}`}
+                onClick={() => setActiveDetailTab('students')}
+              >
+                รายชื่อนักศึกษาที่ลงทะเบียน ({tableRows.length} คน)
+              </button>
             </div>
+
             <div className={styles.tableHeaderActions}>
               {calendarSelectedDate && (
                 <button
                   type="button"
                   onClick={() => setCalendarSelectedDate(null)}
                   className={styles.resetDateFilterBtn}
-                  title="แสดงข้อมูลนักศึกษาทุกวัน"
+                  title="แสดงข้อมูลทุกวัน"
                 >
                   ✕ แสดงทุกวัน
                 </button>
               )}
               <input
                 type="text"
-                placeholder="ค้นหาชื่อ, รหัส, สาขา, ชื่องาน..."
+                placeholder={
+                  activeDetailTab === 'jobs'
+                    ? 'ค้นหาชื่องาน, อาจารย์, สถานที่...'
+                    : 'ค้นหาชื่อ, รหัส, สาขา, ชื่องาน...'
+                }
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
                 className={`${styles.filterSelect} ${styles.tableSearchInput}`}
@@ -870,99 +1146,249 @@ function DashboardInner() {
             </div>
           </div>
 
-          {/* Desktop/Tablet Table View */}
-          <div className={styles.tableWrapper}>
-            {tableRows.length === 0 ? (
-              <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
-            ) : (
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th>วันที่จัดงาน</th>
-                    <th>ชื่องาน / กิจกรรม</th>
-                    <th>กะ / ช่วงเวลา</th>
-                    <th>รหัสนักศึกษา</th>
-                    <th>ชื่อ - นามสกุล</th>
-                    <th>สาขาวิชา</th>
-                    <th>ทุนการศึกษา</th>
-                    <th>ชม.ทุน</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map((r, i) => (
-                    <tr key={`${r.regId}-${i}`}>
-                      <td>{r.jobDate}</td>
-                      <td><strong>{r.jobTitle}</strong></td>
-                      <td>{r.shiftLabel} ({r.timeRange})</td>
-                      <td><code>{r.studentId}</code></td>
-                      <td>
-                        <strong>{r.studentName}</strong>
-                        {r.phone && (
-                          <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '2px' }}>
-                            โทร: <a href={`tel:${r.phone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>{r.phone}</a>
+          {/* TAB 1: JOBS TABLE & MOBILE CARDS */}
+          {activeDetailTab === 'jobs' && (
+            <>
+              {/* Desktop/Tablet Table View for Jobs */}
+              <div className={styles.tableWrapper}>
+                {jobRows.length === 0 ? (
+                  <div className={styles.emptyTable}>ไม่พบประกาศงานในช่วงเวลาหรือตัวกรองนี้</div>
+                ) : (
+                  <table className={styles.dataTable}>
+                    <thead>
+                      <tr>
+                        <th>วันที่จัดงาน</th>
+                        <th>ชื่องาน / กิจกรรม</th>
+                        <th>ประเภทงาน</th>
+                        <th>อาจารย์ผู้ประกาศ</th>
+                        <th>สถานที่นัดหมาย</th>
+                        <th>กะ / ชั่วโมงทุน</th>
+                        <th>ที่นั่งรับ (ลงแล้ว / รับได้)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {jobRows.map((job) => {
+                        const totalCap = job.shifts.reduce((s, sh) => s + sh.capacity, 0);
+                        const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
+                        const totalJobHours = job.shifts.reduce((s, sh) => s + sh.hours, 0);
+                        const isExt = job.job_type === 'external';
+
+                        return (
+                          <tr key={job.id}>
+                            <td>{job.date}</td>
+                            <td>
+                              <strong>{job.title}</strong>
+                            </td>
+                            <td>
+                              <span className={isExt ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
+                                {isExt ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                              </span>
+                            </td>
+                            <td>{job.teacher_name}</td>
+                            <td>{job.location || 'ไม่ระบุ'}</td>
+                            <td>
+                              <strong>{job.shifts.length} กะ</strong> (รวม {totalJobHours} ชม.)
+                            </td>
+                            <td>
+                              <strong>{totalReg}/{totalCap} ที่</strong>{' '}
+                              <span style={{ fontSize: '0.78rem', color: totalReg >= totalCap ? '#dc2626' : '#16a34a' }}>
+                                ({totalReg >= totalCap ? 'เต็ม' : `ว่าง ${totalCap - totalReg}`})
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Mobile Card List View for Jobs */}
+              <div className={styles.mobileCardList}>
+                {jobRows.length === 0 ? (
+                  <div className={styles.emptyTable}>ไม่พบประกาศงานในช่วงเวลาหรือตัวกรองนี้</div>
+                ) : (
+                  jobRows.map((job) => {
+                    const totalCap = job.shifts.reduce((s, sh) => s + sh.capacity, 0);
+                    const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
+                    const totalJobHours = job.shifts.reduce((s, sh) => s + sh.hours, 0);
+                    const isExt = job.job_type === 'external';
+
+                    return (
+                      <div key={`mj-${job.id}`} className={styles.mobileRegCard}>
+                        <div className={styles.mobileCardTopRow}>
+                          <span className={styles.mobileCardDateBadge}>{formatThaiDate(job.date)}</span>
+                          <div className={styles.mobileCardBadges}>
+                            <span className={isExt ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
+                              {isExt ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                            </span>
+                            <span className={styles.mobileHoursBadge}>{totalJobHours} ชม.</span>
                           </div>
-                        )}
-                      </td>
-                      <td>{r.faculty}</td>
-                      <td>
-                        <span className={`${styles.tableTag} ${isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther}`}>
-                          {r.scholarshipName || 'ไม่ระบุ'}
+                        </div>
+
+                        <div className={styles.mobileCardJob}>
+                          <strong className={styles.mobileCardJobTitle}>{job.title}</strong>
+                          <span className={styles.mobileCardJobShift}>
+                            อาจารย์: {job.teacher_name} • สถานที่: {job.location || 'ไม่ระบุ'}
+                          </span>
+                        </div>
+
+                        <div className={styles.mobileCardStudent}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                            <span>
+                              จำนวนกะ: <strong>{job.shifts.length} ช่วงเวลา</strong>
+                            </span>
+                            <span>
+                              ผู้ลงทะเบียน:{' '}
+                              <strong style={{ color: totalReg >= totalCap ? '#dc2626' : '#16a34a' }}>
+                                {totalReg}/{totalCap} คน
+                              </strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+
+          {/* TAB 2: STUDENTS REGISTRATIONS TABLE & MOBILE CARDS */}
+          {activeDetailTab === 'students' && (
+            <>
+              {/* Desktop/Tablet Table View */}
+              <div className={styles.tableWrapper}>
+                {tableRows.length === 0 ? (
+                  <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
+                ) : (
+                  <table className={styles.dataTable}>
+                    <thead>
+                      <tr>
+                        <th>วันที่จัดงาน</th>
+                        <th>ชื่องาน / กิจกรรม</th>
+                        <th>ขอบเขต</th>
+                        <th>กะ / ช่วงเวลา</th>
+                        <th>รหัสนักศึกษา</th>
+                        <th>ชื่อ - นามสกุล</th>
+                        <th>คณะ / สาขาวิชา</th>
+                        <th>ทุนการศึกษา</th>
+                        <th>ชม.ทุน</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableRows.map((r, i) => (
+                        <tr key={`${r.regId}-${i}`}>
+                          <td>{r.jobDate}</td>
+                          <td>
+                            <strong>{r.jobTitle}</strong>
+                          </td>
+                          <td>
+                            <span className={r.jobScope === 'external' ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
+                              {r.jobScope === 'external' ? 'ภายนอก' : 'ภายใน'}
+                            </span>
+                          </td>
+                          <td>
+                            {r.shiftLabel} ({r.timeRange})
+                          </td>
+                          <td>
+                            <code>{r.studentId}</code>
+                          </td>
+                          <td>
+                            <strong>{r.studentName}</strong>
+                            {r.phone && (
+                              <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '2px' }}>
+                                โทร:{' '}
+                                <a href={`tel:${r.phone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>
+                                  {r.phone}
+                                </a>
+                              </div>
+                            )}
+                          </td>
+                          <td>{r.faculty}</td>
+                          <td>
+                            <span
+                              className={`${styles.tableTag} ${
+                                isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
+                              }`}
+                            >
+                              {r.scholarshipName || 'ไม่ระบุ'}
+                            </span>
+                          </td>
+                          <td>
+                            <strong>{r.hours}</strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Mobile Card List View */}
+              <div className={styles.mobileCardList}>
+                {tableRows.length === 0 ? (
+                  <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
+                ) : (
+                  tableRows.map((r, i) => (
+                    <div key={`m-${r.regId}-${i}`} className={styles.mobileRegCard}>
+                      <div className={styles.mobileCardTopRow}>
+                        <span className={styles.mobileCardDateBadge}>{formatThaiDate(r.jobDate)}</span>
+                        <div className={styles.mobileCardBadges}>
+                          <span className={r.jobScope === 'external' ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
+                            {r.jobScope === 'external' ? 'ภายนอก' : 'ภายใน'}
+                          </span>
+                          <span className={styles.mobileHoursBadge}>{r.hours} ชม.ทุน</span>
+                          <span
+                            className={`${styles.tableTag} ${
+                              isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
+                            }`}
+                          >
+                            {r.scholarshipName || 'ไม่ระบุ'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={styles.mobileCardJob}>
+                        <strong className={styles.mobileCardJobTitle}>{r.jobTitle}</strong>
+                        <span className={styles.mobileCardJobShift}>
+                          {r.shiftLabel} ({r.timeRange})
                         </span>
-                      </td>
-                      <td><strong>{r.hours}</strong></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                      </div>
 
-          {/* Mobile Card List View */}
-          <div className={styles.mobileCardList}>
-            {tableRows.length === 0 ? (
-              <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
-            ) : (
-              tableRows.map((r, i) => (
-                <div key={`m-${r.regId}-${i}`} className={styles.mobileRegCard}>
-                  <div className={styles.mobileCardTopRow}>
-                    <span className={styles.mobileCardDateBadge}>
-                      {formatThaiDate(r.jobDate)}
-                    </span>
-                    <div className={styles.mobileCardBadges}>
-                      <span className={styles.mobileHoursBadge}>{r.hours} ชม.ทุน</span>
-                      <span className={`${styles.tableTag} ${isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther}`}>
-                        {r.scholarshipName || 'ไม่ระบุ'}
-                      </span>
+                      <div className={styles.mobileCardStudent}>
+                        <div className={styles.mobileStudentName}>{r.studentName}</div>
+                        <div className={styles.mobileStudentMeta}>
+                          <span className={styles.mobileStudentId}>รหัส: {r.studentId}</span>
+                          <span className={styles.mobileStudentMajor}>• {r.faculty}</span>
+                        </div>
+                      </div>
+
+                      {r.phone && (
+                        <div className={styles.mobileCardActionRow}>
+                          <a href={`tel:${r.phone}`} className={styles.mobileCallBtn}>
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                            </svg>
+                            โทร {r.phone}
+                          </a>
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  <div className={styles.mobileCardJob}>
-                    <strong className={styles.mobileCardJobTitle}>{r.jobTitle}</strong>
-                    <span className={styles.mobileCardJobShift}>{r.shiftLabel} ({r.timeRange})</span>
-                  </div>
-
-                  <div className={styles.mobileCardStudent}>
-                    <div className={styles.mobileStudentName}>{r.studentName}</div>
-                    <div className={styles.mobileStudentMeta}>
-                      <span className={styles.mobileStudentId}>รหัส: {r.studentId}</span>
-                      <span className={styles.mobileStudentMajor}>• {r.faculty}</span>
-                    </div>
-                  </div>
-
-                  {r.phone && (
-                    <div className={styles.mobileCardActionRow}>
-                      <a href={`tel:${r.phone}`} className={styles.mobileCallBtn}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                        </svg>
-                        โทร {r.phone}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </section>
       </div>
 

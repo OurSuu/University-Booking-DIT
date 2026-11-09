@@ -32,6 +32,7 @@ export default function BookingModal({
   const [description, setDescription] = useState('');
   const [requireScholarshipName, setRequireScholarshipName] = useState(true);
   const [allowKys, setAllowKys] = useState(true);
+  const [jobType, setJobType] = useState<'internal' | 'external'>('internal');
   const [shifts, setShifts] = useState<ShiftInput[]>([
     { label: 'กะเช้า', time_range: '09:00 - 12:00', hours: 3, capacity: 5 },
   ]);
@@ -48,6 +49,7 @@ export default function BookingModal({
       setDescription(editingJob.description);
       setRequireScholarshipName(editingJob.require_scholarship_name);
       setAllowKys(editingJob.allow_kys);
+      setJobType(editingJob.job_type === 'external' ? 'external' : 'internal');
       setShifts(
         editingJob.shifts.map((s) => ({
           id: s.id,
@@ -135,6 +137,7 @@ export default function BookingModal({
           description: description.trim(),
           require_scholarship_name: requireScholarshipName,
           allow_kys: allowKys,
+          job_type: jobType,
           shifts: shifts.map((s) => ({
             id: s.id,
             label: s.label.trim(),
@@ -253,6 +256,30 @@ export default function BookingModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="ระบุลักษณะงาน การแต่งกาย หรือสิ่งที่นักศึกษาต้องเตรียมตัว..."
             />
+          </div>
+
+          {/* ขอบเขตประเภทงาน: ภายในคณะ vs ภายนอกคณะ */}
+          <div className={styles.sectionBox}>
+            <div className={styles.sectionTitle}>ขอบเขตและประเภทงาน *</div>
+            <div className={styles.kysToggleRow}>
+              <button
+                type="button"
+                className={`${styles.kysOption} ${jobType === 'internal' ? styles.kysOptionActiveOk : ''}`}
+                onClick={() => setJobType('internal')}
+              >
+                <div className={styles.kysOptionTitle}>งานภายในคณะ (DIT)</div>
+                <div className={styles.kysOptionSub}>งานกิจกรรม ช่วยงานอาจารย์ หรือธุรการภายในวิทยาลัย</div>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.kysOption} ${jobType === 'external' ? styles.kysOptionActiveScope : ''}`}
+                onClick={() => setJobType('external')}
+              >
+                <div className={styles.kysOptionTitle}>งานภายนอกคณะ</div>
+                <div className={styles.kysOptionSub}>งานกิจกรรมมหาวิทยาลัย คณะอื่น หรือหน่วยงานภายนอก</div>
+              </button>
+            </div>
           </div>
 
           {/* เงื่อนไขทุน */}

@@ -19,6 +19,7 @@ export async function PUT(
       location,
       require_scholarship_name,
       allow_kys,
+      job_type,
       shifts,
     } = body;
 
@@ -58,6 +59,7 @@ export async function PUT(
       location: location || '',
       require_scholarship_name: Boolean(require_scholarship_name),
       allow_kys: Boolean(allow_kys),
+      job_type: job_type === 'external' ? 'external' : 'internal',
       shifts,
     });
 

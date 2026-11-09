@@ -668,6 +668,15 @@ export default function DayDetailModal({
                         <div className={styles.jobBadgesRow}>
                           <span
                             className={
+                              job.job_type === 'external'
+                                ? styles.badgeScopeExternal
+                                : styles.badgeScopeInternal
+                            }
+                          >
+                            {job.job_type === 'external' ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                          </span>
+                          <span
+                            className={
                               job.allow_kys ? styles.badgeKysOk : styles.badgeKysNo
                             }
                           >

@@ -187,6 +187,11 @@
   background: var(--danger-light);
 }
 
+.kysOptionActiveScope {
+  border-color: #d97706;
+  background: #fef3c7;
+}
+
 .kysOptionTitle {
   font-family: var(--font-heading);
   font-size: 0.875rem;

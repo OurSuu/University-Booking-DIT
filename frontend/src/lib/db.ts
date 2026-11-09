@@ -88,6 +88,7 @@ async function ensurePgTables() {
     );
 
     ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
+    ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
 
     CREATE TABLE IF NOT EXISTS teacher_pins (
       id SERIAL PRIMARY KEY,
@@ -489,6 +490,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       location: j.location || '',
       require_scholarship_name: Boolean(j.require_scholarship_name),
       allow_kys: Boolean(j.allow_kys),
+      job_type: (j.job_type === 'external' ? 'external' : 'internal') as 'internal' | 'external',
       created_at: j.created_at ? new Date(j.created_at).toISOString() : '',
       shifts: shiftsByJob.get(Number(j.id)) || [],
     }));
@@ -529,10 +531,12 @@ export interface CreateJobPayload {
   location: string;
   require_scholarship_name: boolean;
   allow_kys: boolean;
+  job_type?: 'internal' | 'external';
   shifts: ShiftInput[];
 }
 
 export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncement> {
+  const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
@@ -541,8 +545,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       await client.query('BEGIN');
       const jobRes = await client.query(
         `INSERT INTO scholarship_jobs
-          (date, title, description, teacher_name, location, require_scholarship_name, allow_kys)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+          (date, title, description, teacher_name, location, require_scholarship_name, allow_kys, job_type)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
           payload.date,
@@ -552,6 +556,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
           payload.location.trim(),
           payload.require_scholarship_name,
           payload.allow_kys,
+          jobScope,
         ]
       );
       const jobRow = jobRes.rows[0];
@@ -597,6 +602,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
     location: payload.location.trim(),
     require_scholarship_name: payload.require_scholarship_name,
     allow_kys: payload.allow_kys,
+    job_type: jobScope,
     created_at: nowIso,
   });
 
@@ -624,6 +630,8 @@ export async function updateJob(
   const existing = await getJobById(jobId);
   if (!existing) return null;
 
+  const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
+
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
@@ -633,8 +641,8 @@ export async function updateJob(
       await client.query(
         `UPDATE scholarship_jobs
          SET date = $1, title = $2, description = $3, teacher_name = $4,
-             location = $5, require_scholarship_name = $6, allow_kys = $7
-         WHERE id = $8`,
+             location = $5, require_scholarship_name = $6, allow_kys = $7, job_type = $8
+         WHERE id = $9`,
         [
           payload.date,
           payload.title.trim(),
@@ -643,6 +651,7 @@ export async function updateJob(
           payload.location.trim(),
           payload.require_scholarship_name,
           payload.allow_kys,
+          jobScope,
           jobId,
         ]
       );
@@ -716,6 +725,7 @@ export async function updateJob(
     location: payload.location.trim(),
     require_scholarship_name: payload.require_scholarship_name,
     allow_kys: payload.allow_kys,
+    job_type: jobScope,
   };
 
   const incomingShiftIds = payload.shifts
