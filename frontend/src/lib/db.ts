@@ -687,21 +687,7 @@ export async function cancelRegistration(
   const isTeacherOverride = verifyTeacherPin(options.teacherPin);
 
   if (!isTeacherOverride) {
-    // ตรวจสอบรหัสนักศึกษาเพื่อยืนยันว่าเป็นเจ้าของชื่อจริง
-    const inputStudentId = (options.studentId || '').trim().toLowerCase();
-    if (!inputStudentId || inputStudentId !== foundReg.student_id.trim().toLowerCase()) {
-      throw new Error('รหัสนักศึกษาไม่ตรงกับผู้ที่ลงทะเบียนไว้ กรุณากรอกรหัสนักศึกษาให้ถูกต้อง');
-    }
-
-    // ตรวจสอบกฎการยกเลิกงาน (ก่อนวันงานอย่างน้อย 2 วัน หรือเพิ่งลงทะเบียนในวันนี้)
-    const eligibility = checkCancelEligibility(
-      foundJob.date,
-      foundReg.registered_date,
-      getTodayStr()
-    );
-    if (!eligibility.canCancel) {
-      throw new Error(eligibility.reason);
-    }
+    throw new Error('นักศึกษาไม่สามารถถอนชื่อเองได้ กรุณาแจ้งอาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ');
   }
 
   if (getDbConnectionString().length > 0) {

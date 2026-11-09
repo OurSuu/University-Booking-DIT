@@ -1,0 +1,184 @@
+.chartContainer {
+  position: relative;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem 1.25rem 1rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chartTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.chartTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.chartTitle {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.chartSub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.chartStatsSummary {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.summaryPill {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.summaryPill strong {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  color: var(--primary);
+}
+
+.svgWrap {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gridLine {
+  stroke: #e5e7eb;
+  stroke-dasharray: 4 4;
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: #9ca3af;
+  font-size: 11px;
+  font-family: var(--font-heading);
+  font-weight: 500;
+}
+
+.linePath {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: d 0.25s ease;
+}
+
+.areaPath {
+  transition: d 0.25s ease;
+}
+
+.dataDot {
+  fill: #ffffff;
+  stroke-width: 2.5;
+  cursor: pointer;
+  transition: r 0.15s ease, stroke-width 0.15s ease;
+}
+
+.dataDot:hover,
+.dataDotActive {
+  r: 6.5;
+  stroke-width: 3.5;
+}
+
+.hoverColumn {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.hoverColumn:hover {
+  fill: rgba(200, 30, 36, 0.04);
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 20;
+  background: #1f2937;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, -115%);
+  white-space: nowrap;
+  animation: fadeIn 0.15s ease;
+}
+
+.tooltipTitle {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.84rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 0.15rem;
+}
+
+.tooltipValue {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.tooltipSecondary {
+  color: #93c5fd;
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.emptyBox {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 680px) {
+  .chartContainer {
+    padding: 0.9rem 0.75rem;
+  }
+  .chartTopRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .chartStatsSummary {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

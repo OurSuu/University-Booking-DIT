@@ -251,18 +251,109 @@
   color: var(--text-main);
 }
 
-.field input {
+.field input,
+.selectInput {
   padding: 0.65rem 0.85rem;
   border: 1.5px solid var(--border-strong);
   border-radius: 10px;
   font-size: 0.92rem;
   background: #ffffff;
+  color: var(--text-main);
   outline: none;
 }
 
-.field input:focus {
+.selectInput {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.field input:focus,
+.selectInput:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(200, 30, 36, 0.14);
+}
+
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+  animation: fadeIn 0.18s ease;
+}
+
+.confirmModalBox {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.confirmIconWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.confirmTitle {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.confirmNoticeBox {
+  background: #fff1f2;
+  border: 1.5px solid var(--danger);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.confirmSummary {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.confirmActions button {
+  flex: 1;
 }
 
 .quickPills {

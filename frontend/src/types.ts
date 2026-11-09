@@ -48,18 +48,39 @@ export const PRESET_SHIFTS: Omit<ShiftInput, 'id'>[] = [
   { label: 'เต็มวัน', time_range: '09:00 - 16:00', hours: 6, capacity: 5 },
 ];
 
+export const DIT_MAJORS = [
+  'วิทยาการคอมพิวเตอร์',
+  'นวัตกรรมดิจิทัลและปัญญาประดิษฐ์',
+  'คอมพิวเตอร์เกมและอีสปอร์ต',
+  'เทคโนโลยีสร้างสรรค์และสื่อสังคมออนไลน์',
+  'การวางแผนการเงินด้วยเทคโนโลยีปัญญาประดิษฐ์',
+] as const;
+
+export type DitMajor = (typeof DIT_MAJORS)[number];
+
+export const MAJOR_ALIAS_MAP: Record<string, string> = {
+  cs: 'วิทยาการคอมพิวเตอร์',
+  cge: 'คอมพิวเตอร์เกมและอีสปอร์ต',
+  dai: 'นวัตกรรมดิจิทัลและปัญญาประดิษฐ์',
+  smg: 'เทคโนโลยีสร้างสรรค์และสื่อสังคมออนไลน์',
+  fin: 'การวางแผนการเงินด้วยเทคโนโลยีปัญญาประดิษฐ์',
+};
+
+export function normalizeMajorName(majorOrAlias: string): string {
+  const clean = (majorOrAlias || '').trim();
+  const lower = clean.toLowerCase();
+  if (MAJOR_ALIAS_MAP[lower]) {
+    return MAJOR_ALIAS_MAP[lower];
+  }
+  return clean;
+}
+
 export const POPULAR_SCHOLARSHIPS = [
   'กยศ.',
   'ทุน 50%',
 ] as const;
 
-export const POPULAR_FACULTIES = [
-  'CS',
-  'CGE',
-  'DAI',
-  'SMG',
-  'FIN',
-] as const;
+export const POPULAR_FACULTIES = DIT_MAJORS;
 
 export function getTodayStr(): string {
   const now = new Date();

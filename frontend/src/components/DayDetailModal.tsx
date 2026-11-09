@@ -5,12 +5,10 @@ import {
   JobAnnouncement,
   JobShift,
   Registration,
-  POPULAR_FACULTIES,
-  POPULAR_SCHOLARSHIPS,
+  DIT_MAJORS,
   getTodayStr,
   getDaysUntilJob,
   isKysScholarship,
-  checkCancelEligibility,
 } from '@/types';
 import { useToast } from './Toast';
 import styles from './DayDetailModal.module.css';
@@ -87,14 +85,14 @@ export default function DayDetailModal({
   const [scholarshipName, setScholarshipName] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
   const [regLoading, setRegLoading] = useState(false);
+  const [showRegConfirmPopup, setShowRegConfirmPopup] = useState(false);
 
-  // State สำหรับการถอนชื่อ / ยกเลิกงาน
+  // State สำหรับการถอนชื่อ (เฉพาะอาจารย์)
   const [cancellingReg, setCancellingReg] = useState<{
     reg: Registration;
     job: JobAnnouncement;
     shift: JobShift;
   } | null>(null);
-  const [confirmStudentId, setConfirmStudentId] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
@@ -155,17 +153,41 @@ export default function DayDetailModal({
     !activeShiftInfo.job.allow_kys &&
     isKysScholarship(scholarshipName);
 
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
+  const handlePreRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeShiftInfo) return;
     setRegError(null);
+
+    if (isLiveShiftFull) {
+      setRegError('ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในช่วงเวลานี้ครบจำนวนแล้ว');
+      return;
+    }
 
     if (isKysBlockedInForm) {
       setRegError('งานนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกงานอื่นที่เปิดรับ กยศ.');
       return;
     }
 
+    if (!studentId.trim() || !studentName.trim() || !faculty.trim()) {
+      setRegError('กรุณากรอกรหัสนักศึกษา, ชื่อ-นามสกุล และเลือกสาขาวิชาให้ครบถ้วน');
+      return;
+    }
+
+    if (activeShiftInfo.job.require_scholarship_name && !scholarshipName.trim()) {
+      setRegError('งานนี้กำหนดให้ต้องระบุชื่อทุน กรุณาระบุชื่อทุนของคุณ');
+      return;
+    }
+
+    // เปิด Pop up ยืนยันก่อนลงทะเบียนจริง
+    setShowRegConfirmPopup(true);
+  };
+
+  const handleExecuteRegister = async () => {
+    if (!activeShiftInfo) return;
+    setShowRegConfirmPopup(false);
     setRegLoading(true);
+    setRegError(null);
+
     try {
       const res = await fetch('/api/registrations', {
         method: 'POST',
@@ -214,8 +236,7 @@ export default function DayDetailModal({
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentId: confirmStudentId.trim(),
-          teacherPin: isTeacherMode ? teacherPin : undefined,
+          teacherPin,
         }),
       });
 
@@ -230,7 +251,6 @@ export default function DayDetailModal({
 
       showToast('ถอนชื่อจากการลงทะเบียนเรียบร้อยแล้ว', 'success');
       setCancellingReg(null);
-      setConfirmStudentId('');
       setCancelLoading(false);
       onRefresh();
     } catch {
@@ -336,7 +356,7 @@ export default function DayDetailModal({
                 </div>
               )}
 
-              <form onSubmit={handleRegisterSubmit} className={styles.regForm}>
+              <form onSubmit={handlePreRegister} className={styles.regForm}>
                 <div className={styles.formGrid2}>
                   <div className={styles.field}>
                     <label>รหัสนักศึกษา *</label>
@@ -362,58 +382,39 @@ export default function DayDetailModal({
                 </div>
 
                 <div className={styles.field}>
-                  <label>สาขา *</label>
-                  <input
-                    type="text"
+                  <label htmlFor="student-faculty">สาขาวิชา *</label>
+                  <select
+                    id="student-faculty"
                     value={faculty}
                     onChange={(e) => setFaculty(e.target.value)}
-                    placeholder="เลือกจากปุ่มด้านล่าง หรือพิมพ์ชื่อสาขา..."
                     required
-                  />
-                  <div className={styles.quickPills}>
-                    {POPULAR_FACULTIES.map((fac) => (
-                      <button
-                        key={fac}
-                        type="button"
-                        className={`${styles.pillBtn} ${faculty === fac ? styles.pillBtnActive : ''}`}
-                        onClick={() => setFaculty(faculty === fac ? '' : fac)}
-                      >
-                        {fac}
-                      </button>
+                    className={styles.selectInput}
+                  >
+                    <option value="">-- กรุณาเลือกสาขาวิชา --</option>
+                    {DIT_MAJORS.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
 
                 <div className={styles.field}>
-                  <label>
+                  <label htmlFor="student-scholarship">
                     ชื่อทุนการศึกษา {activeShiftInfo.job.require_scholarship_name ? '*' : '(ถ้ามี)'}
                   </label>
                   <input
+                    id="student-scholarship"
                     type="text"
                     value={scholarshipName}
                     onChange={(e) => setScholarshipName(e.target.value)}
-                    placeholder="เลือกประเภททุนด้านล่าง หรือพิมพ์ชื่อทุนของคุณ..."
+                    placeholder={
+                      activeShiftInfo.job.require_scholarship_name
+                        ? 'ระบุชื่อทุนของคุณ เช่น ทุนเพชรประกาย, กยศ., ฯลฯ...'
+                        : 'ระบุชื่อทุนของคุณ (ถ้ามี)...'
+                    }
                     required={activeShiftInfo.job.require_scholarship_name}
                   />
-                  <div className={styles.quickPills}>
-                    {POPULAR_SCHOLARSHIPS.map((sch) => {
-                      const disabledKys = !activeShiftInfo.job.allow_kys && sch === 'กยศ.';
-                      const isSelected = scholarshipName === sch;
-                      return (
-                        <button
-                          key={sch}
-                          type="button"
-                          className={`${styles.pillBtn} ${
-                            isSelected ? styles.pillBtnActive : ''
-                          } ${disabledKys ? styles.pillBtnDisabled : ''}`}
-                          onClick={() => setScholarshipName(isSelected ? '' : sch)}
-                          title={disabledKys ? 'งานนี้ไม่รับนักศึกษาทุน กยศ.' : undefined}
-                        >
-                          {disabledKys ? 'กยศ. (งานนี้ไม่รับ)' : sch}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {isLiveShiftFull && (
@@ -433,9 +434,7 @@ export default function DayDetailModal({
                 )}
 
                 <div className={styles.policyNote}>
-                  <strong>เงื่อนไขการถอนชื่อ/ยกเลิกงาน:</strong> สามารถยกเลิกได้ล่วงหน้าอย่างน้อย{' '}
-                  <strong>2 วัน</strong> ก่อนวันงานจริง (หากเหลือเพียง 1 วันแล้วเพิ่งมากรอกชื่อในวันนี้
-                  สามารถถอนชื่อได้ภายในวันนี้เท่านั้น)
+                  <strong>ข้อกำหนดสำคัญ:</strong> เมื่อลงทะเบียนแล้ว <u>นักศึกษาจะไม่สามารถถอนชื่อได้ด้วยตนเอง</u> หากมีเหตุจำเป็นต้องถอนชื่อ โปรดแจ้งอาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ
                 </div>
 
                 <div className={styles.regFormActions}>
@@ -448,7 +447,8 @@ export default function DayDetailModal({
                     ยกเลิก
                   </button>
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handlePreRegister}
                     className={styles.primaryBtn}
                     disabled={regLoading || Boolean(isKysBlockedInForm) || isLiveShiftFull}
                   >
@@ -457,18 +457,92 @@ export default function DayDetailModal({
                       ? 'กำลังบันทึก...'
                       : isLiveShiftFull
                       ? 'ช่วงเวลานี้เต็มแล้ว'
-                      : 'ยืนยันการลงทะเบียน'}
+                      : 'ลงทะเบียนรับงาน'}
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* กล่องยืนยันการถอนชื่อ / ยกเลิกการลงทะเบียน */}
-          {cancellingReg && (
+          {/* Pop up ยืนยันการลงทะเบียนงาน */}
+          {showRegConfirmPopup && activeShiftInfo && (
+            <div
+              className={styles.confirmBackdrop}
+              onClick={() => setShowRegConfirmPopup(false)}
+            >
+              <div
+                className={styles.confirmModalBox}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.confirmIconWrap}>
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <h3 className={styles.confirmTitle}>ยืนยันการลงทะเบียนรับงาน</h3>
+
+                <div className={styles.confirmNoticeBox}>
+                  หากลงทะเบียนเเล้ว ไม่สามารถถอนได้ โปรดเเจ้งอาจารย์ที่รับผิดชอบเพื่อ ถอนชื่อ
+                </div>
+
+                <div className={styles.confirmSummary}>
+                  <p>
+                    <strong>ชื่องาน:</strong> {activeShiftInfo.job.title}
+                  </p>
+                  <p>
+                    <strong>ช่วงเวลา:</strong> {activeShiftInfo.shift.label} (
+                    {activeShiftInfo.shift.time_range}) •{' '}
+                    {activeShiftInfo.shift.hours} ชม.ทุน
+                  </p>
+                  <p>
+                    <strong>ผู้ลงทะเบียน:</strong> {studentName} (รหัส: {studentId})
+                  </p>
+                  <p>
+                    <strong>สาขาวิชา:</strong> {faculty}
+                  </p>
+                  {scholarshipName && (
+                    <p>
+                      <strong>ทุนการศึกษา:</strong> {scholarshipName}
+                    </p>
+                  )}
+                </div>
+
+                <div className={styles.confirmActions}>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => setShowRegConfirmPopup(false)}
+                    disabled={regLoading}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryBtn}
+                    onClick={handleExecuteRegister}
+                    disabled={regLoading}
+                  >
+                    {regLoading ? 'กำลังบันทึก...' : 'เข้าใจและยืนยันการลงทะเบียน'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* กล่องยืนยันการถอนชื่อ (เฉพาะอาจารย์) */}
+          {cancellingReg && isTeacherMode && (
             <div className={styles.cancelCard}>
               <div className={styles.cancelHeader}>
-                <h3>ยืนยันการถอนชื่อจากงานชั่วโมงทุน</h3>
+                <h3>ยืนยันการถอนชื่อนักศึกษา (สิทธิ์อาจารย์)</h3>
                 <button
                   type="button"
                   className={styles.backBtn}
@@ -487,73 +561,42 @@ export default function DayDetailModal({
                   {cancellingReg.shift.time_range})
                 </p>
                 <p>
-                  <strong>ผู้ลงทะเบียน:</strong> {cancellingReg.reg.student_name} (รหัส:{' '}
+                  <strong>นักศึกษา:</strong> {cancellingReg.reg.student_name} (รหัส:{' '}
                   {cancellingReg.reg.student_id})
+                </p>
+                <p>
+                  <strong>สาขาวิชา:</strong> {cancellingReg.reg.faculty}
                 </p>
               </div>
 
-              {(() => {
-                const eligibility = checkCancelEligibility(
-                  cancellingReg.job.date,
-                  cancellingReg.reg.registered_date,
-                  todayStr
-                );
-                return (
-                  <div
-                    className={
-                      eligibility.isSameDayGrace
-                        ? styles.graceNotice
-                        : styles.okNotice
-                    }
-                  >
-                    {eligibility.reason}
-                  </div>
-                );
-              })()}
+              <div className={styles.teacherOverrideNotice}>
+                คุณกำลังดำเนินการถอนชื่อนักศึกษาท่านนี้ออกจากระบบด้วยสิทธิ์อาจารย์
+              </div>
 
-              <form onSubmit={handleCancelRegistrationSubmit} className={styles.cancelForm}>
-                {!isTeacherMode ? (
-                  <div className={styles.field}>
-                    <label>กรอกรหัสนักศึกษาของคุณเพื่อยืนยันการถอนชื่อ *</label>
-                    <input
-                      type="text"
-                      value={confirmStudentId}
-                      onChange={(e) => setConfirmStudentId(e.target.value)}
-                      placeholder={`กรอกรหัสนักศึกษา (${cancellingReg.reg.student_id})`}
-                      required
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <div className={styles.teacherOverrideNotice}>
-                    คุณกำลังลบรายชื่อด้วยสิทธิ์อาจารย์ (ไม่ต้องใช้รหัสนักศึกษา)
-                  </div>
-                )}
+              {cancelError && <div className={styles.errorBox}>{cancelError}</div>}
 
-                {cancelError && <div className={styles.errorBox}>{cancelError}</div>}
-
-                <div className={styles.regFormActions}>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    onClick={() => {
-                      setCancellingReg(null);
-                      setCancelError(null);
-                    }}
-                    disabled={cancelLoading}
-                  >
-                    ย้อนกลับ
-                  </button>
-                  <button
-                    type="submit"
-                    className={styles.dangerBtn}
-                    disabled={cancelLoading}
-                  >
-                    {cancelLoading && <span className={styles.btnSpinner} />}
-                    {cancelLoading ? 'กำลังถอนชื่อ...' : 'ยืนยันการถอนชื่อ'}
-                  </button>
-                </div>
-              </form>
+              <div className={styles.regFormActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => {
+                    setCancellingReg(null);
+                    setCancelError(null);
+                  }}
+                  disabled={cancelLoading}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  className={styles.dangerBtn}
+                  onClick={handleCancelRegistrationSubmit}
+                  disabled={cancelLoading}
+                >
+                  {cancelLoading && <span className={styles.btnSpinner} />}
+                  {cancelLoading ? 'กำลังถอนชื่อ...' : 'ยืนยันการถอนชื่อ'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -703,71 +746,49 @@ export default function DayDetailModal({
                                 </div>
                               ) : (
                                 <div className={styles.participantsList}>
-                                  {shift.registrations.map((reg, index) => {
-                                    const cancelCheck = checkCancelEligibility(
-                                      job.date,
-                                      reg.registered_date,
-                                      todayStr
-                                    );
-                                    const canRemove =
-                                      cancelCheck.canCancel || isTeacherMode;
-
-                                    return (
-                                      <div
-                                        key={reg.id}
-                                        className={styles.participantRow}
-                                      >
-                                        <div className={styles.participantInfo}>
-                                          <span className={styles.participantIndex}>
-                                            #{index + 1}
+                                  {shift.registrations.map((reg, index) => (
+                                    <div
+                                      key={reg.id}
+                                      className={styles.participantRow}
+                                    >
+                                      <div className={styles.participantInfo}>
+                                        <span className={styles.participantIndex}>
+                                          #{index + 1}
+                                        </span>
+                                        <span className={styles.participantName}>
+                                          {reg.student_name}
+                                        </span>
+                                        <span className={styles.participantCode}>
+                                          รหัส: {reg.student_id}
+                                        </span>
+                                        <span className={styles.participantFaculty}>
+                                          สาขา: {reg.faculty}
+                                        </span>
+                                        {reg.scholarship_name && (
+                                          <span className={styles.participantScholarship}>
+                                            ทุน: {reg.scholarship_name}
                                           </span>
-                                          <span className={styles.participantName}>
-                                            {reg.student_name}
-                                          </span>
-                                          <span className={styles.participantCode}>
-                                            รหัส: {reg.student_id}
-                                          </span>
-                                          <span className={styles.participantFaculty}>
-                                            สาขา: {reg.faculty}
-                                          </span>
-                                          {reg.scholarship_name && (
-                                            <span className={styles.participantScholarship}>
-                                              ทุน: {reg.scholarship_name}
-                                            </span>
-                                          )}
-                                          {cancelCheck.isSameDayGrace && (
-                                            <span className={styles.sameDayBadge}>
-                                              เพิ่งลงวันนี้ (ถอนชื่อได้วันนี้)
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        <div className={styles.participantActions}>
-                                          {canRemove ? (
-                                            <button
-                                              type="button"
-                                              className={styles.withdrawBtn}
-                                              onClick={() => {
-                                                setCancellingReg({ reg, job, shift });
-                                                setActiveShiftInfo(null);
-                                                setCancelError(null);
-                                              }}
-                                              title={cancelCheck.reason}
-                                            >
-                                              ถอนชื่อ
-                                            </button>
-                                          ) : (
-                                            <span
-                                              className={styles.lockedCancelBadge}
-                                              title={cancelCheck.reason}
-                                            >
-                                              งดยกเลิก (&lt; 2 วัน)
-                                            </span>
-                                          )}
-                                        </div>
+                                        )}
                                       </div>
-                                    );
-                                  })}
+
+                                      <div className={styles.participantActions}>
+                                        {isTeacherMode && (
+                                          <button
+                                            type="button"
+                                            className={styles.withdrawBtn}
+                                            onClick={() => {
+                                              setCancellingReg({ reg, job, shift });
+                                              setActiveShiftInfo(null);
+                                              setCancelError(null);
+                                            }}
+                                            title="ถอนชื่อนักศึกษาคนนี้ (สำหรับอาจารย์)"
+                                          >
+                                            ถอนชื่อ (อาจารย์)
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </div>

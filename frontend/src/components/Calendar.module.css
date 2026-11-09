@@ -139,19 +139,30 @@
 /* ===== STATS GRID ===== */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.85rem;
 }
 
 .statCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 14px;
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.15rem;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.statCardClickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.statCardClickable:hover {
+  transform: translateY(-2px);
+  border-color: var(--danger-border);
+  box-shadow: var(--shadow-md);
 }
 
 .statLabel {
@@ -173,6 +184,157 @@
 
 .statPrimary {
   color: var(--primary);
+}
+
+.statDanger {
+  color: var(--danger);
+}
+
+.dashboardLinkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--primary-border);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.dashboardLinkBtn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.facultyFilterBox {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.facultySelect {
+  padding: 0.5rem 0.85rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-family: var(--font-body);
+  background: #ffffff;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  max-width: 260px;
+}
+
+.facultySelect:focus {
+  border-color: var(--primary);
+}
+
+.clearFacultyBtn {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.clearFacultyBtn:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.facultyStatsDrawer {
+  background: #ffffff;
+  border: 1.5px solid var(--primary-border);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.facultyStatsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.facultyStatsTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.facultyStatsTitleWrap h3 {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.facultyBadge {
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+}
+
+.facultyMetricPills {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.facultyMetricPill {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.facultyMetricPill span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.facultyMetricPill strong {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--primary);
+}
+
+.facultyRegList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.facultyRegListTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* ===== CONTROL BAR ===== */

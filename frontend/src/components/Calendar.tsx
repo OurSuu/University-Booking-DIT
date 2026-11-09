@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { JobAnnouncement, getTodayStr, getDaysUntilJob } from '@/types';
+import Link from 'next/link';
+import {
+  JobAnnouncement,
+  DIT_MAJORS,
+  normalizeMajorName,
+  getTodayStr,
+  getDaysUntilJob,
+} from '@/types';
 import { useToast } from './Toast';
 import BookingModal from './BookingModal';
 import ConfirmModal from './ConfirmModal';
@@ -37,6 +44,8 @@ export default function Calendar() {
   // Filters & Student lookup
   const [filterAvailableOnly, setFilterAvailableOnly] = useState(false);
   const [filterKysOnly, setFilterKysOnly] = useState(false);
+  const [filterNonKysOnly, setFilterNonKysOnly] = useState(false);
+  const [facultyFilter, setFacultyFilter] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
 
   // Teacher mode state
@@ -47,6 +56,14 @@ export default function Calendar() {
   const [pendingActionAfterPin, setPendingActionAfterPin] = useState<
     (() => void) | null
   >(null);
+
+  // Restore teacher PIN from session storage if available
+  useEffect(() => {
+    const savedPin = sessionStorage.getItem('dit_teacher_pin');
+    if (savedPin) {
+      setTeacherPin(savedPin);
+    }
+  }, []);
 
   // Modals
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
@@ -150,6 +167,7 @@ export default function Calendar() {
       }
 
       setTeacherPin(inputPin);
+      sessionStorage.setItem('dit_teacher_pin', inputPin);
       setShowPinModal(false);
       setPinVerifying(false);
       showToast('เปิดใช้งานโหมดอาจารย์เรียบร้อยแล้ว', 'success');
@@ -200,11 +218,20 @@ export default function Calendar() {
 
       if (filterAvailableOnly && !hasAvailable) return false;
       if (filterKysOnly && !job.allow_kys) return false;
+      if (filterNonKysOnly && job.allow_kys) return false;
+      if (facultyFilter) {
+        const hasFacultyReg = job.shifts.some((s) =>
+          s.registrations.some(
+            (r) => normalizeMajorName(r.faculty) === facultyFilter
+          )
+        );
+        if (!hasFacultyReg) return false;
+      }
       return true;
     });
-  }, [jobs, filterAvailableOnly, filterKysOnly]);
+  }, [jobs, filterAvailableOnly, filterKysOnly, filterNonKysOnly, facultyFilter]);
 
-  // Student search matches
+  // Student search matches (supports student name, student ID, or faculty)
   const myRegistrations = useMemo(() => {
     const q = studentSearch.trim().toLowerCase();
     if (!q) return [];
@@ -215,15 +242,18 @@ export default function Calendar() {
       hours: number;
       studentName: string;
       studentId: string;
+      faculty: string;
       scholarshipName: string;
     }[] = [];
 
     for (const job of jobs) {
       for (const shift of job.shifts) {
         for (const reg of shift.registrations) {
+          const normFaculty = normalizeMajorName(reg.faculty);
           if (
             reg.student_id.toLowerCase().includes(q) ||
-            reg.student_name.toLowerCase().includes(q)
+            reg.student_name.toLowerCase().includes(q) ||
+            normFaculty.toLowerCase().includes(q)
           ) {
             results.push({
               job,
@@ -232,6 +262,7 @@ export default function Calendar() {
               hours: shift.hours,
               studentName: reg.student_name,
               studentId: reg.student_id,
+              faculty: normFaculty,
               scholarshipName: reg.scholarship_name,
             });
           }
@@ -248,9 +279,14 @@ export default function Calendar() {
     let totalSeats = 0;
     let totalRegistered = 0;
     let kysEligibleCount = 0;
+    let nonKysCount = 0;
 
     for (const j of monthJobs) {
-      if (j.allow_kys) kysEligibleCount++;
+      if (j.allow_kys) {
+        kysEligibleCount++;
+      } else {
+        nonKysCount++;
+      }
       for (const s of j.shifts) {
         totalSeats += s.capacity;
         totalRegistered += s.registrations.length;
@@ -262,8 +298,54 @@ export default function Calendar() {
       availableSeats: Math.max(0, totalSeats - totalRegistered),
       totalRegistered,
       kysEligibleCount,
+      nonKysCount,
     };
   }, [jobs, monthPrefix]);
+
+  // Faculty monthly breakdown statistics
+  const facultyMonthStats = useMemo(() => {
+    if (!facultyFilter) return null;
+    const monthJobs = jobs.filter((j) => j.date.startsWith(monthPrefix));
+    const uniqueStudentIds = new Set<string>();
+    let totalRegCount = 0;
+    let totalHours = 0;
+    const records: {
+      jobTitle: string;
+      date: string;
+      shiftLabel: string;
+      studentName: string;
+      studentId: string;
+      hours: number;
+    }[] = [];
+
+    for (const job of monthJobs) {
+      for (const shift of job.shifts) {
+        for (const reg of shift.registrations) {
+          if (normalizeMajorName(reg.faculty) === facultyFilter) {
+            uniqueStudentIds.add(reg.student_id);
+            totalRegCount++;
+            totalHours += shift.hours;
+            records.push({
+              jobTitle: job.title,
+              date: job.date,
+              shiftLabel: shift.label,
+              studentName: reg.student_name,
+              studentId: reg.student_id,
+              hours: shift.hours,
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      majorName: facultyFilter,
+      uniqueStudentsCount: uniqueStudentIds.size,
+      totalRegCount,
+      totalHours,
+      records,
+    };
+  }, [jobs, monthPrefix, facultyFilter]);
 
   // Build calendar cells (42 cells)
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -415,6 +497,9 @@ export default function Calendar() {
           </div>
 
           <div className={styles.teacherToolbar}>
+            <Link href="/dashboard" className={styles.dashboardLinkBtn}>
+              แดชบอร์ดสถิติ
+            </Link>
             {isTeacherMode ? (
               <div className={styles.teacherActiveGroup}>
                 <span className={styles.teacherActivePill}>
@@ -481,6 +566,20 @@ export default function Calendar() {
               {monthStats.kysEligibleCount} งาน
             </strong>
           </div>
+          <div
+            className={`${styles.statCard} ${styles.statCardClickable}`}
+            onClick={() => {
+              setFilterNonKysOnly((prev) => !prev);
+              setFilterKysOnly(false);
+              setFilterAvailableOnly(false);
+            }}
+            title="คลิกเพื่อกรองเฉพาะงานที่ไม่รับ กยศ."
+          >
+            <span className={styles.statLabel}>งานที่ไม่รับ กยศ. (เฉพาะทุนอื่น)</span>
+            <strong className={`${styles.statValue} ${styles.statDanger}`}>
+              {monthStats.nonKysCount} งาน
+            </strong>
+          </div>
         </section>
 
         {/* Controls: Month Navigation + Filters + Student Search */}
@@ -513,13 +612,14 @@ export default function Calendar() {
             <div className={styles.filterTabs}>
               <button
                 className={`${styles.filterTab} ${
-                  !filterAvailableOnly && !filterKysOnly
+                  !filterAvailableOnly && !filterKysOnly && !filterNonKysOnly
                     ? styles.filterTabActive
                     : ''
                 }`}
                 onClick={() => {
                   setFilterAvailableOnly(false);
                   setFilterKysOnly(false);
+                  setFilterNonKysOnly(false);
                 }}
               >
                 ทั้งหมด
@@ -528,7 +628,10 @@ export default function Calendar() {
                 className={`${styles.filterTab} ${
                   filterAvailableOnly ? styles.filterTabActive : ''
                 }`}
-                onClick={() => setFilterAvailableOnly((prev) => !prev)}
+                onClick={() => {
+                  setFilterAvailableOnly((prev) => !prev);
+                  setFilterNonKysOnly(false);
+                }}
               >
                 เฉพาะที่ยังว่าง
               </button>
@@ -536,10 +639,49 @@ export default function Calendar() {
                 className={`${styles.filterTab} ${
                   filterKysOnly ? styles.filterTabActive : ''
                 }`}
-                onClick={() => setFilterKysOnly((prev) => !prev)}
+                onClick={() => {
+                  setFilterKysOnly((prev) => !prev);
+                  setFilterNonKysOnly(false);
+                }}
               >
                 กยศ. ทำได้
               </button>
+              <button
+                className={`${styles.filterTab} ${
+                  filterNonKysOnly ? styles.filterTabActive : ''
+                }`}
+                onClick={() => {
+                  setFilterNonKysOnly((prev) => !prev);
+                  setFilterKysOnly(false);
+                }}
+              >
+                ไม่รับ กยศ. (เฉพาะทุนอื่น)
+              </button>
+            </div>
+
+            <div className={styles.facultyFilterBox}>
+              <select
+                value={facultyFilter}
+                onChange={(e) => setFacultyFilter(e.target.value)}
+                className={styles.facultySelect}
+                aria-label="กรองเฉพาะสาขา/คณะ"
+              >
+                <option value="">ทุกสาขา (DIT)</option>
+                {DIT_MAJORS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              {facultyFilter && (
+                <button
+                  className={styles.clearFacultyBtn}
+                  onClick={() => setFacultyFilter('')}
+                  title="ล้างตัวกรองสาขา"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             <div className={styles.searchBox}>
@@ -547,7 +689,7 @@ export default function Calendar() {
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="ค้นหางานที่ฉันลงไว้ (พิมพ์รหัส/ชื่อนักศึกษา)..."
+                placeholder="ค้นหางานที่ฉันลงไว้ (พิมพ์รหัส/ชื่อนักศึกษา/สาขา)..."
                 className={styles.searchInput}
               />
               {studentSearch && (
@@ -561,6 +703,73 @@ export default function Calendar() {
             </div>
           </div>
         </section>
+
+        {/* Faculty Month Statistics Drawer */}
+        {facultyMonthStats && (
+          <section className={styles.facultyStatsDrawer}>
+            <div className={styles.facultyStatsHeader}>
+              <div className={styles.facultyStatsTitleWrap}>
+                <h3>สถิติการปฏิบัติงานชั่วโมงทุน</h3>
+                <span className={styles.facultyBadge}>{facultyMonthStats.majorName}</span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  ประจำเดือน {THAI_MONTH_NAMES[currentMonth]} {currentYear + 543}
+                </span>
+              </div>
+              <button
+                className={styles.clearFacultyBtn}
+                onClick={() => setFacultyFilter('')}
+              >
+                ✕ ปิดสรุปสาขา
+              </button>
+            </div>
+
+            <div className={styles.facultyMetricPills}>
+              <div className={styles.facultyMetricPill}>
+                <span>นักศึกษาที่มาทำงานในเดือนนี้</span>
+                <strong>{facultyMonthStats.uniqueStudentsCount} คน</strong>
+              </div>
+              <div className={styles.facultyMetricPill}>
+                <span>การลงทะเบียนทั้งหมด</span>
+                <strong>{facultyMonthStats.totalRegCount} ครั้ง</strong>
+              </div>
+              <div className={styles.facultyMetricPill}>
+                <span>ชั่วโมงทุนสะสม</span>
+                <strong>{facultyMonthStats.totalHours} ชม.</strong>
+              </div>
+            </div>
+
+            {facultyMonthStats.records.length > 0 ? (
+              <div className={styles.facultyRegList}>
+                <div className={styles.facultyRegListTitle}>
+                  รายชื่อนักศึกษาที่ลงทะเบียนในเดือนนี้ ({facultyMonthStats.records.length} รายการ):
+                </div>
+                <div className={styles.searchResultList}>
+                  {facultyMonthStats.records.map((rec, idx) => (
+                    <div key={idx} className={styles.searchResultItem}>
+                      <div>
+                        <span className={styles.searchDateBadge}>
+                          {formatThaiDate(rec.date)}
+                        </span>
+                        <strong>{rec.studentName}</strong> ({rec.studentId}) — งาน:{' '}
+                        {rec.jobTitle} [{rec.shiftLabel}] • {rec.hours} ชม.ทุน
+                      </div>
+                      <button
+                        className={styles.openDayBtn}
+                        onClick={() => setDayDetailDate(rec.date)}
+                      >
+                        ดูในปฏิทิน
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className={styles.noSearchMatch}>
+                ยังไม่มีนักศึกษาจากสาขานี้ลงทะเบียนปฏิบัติงานในเดือนนี้
+              </p>
+            )}
+          </section>
+        )}
 
         {/* Student Search Results Drawer */}
         {studentSearch.trim() && (
