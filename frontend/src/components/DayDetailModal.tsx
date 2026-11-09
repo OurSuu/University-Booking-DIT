@@ -82,6 +82,7 @@ export default function DayDetailModal({
   const [studentId, setStudentId] = useState('');
   const [studentName, setStudentName] = useState('');
   const [faculty, setFaculty] = useState('');
+  const [phone, setPhone] = useState('');
   const [scholarshipName, setScholarshipName] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
   const [regLoading, setRegLoading] = useState(false);
@@ -106,6 +107,7 @@ export default function DayDetailModal({
     setActiveShiftInfo({ job, shift });
     setCancellingReg(null);
     setRegError(null);
+    setPhone('');
     onRefresh();
   };
 
@@ -136,9 +138,9 @@ export default function DayDetailModal({
       } else {
         s.registrations.forEach((r, i) => {
           lines.push(
-            `   ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา: ${r.faculty})${
-              r.scholarship_name ? ` [ทุน: ${r.scholarship_name}]` : ''
-            }`
+            `   ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา: ${r.faculty}${
+              r.phone ? ` • โทร: ${r.phone}` : ''
+            })${r.scholarship_name ? ` [ทุน: ${r.scholarship_name}]` : ''}`
           );
         });
       }
@@ -173,6 +175,16 @@ export default function DayDetailModal({
       return;
     }
 
+    const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+    if (!cleanPhone) {
+      setRegError('กรุณากรอกเบอร์โทรศัพท์ติดต่อ');
+      return;
+    }
+    if (!/^0[0-9]{8,9}$/.test(cleanPhone)) {
+      setRegError('กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (เช่น 0812345678 หรือ 02xxxxxxx)');
+      return;
+    }
+
     if (activeShiftInfo.job.require_scholarship_name && !scholarshipName.trim()) {
       setRegError('งานนี้กำหนดให้ต้องระบุชื่อทุน กรุณาระบุชื่อทุนของคุณ');
       return;
@@ -189,6 +201,7 @@ export default function DayDetailModal({
     setRegError(null);
 
     try {
+      const cleanPhone = phone.trim().replace(/[\s-]/g, '');
       const res = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -199,6 +212,7 @@ export default function DayDetailModal({
           student_name: studentName.trim(),
           faculty: faculty.trim(),
           scholarship_name: scholarshipName.trim(),
+          phone: cleanPhone,
         }),
       });
 
@@ -216,6 +230,7 @@ export default function DayDetailModal({
       setStudentId('');
       setStudentName('');
       setFaculty('');
+      setPhone('');
       setScholarshipName('');
       setRegLoading(false);
       onRefresh();
@@ -381,22 +396,36 @@ export default function DayDetailModal({
                   </div>
                 </div>
 
-                <div className={styles.field}>
-                  <label htmlFor="student-faculty">สาขาวิชา *</label>
-                  <select
-                    id="student-faculty"
-                    value={faculty}
-                    onChange={(e) => setFaculty(e.target.value)}
-                    required
-                    className={styles.selectInput}
-                  >
-                    <option value="">-- กรุณาเลือกสาขาวิชา --</option>
-                    {DIT_MAJORS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
+                <div className={styles.formGrid2}>
+                  <div className={styles.field}>
+                    <label htmlFor="student-faculty">สาขาวิชา *</label>
+                    <select
+                      id="student-faculty"
+                      value={faculty}
+                      onChange={(e) => setFaculty(e.target.value)}
+                      required
+                      className={styles.selectInput}
+                    >
+                      <option value="">-- กรุณาเลือกสาขาวิชา --</option>
+                      {DIT_MAJORS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.field}>
+                    <label htmlFor="student-phone">เบอร์โทรศัพท์ติดต่อ *</label>
+                    <input
+                      id="student-phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="เช่น 0812345678"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className={styles.field}>
@@ -508,6 +537,9 @@ export default function DayDetailModal({
                   </p>
                   <p>
                     <strong>สาขาวิชา:</strong> {faculty}
+                  </p>
+                  <p>
+                    <strong>เบอร์โทรศัพท์:</strong> {phone}
                   </p>
                   {scholarshipName && (
                     <p>
@@ -683,9 +715,13 @@ export default function DayDetailModal({
                     </div>
 
                     <div className={styles.jobMeta}>
-                      <span><strong>อาจารย์ผู้ประกาศ:</strong> {job.teacher_name}</span>
+                      <span className={styles.teacherBadgeMeta}>
+                        <strong>อาจารย์ผู้ประกาศ:</strong> {job.teacher_name}
+                      </span>
                       {job.location && (
-                        <span><strong>สถานที่:</strong> {job.location}</span>
+                        <span className={styles.locationBadgeMeta}>
+                          <strong>สถานที่:</strong> {job.location}
+                        </span>
                       )}
                     </div>
 
@@ -764,6 +800,15 @@ export default function DayDetailModal({
                                         <span className={styles.participantFaculty}>
                                           สาขา: {reg.faculty}
                                         </span>
+                                        {reg.phone && (
+                                          <a
+                                            href={`tel:${reg.phone}`}
+                                            className={styles.participantPhone}
+                                            title="โทรติดต่อนักศึกษา"
+                                          >
+                                            โทร: {reg.phone}
+                                          </a>
+                                        )}
                                         {reg.scholarship_name && (
                                           <span className={styles.participantScholarship}>
                                             ทุน: {reg.scholarship_name}

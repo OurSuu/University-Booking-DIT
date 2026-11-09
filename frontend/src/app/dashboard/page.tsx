@@ -201,6 +201,7 @@ export default function DashboardPage() {
       studentName: string;
       faculty: string;
       scholarshipName: string;
+      phone: string;
       allowKys: boolean;
     }[] = [];
 
@@ -221,6 +222,7 @@ export default function DashboardPage() {
               studentName: reg.student_name,
               faculty: normFaculty || reg.faculty,
               scholarshipName: reg.scholarship_name,
+              phone: reg.phone || '',
               allowKys: job.allow_kys,
             });
           }
@@ -804,7 +806,14 @@ export default function DashboardPage() {
                       <td><strong>{r.jobTitle}</strong></td>
                       <td>{r.shiftLabel} ({r.timeRange})</td>
                       <td><code>{r.studentId}</code></td>
-                      <td>{r.studentName}</td>
+                      <td>
+                        <strong>{r.studentName}</strong>
+                        {r.phone && (
+                          <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '2px' }}>
+                            โทร: <a href={`tel:${r.phone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>{r.phone}</a>
+                          </div>
+                        )}
+                      </td>
                       <td>{r.faculty}</td>
                       <td>
                         <span className={`${styles.tableTag} ${isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther}`}>

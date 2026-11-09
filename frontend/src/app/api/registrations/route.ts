@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
       student_name,
       faculty,
       scholarship_name,
+      phone,
     } = body;
 
     if (!job_id || !shift_id) {
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
       student_name: String(student_name || ''),
       faculty: String(faculty || ''),
       scholarship_name: String(scholarship_name || ''),
+      phone: String(phone || ''),
     });
 
     return NextResponse.json(result, { status: 201 });

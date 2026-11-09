@@ -6,6 +6,7 @@ export interface Registration {
   student_name: string;
   faculty: string;
   scholarship_name: string;
+  phone?: string;
   registered_date: string; // YYYY-MM-DD (วันที่กดลงทะเบียน สำหรับเช็คถอนชื่อภายในวันเดียวกัน)
   created_at: string;
 }

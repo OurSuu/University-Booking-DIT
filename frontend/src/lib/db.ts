@@ -79,9 +79,12 @@ async function ensurePgTables() {
       student_name VARCHAR(150) NOT NULL,
       faculty VARCHAR(150) NOT NULL,
       scholarship_name VARCHAR(150) DEFAULT '',
+      phone VARCHAR(50) DEFAULT '',
       registered_date VARCHAR(10) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
   `);
   globalForDb._dbInitialized = true;
 }
@@ -180,6 +183,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
         student_name: r.student_name,
         faculty: r.faculty,
         scholarship_name: r.scholarship_name || '',
+        phone: r.phone ? String(r.phone) : '',
         registered_date: formatDateStr(r.registered_date),
         created_at: r.created_at ? new Date(r.created_at).toISOString() : '',
       };
@@ -514,6 +518,7 @@ export interface RegisterStudentPayload {
   student_name: string;
   faculty: string;
   scholarship_name: string;
+  phone?: string;
 }
 
 export async function registerStudent(
@@ -538,9 +543,14 @@ export async function registerStudent(
   const studentNameClean = payload.student_name.trim();
   const facultyClean = payload.faculty.trim();
   const scholarshipClean = (payload.scholarship_name || '').trim();
+  const phoneClean = (payload.phone || '').trim();
 
   if (!studentIdClean || !studentNameClean || !facultyClean) {
     throw new Error('กรุณากรอก รหัสนักศึกษา, ชื่อ-นามสกุล และสาขา ให้ครบถ้วน');
+  }
+
+  if (!phoneClean) {
+    throw new Error('กรุณากรอกเบอร์โทรศัพท์ติดต่อ');
   }
 
   if (job.require_scholarship_name && !scholarshipClean) {
@@ -601,8 +611,8 @@ export async function registerStudent(
 
       const res = await client.query(
         `INSERT INTO scholarship_registrations
-          (job_id, shift_id, student_id, student_name, faculty, scholarship_name, registered_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+          (job_id, shift_id, student_id, student_name, faculty, scholarship_name, phone, registered_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
           job.id,
@@ -611,6 +621,7 @@ export async function registerStudent(
           studentNameClean,
           facultyClean,
           scholarshipClean,
+          phoneClean,
           todayStr,
         ]
       );
@@ -627,6 +638,7 @@ export async function registerStudent(
           student_name: row.student_name,
           faculty: row.faculty,
           scholarship_name: row.scholarship_name || '',
+          phone: row.phone ? String(row.phone) : '',
           registered_date: formatDateStr(row.registered_date),
           created_at: row.created_at ? new Date(row.created_at).toISOString() : '',
         },
@@ -650,6 +662,7 @@ export async function registerStudent(
     student_name: studentNameClean,
     faculty: facultyClean,
     scholarship_name: scholarshipClean,
+    phone: phoneClean,
     registered_date: todayStr,
     created_at: new Date().toISOString(),
   };
