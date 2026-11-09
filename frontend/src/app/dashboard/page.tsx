@@ -10,7 +10,7 @@ import {
   isKysScholarship,
 } from '@/types';
 import { ToastProvider, useToast } from '@/components/Toast';
-import RechartsLineChart, { ChartDataPoint } from '@/components/RechartsLineChart';
+import RechartsLineChart, { ChartDataPoint, MetricConfig } from '@/components/RechartsLineChart';
 import PinManagementModal from '@/components/PinManagementModal';
 import DashboardCalendar from '@/components/DashboardCalendar';
 import DayDetailModal, { formatThaiDate } from '@/components/DayDetailModal';
@@ -50,6 +50,27 @@ type ViewMode = 'day' | 'month' | 'year';
 type MetricType = 'announcedHours' | 'registrations' | 'jobs';
 type ScopeFilter = 'all' | 'internal' | 'external';
 
+const DASHBOARD_METRICS: MetricConfig[] = [
+  {
+    key: 'announcedHours',
+    label: 'ชั่วโมงทุนที่อาจารย์ประกาศ',
+    unit: 'ชม.',
+    color: '#c81e24', // Crimson Red
+  },
+  {
+    key: 'registrations',
+    label: 'จำนวนเด็กที่เข้าร่วม',
+    unit: 'คน',
+    color: '#2563eb', // Royal Blue
+  },
+  {
+    key: 'jobs',
+    label: 'จำนวนงานที่ประกาศ',
+    unit: 'งาน',
+    color: '#059669', // Emerald Green
+  },
+];
+
 export default function DashboardPage() {
   return (
     <ToastProvider>
@@ -73,7 +94,11 @@ function DashboardInner() {
 
   // Filter States
   const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const [metric, setMetric] = useState<MetricType>('announcedHours');
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricType[]>([
+    'announcedHours',
+    'registrations',
+    'jobs',
+  ]);
   const [selectedScope, setSelectedScope] = useState<ScopeFilter>('all');
   const [selectedMajor, setSelectedMajor] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
@@ -374,7 +399,7 @@ function DashboardInner() {
     };
   }, [filteredData]);
 
-  // Generate Line Chart Data Points based on View Mode and Metric
+  // Generate Line Chart Data Points based on View Mode (Includes all 3 metrics)
   const chartDataPoints: ChartDataPoint[] = useMemo(() => {
     if (viewMode === 'day') {
       if (!startDate || !endDate || startDate > endDate) return [];
@@ -398,33 +423,16 @@ function DashboardInner() {
           0
         );
 
-        let val = 0;
-        let secVal = 0;
-        let secLabel = '';
-
-        if (metric === 'announcedHours') {
-          val = dayAnnouncedHours;
-          secVal = dayRegs.length;
-          secLabel = 'คนลงทะเบียน';
-        } else if (metric === 'registrations') {
-          val = dayRegs.length;
-          secVal = dayAnnouncedHours;
-          secLabel = 'ชม.ทุนที่ประกาศ';
-        } else if (metric === 'jobs') {
-          val = dayJobs.length;
-          secVal = dayAnnouncedHours;
-          secLabel = 'ชม.ทุนที่ประกาศ';
-        }
-
         const dayNum = cur.getDate();
         const monthShort = THAI_MONTH_SHORT[cur.getMonth()];
 
         points.push({
           label: `${dayNum} ${monthShort}`,
           fullDate: `วันที่ ${dayNum} ${THAI_MONTH_FULL[cur.getMonth()]} ${y + 543}`,
-          value: val,
-          secondaryValue: secVal,
-          secondaryLabel: secLabel,
+          announcedHours: dayAnnouncedHours,
+          registrations: dayRegs.length,
+          jobs: dayJobs.length,
+          value: dayAnnouncedHours,
         });
 
         cur.setDate(cur.getDate() + 1);
@@ -444,30 +452,13 @@ function DashboardInner() {
           0
         );
 
-        let val = 0;
-        let secVal = 0;
-        let secLabel = '';
-
-        if (metric === 'announcedHours') {
-          val = monthAnnouncedHours;
-          secVal = monthRegs.length;
-          secLabel = 'คนลงทะเบียน';
-        } else if (metric === 'registrations') {
-          val = monthRegs.length;
-          secVal = monthAnnouncedHours;
-          secLabel = 'ชม.ทุนที่ประกาศ';
-        } else if (metric === 'jobs') {
-          val = monthJobs.length;
-          secVal = monthAnnouncedHours;
-          secLabel = 'ชม.ทุนที่ประกาศ';
-        }
-
         points.push({
           label: THAI_MONTH_SHORT[m],
           fullDate: `เดือน${THAI_MONTH_FULL[m]} ${selectedYear + 543}`,
-          value: val,
-          secondaryValue: secVal,
-          secondaryLabel: secLabel,
+          announcedHours: monthAnnouncedHours,
+          registrations: monthRegs.length,
+          jobs: monthJobs.length,
+          value: monthAnnouncedHours,
         });
       }
       return points;
@@ -496,36 +487,19 @@ function DashboardInner() {
       const sortedYears = Array.from(yearMap.keys()).sort((a, b) => a - b);
       return sortedYears.map((y) => {
         const item = yearMap.get(y)!;
-        let val = 0;
-        let secVal = 0;
-        let secLabel = '';
-
-        if (metric === 'announcedHours') {
-          val = item.announcedHours;
-          secVal = item.regs;
-          secLabel = 'คนลงทะเบียน';
-        } else if (metric === 'registrations') {
-          val = item.regs;
-          secVal = item.announcedHours;
-          secLabel = 'ชม.ทุนที่ประกาศ';
-        } else if (metric === 'jobs') {
-          val = item.jobs;
-          secVal = item.announcedHours;
-          secLabel = 'ชม.ทุนที่ประกาศ';
-        }
-
         return {
           label: `ปี ${y + 543}`,
           fullDate: `ปี พ.ศ. ${y + 543} (${y})`,
-          value: val,
-          secondaryValue: secVal,
-          secondaryLabel: secLabel,
+          announcedHours: item.announcedHours,
+          registrations: item.regs,
+          jobs: item.jobs,
+          value: item.announcedHours,
         };
       });
     }
 
     return [];
-  }, [viewMode, metric, startDate, endDate, selectedYear, filteredData, currentYear]);
+  }, [viewMode, startDate, endDate, selectedYear, filteredData, currentYear]);
 
   // Scope breakdown (งานภายในคณะ vs งานภายนอกคณะ)
   const scopeBreakdown = useMemo(() => {
@@ -693,15 +667,46 @@ function DashboardInner() {
     );
   }
 
-  const metricLabel =
-    metric === 'announcedHours'
-      ? 'ชั่วโมงทุนที่อาจารย์ประกาศ'
-      : metric === 'registrations'
-      ? 'จำนวนนักศึกษาลงทะเบียน'
-      : 'จำนวนประกาศงาน';
+  const isAllMetricsSelected = selectedMetrics.length === DASHBOARD_METRICS.length;
 
-  const metricUnit =
-    metric === 'announcedHours' ? 'ชม.' : metric === 'registrations' ? 'คน' : 'งาน';
+  const activeMetricConfigs = useMemo(() => {
+    return DASHBOARD_METRICS.filter((m) => selectedMetrics.includes(m.key as MetricType));
+  }, [selectedMetrics]);
+
+  const viewModeText = viewMode === 'day' ? 'รายวัน' : viewMode === 'month' ? 'รายเดือน' : 'รายปี';
+
+  const chartTitle = useMemo(() => {
+    if (selectedMetrics.length === 3) {
+      return `แนวโน้มข้อมูลภาพรวม 3 ด้านพร้อมกัน (${viewModeText})`;
+    }
+    if (selectedMetrics.length === 2) {
+      const names = activeMetricConfigs.map((m) => m.label).join(' และ ');
+      return `เปรียบเทียบ ${names} (${viewModeText})`;
+    }
+    if (selectedMetrics.length === 1) {
+      return `แนวโน้ม ${activeMetricConfigs[0]?.label || ''} (${viewModeText})`;
+    }
+    return `แนวโน้มข้อมูล (${viewModeText})`;
+  }, [selectedMetrics, activeMetricConfigs, viewModeText]);
+
+  const handleSelectAllMetrics = () => {
+    setSelectedMetrics(['announcedHours', 'registrations', 'jobs']);
+  };
+
+  const handleSelectSingleMetric = (key: MetricType) => {
+    setSelectedMetrics([key]);
+  };
+
+  const handleToggleMetric = (key: string) => {
+    const metricKey = key as MetricType;
+    if (selectedMetrics.includes(metricKey)) {
+      if (selectedMetrics.length > 1) {
+        setSelectedMetrics(selectedMetrics.filter((k) => k !== metricKey));
+      }
+    } else {
+      setSelectedMetrics([...selectedMetrics, metricKey]);
+    }
+  };
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -766,21 +771,54 @@ function DashboardInner() {
               <span className={styles.metricLabel}>ข้อมูลในกราฟ:</span>
               <div className={styles.metricBtnGroup}>
                 <button
-                  className={`${styles.metricBtn} ${metric === 'announcedHours' ? styles.metricBtnActive : ''}`}
-                  onClick={() => setMetric('announcedHours')}
+                  type="button"
+                  className={`${styles.metricBtn} ${isAllMetricsSelected ? styles.metricBtnAllActive : ''}`}
+                  onClick={handleSelectAllMetrics}
                 >
+                  <span className={styles.metricBtnDots}>
+                    <span style={{ backgroundColor: '#c81e24' }} />
+                    <span style={{ backgroundColor: '#2563eb' }} />
+                    <span style={{ backgroundColor: '#059669' }} />
+                  </span>
+                  ดูทุกข้อมูลพร้อมกัน
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.metricBtn} ${
+                    !isAllMetricsSelected && selectedMetrics.length === 1 && selectedMetrics[0] === 'announcedHours'
+                      ? styles.metricBtnHoursActive
+                      : ''
+                  }`}
+                  onClick={() => handleSelectSingleMetric('announcedHours')}
+                >
+                  <span className={styles.metricDotRed} />
                   ชั่วโมงทุนที่อาจารย์ประกาศ
                 </button>
+
                 <button
-                  className={`${styles.metricBtn} ${metric === 'registrations' ? styles.metricBtnActive : ''}`}
-                  onClick={() => setMetric('registrations')}
+                  type="button"
+                  className={`${styles.metricBtn} ${
+                    !isAllMetricsSelected && selectedMetrics.length === 1 && selectedMetrics[0] === 'registrations'
+                      ? styles.metricBtnRegsActive
+                      : ''
+                  }`}
+                  onClick={() => handleSelectSingleMetric('registrations')}
                 >
+                  <span className={styles.metricDotBlue} />
                   จำนวนเด็กที่เข้าร่วม
                 </button>
+
                 <button
-                  className={`${styles.metricBtn} ${metric === 'jobs' ? styles.metricBtnActive : ''}`}
-                  onClick={() => setMetric('jobs')}
+                  type="button"
+                  className={`${styles.metricBtn} ${
+                    !isAllMetricsSelected && selectedMetrics.length === 1 && selectedMetrics[0] === 'jobs'
+                      ? styles.metricBtnJobsActive
+                      : ''
+                  }`}
+                  onClick={() => handleSelectSingleMetric('jobs')}
                 >
+                  <span className={styles.metricDotGreen} />
                   จำนวนงานที่ประกาศ
                 </button>
               </div>
@@ -960,10 +998,10 @@ function DashboardInner() {
         <section>
           <RechartsLineChart
             data={chartDataPoints}
-            metricName={metricLabel}
-            unit={metricUnit}
-            color="#c81e24"
-            title={`แนวโน้ม ${metricLabel} (${viewMode === 'day' ? 'รายวัน' : viewMode === 'month' ? 'รายเดือน' : 'รายปี'})`}
+            activeMetrics={activeMetricConfigs}
+            allMetrics={DASHBOARD_METRICS}
+            onToggleMetric={handleToggleMetric}
+            title={chartTitle}
             subtitle={
               selectedMajor
                 ? `แสดงเฉพาะคณะ/สาขาวิชา: ${selectedMajor}`

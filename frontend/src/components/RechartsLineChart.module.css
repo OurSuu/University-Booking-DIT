@@ -80,6 +80,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* KPI Summary Bar (Single Metric) */
 .kpiBar {
   display: flex;
   gap: 1rem;
@@ -108,11 +109,127 @@
   color: var(--text-main);
 }
 
+/* KPI Summary Bar (Multiple Metrics) */
+.kpiBarMulti {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.kpiCardMulti {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-subtle);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-left-width: 4px;
+  transition: transform 0.15s ease;
+}
+
+.kpiCardMulti:hover {
+  transform: translateY(-1px);
+}
+
+.kpiCardMultiHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.kpiCardMultiValue {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.kpiCardMultiSub {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+
+/* Interactive Legend Bar */
+.legendBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.legendTitle {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.legendBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.legendBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.legendBtn:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.legendBtnActive {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.legendBtnInactive {
+  opacity: 0.5;
+  background: var(--bg-subtle) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendValueBadge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
 .chartContainer {
   width: 100%;
-  height: 350px;
-  min-height: 350px;
-  margin-top: 0.5rem;
+  height: 360px;
+  min-height: 360px;
+  margin-top: 0.25rem;
   position: relative;
 }
 
@@ -126,7 +243,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  min-width: 170px;
+  min-width: 190px;
   animation: fadeIn 0.15s ease;
 }
 
@@ -136,8 +253,8 @@
   font-weight: 700;
   color: var(--text-main);
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.15rem;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.2rem;
 }
 
 .tooltipRow {
@@ -164,15 +281,8 @@
 
 .tooltipValue {
   font-family: var(--font-heading);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--primary);
-}
-
-.tooltipSubRow {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-top: 0.1rem;
 }
 
 .emptyBox {
@@ -236,8 +346,36 @@
   .kpiValue {
     font-size: 0.95rem;
   }
+  .kpiBarMulti {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .kpiCardMulti {
+    padding: 0.6rem 0.75rem;
+  }
+  .kpiCardMultiValue {
+    font-size: 1.1rem;
+  }
+  .legendBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    padding: 0.45rem 0.6rem;
+  }
+  .legendBadges {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .legendBtn {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
   .chartContainer {
-    height: 250px;
-    min-height: 250px;
+    height: 270px;
+    min-height: 270px;
   }
 }
