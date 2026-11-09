@@ -299,13 +299,36 @@
 }
 
 .copyPinBtn,
-.deletePinBtn {
+.deletePinBtn,
+.viewPinBtn {
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--border-color);
+  transition: all 0.15s ease;
+}
+
+.viewPinBtn {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.viewPinBtn:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.policyHint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  margin-top: 0.25rem;
 }
 
 .copyPinBtn {

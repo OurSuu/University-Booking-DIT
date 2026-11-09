@@ -519,11 +519,11 @@ export default function Calendar() {
               className={styles.dashboardLinkBtn}
               title={
                 teacherRole === 'admin'
-                  ? 'แดชบอร์ดสถิติและจัดการรหัส PIN (สำหรับอาจารย์ผู้ดูแล)'
+                  ? 'แดชบอร์ดสถิติและจัดการรหัสผ่านอาจารย์ (สำหรับผู้ดูแลระบบ)'
                   : 'แดชบอร์ดสถิติสำหรับอาจารย์ผู้ดูแลระบบ'
               }
             >
-              {teacherRole === 'admin' ? 'แดชบอร์ดสถิติ & PIN' : 'แดชบอร์ดสถิติ'}
+              {teacherRole === 'admin' ? 'แดชบอร์ด & จัดการรหัสผ่าน' : 'แดชบอร์ดสถิติ'}
             </Link>
             {isTeacherMode ? (
               <div className={styles.teacherActiveGroup}>
@@ -563,7 +563,7 @@ export default function Calendar() {
                     setShowPinModal(true);
                   }}
                 >
-                  สำหรับอาจารย์ (PIN)
+                  สำหรับอาจารย์ (รหัสผ่าน)
                 </button>
                 <button
                   className={styles.primaryActionBtn}
@@ -1147,13 +1147,13 @@ export default function Calendar() {
         />
       )}
 
-      {/* Teacher PIN Modal */}
+      {/* Teacher Password Modal */}
       {showPinModal && (
         <ConfirmModal
           mode="pin"
           title="เข้าสู่โหมดอาจารย์ผู้สร้างงาน"
-          message="กรุณากรอกรหัส PIN สำหรับอาจารย์ เพื่อสร้าง แก้ไข หรือลบประกาศงานชั่วโมงทุน"
-          confirmText="ยืนยันรหัส PIN"
+          message="กรุณากรอกรหัสผ่านสำหรับอาจารย์ (ความยาว 16 ตัวอักษร) เพื่อสร้าง แก้ไข หรือลบประกาศงานชั่วโมงทุน"
+          confirmText="ยืนยันรหัสผ่าน"
           onConfirm={handleVerifyPin}
           onCancel={() => {
             setShowPinModal(false);

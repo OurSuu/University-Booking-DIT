@@ -11,6 +11,8 @@ import {
   getDaysUntilJob,
   isKysScholarship,
   checkCancelEligibility,
+  MASTER_ADMIN_PASSWORD_DEFAULT,
+  validatePasswordPolicy,
 } from '@/types';
 
 export interface TeacherPinRecord {
@@ -92,20 +94,29 @@ async function ensurePgTables() {
 
     CREATE TABLE IF NOT EXISTS teacher_pins (
       id SERIAL PRIMARY KEY,
-      pin VARCHAR(50) UNIQUE NOT NULL,
+      pin VARCHAR(255) UNIQUE NOT NULL,
       teacher_name VARCHAR(150) NOT NULL,
       role VARCHAR(20) NOT NULL DEFAULT 'teacher',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE teacher_pins ALTER COLUMN pin TYPE VARCHAR(255);
   `);
 
-  // ตรวจสอบและสร้าง Default Master PIN หากยังไม่มี
+  // ตรวจสอบและสร้าง Default Master Password หากยังไม่มี
   const defaultMasterPin = (
+    process.env.MASTER_TEACHER_PASSWORD ||
     process.env.MASTER_TEACHER_PIN ||
+    process.env.TEACHER_PASSWORD ||
     process.env.TEACHER_PIN ||
-    '1234'
+    MASTER_ADMIN_PASSWORD_DEFAULT
   ).trim();
+
+  // อัปเดตรหัสเริ่มต้นของ admin หากยังเป็น 1234
+  await pool.query(
+    `UPDATE teacher_pins SET pin = $1, updated_at = CURRENT_TIMESTAMP WHERE role = 'admin' AND (pin = '1234' OR pin = '')`,
+    [defaultMasterPin]
+  );
 
   await pool.query(
     `INSERT INTO teacher_pins (pin, teacher_name, role)
@@ -141,9 +152,11 @@ const LOCAL_DB_FILE = path.join(LOCAL_DB_DIR, 'scholarship-db.json');
 
 function readLocalDb(): LocalDbData {
   const defaultMasterPin = (
+    process.env.MASTER_TEACHER_PASSWORD ||
     process.env.MASTER_TEACHER_PIN ||
+    process.env.TEACHER_PASSWORD ||
     process.env.TEACHER_PIN ||
-    '1234'
+    MASTER_ADMIN_PASSWORD_DEFAULT
   ).trim();
 
   try {
@@ -221,9 +234,11 @@ export async function getTeacherByPin(
   if (!cleanPin) return null;
 
   const defaultMasterPin = (
+    process.env.MASTER_TEACHER_PASSWORD ||
     process.env.MASTER_TEACHER_PIN ||
+    process.env.TEACHER_PASSWORD ||
     process.env.TEACHER_PIN ||
-    '1234'
+    MASTER_ADMIN_PASSWORD_DEFAULT
   ).trim();
 
   if (getDbConnectionString().length > 0) {
@@ -301,8 +316,9 @@ export async function createTeacherPin(
   const cleanName = (payload.teacher_name || '').trim();
   const role = payload.role === 'admin' ? 'admin' : 'teacher';
 
-  if (!cleanPin || cleanPin.length < 4 || cleanPin.length > 20) {
-    throw new Error('รหัส PIN ต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+  const policy = validatePasswordPolicy(cleanPin);
+  if (!policy.valid) {
+    throw new Error(policy.error || 'รหัสผ่านต้องมีความยาวอย่างน้อย 16 ตัวอักษร และประกอบด้วยตัวอักษรพิมพ์ใหญ่ (A-Z) ตัวพิมพ์เล็ก (a-z) ตัวเลข (0-9) และตัวอักษรพิเศษ (เช่น @, !, _, >, &)');
   }
   if (!cleanName) {
     throw new Error('กรุณาระบุชื่ออาจารย์หรือหน่วยงานผู้ใช้งาน');
@@ -310,7 +326,7 @@ export async function createTeacherPin(
 
   const existing = await getTeacherByPin(cleanPin);
   if (existing) {
-    throw new Error('รหัส PIN นี้ถูกใช้งานในระบบแล้ว กรุณากำหนดรหัสอื่น');
+    throw new Error('รหัสผ่านนี้ถูกใช้งานในระบบแล้ว กรุณากำหนดรหัสอื่น');
   }
 
   if (getDbConnectionString().length > 0) {
@@ -347,14 +363,15 @@ export async function updateMasterPin(
   }
 
   const cleanNewPin = (newPin || '').trim();
-  if (!cleanNewPin || cleanNewPin.length < 4 || cleanNewPin.length > 20) {
-    throw new Error('รหัส Master PIN ใหม่ต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+  const policy = validatePasswordPolicy(cleanNewPin);
+  if (!policy.valid) {
+    throw new Error(policy.error || 'รหัส Master ใหม่ต้องมีความยาวอย่างน้อย 16 ตัวอักษร และประกอบด้วยตัวอักษรพิมพ์ใหญ่ (A-Z) ตัวพิมพ์เล็ก (a-z) ตัวเลข (0-9) และตัวอักษรพิเศษ (เช่น @, !, _, >, &)');
   }
 
   if (cleanNewPin !== currentAdminPin) {
     const existing = await getTeacherByPin(cleanNewPin);
     if (existing) {
-      throw new Error('รหัส PIN นี้ถูกใช้งานในระบบแล้ว กรุณาเลือกรหัสอื่น');
+      throw new Error('รหัสผ่านนี้ถูกใช้งานในระบบแล้ว กรุณาเลือกรหัสอื่น');
     }
   }
 

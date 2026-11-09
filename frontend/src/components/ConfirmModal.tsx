@@ -25,6 +25,7 @@ export default function ConfirmModal({
   errorText,
 }: Props) {
   const [pin, setPin] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !loading) onCancel();
@@ -44,7 +45,7 @@ export default function ConfirmModal({
           <div className={styles.loadingOverlay}>
             <div className={styles.spinnerLarge} />
             <p className={styles.loadingTitle}>
-              {mode === 'pin' ? 'กำลังตรวจสอบรหัส PIN...' : 'กำลังลบประกาศงาน...'}
+              {mode === 'pin' ? 'กำลังตรวจสอบรหัสผ่าน...' : 'กำลังลบประกาศงาน...'}
             </p>
             <span className={styles.loadingSub}>กรุณารอสักครู่</span>
           </div>
@@ -66,21 +67,31 @@ export default function ConfirmModal({
         </div>
 
         <h3 className={styles.title}>
-          {title || (mode === 'pin' ? 'ยืนยันสิทธิ์อาจารย์ (รหัส PIN)' : 'ยืนยันการดำเนินการ')}
+          {title || (mode === 'pin' ? 'ยืนยันสิทธิ์อาจารย์ (รหัสผ่าน)' : 'ยืนยันการดำเนินการ')}
         </h3>
         <p className={styles.message}>{message}</p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {mode === 'pin' && (
             <div className={styles.pinField}>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="กรอกรหัส PIN อาจารย์ (เช่น 1234)"
-                autoFocus
-                className={styles.pinInput}
-              />
+              <div className={styles.pinInputWrap}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  placeholder="กรอกรหัสผ่านอาจารย์ 16 ตัวอักษร"
+                  autoFocus
+                  className={styles.pinInput}
+                />
+                <button
+                  type="button"
+                  className={styles.toggleShowBtn}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? 'ซ่อน' : 'แสดง'}
+                </button>
+              </div>
             </div>
           )}
 

@@ -101,7 +101,7 @@ export default function BookingModal({
 
     const activePin = (teacherPin || pinInput).trim();
     if (!activePin) {
-      setError('กรุณากรอกรหัส PIN สำหรับอาจารย์');
+      setError('กรุณากรอกรหัสผ่านสำหรับอาจารย์');
       return;
     }
 
@@ -410,13 +410,13 @@ export default function BookingModal({
 
           {!teacherPin && (
             <div className={styles.field}>
-              <label htmlFor="teacher-pin">รหัส PIN อาจารย์ (เพื่อยืนยันการประกาศงาน) *</label>
+              <label htmlFor="teacher-pin">รหัสผ่านอาจารย์ (เพื่อยืนยันการประกาศงาน 16 ตัวอักษร) *</label>
               <input
                 id="teacher-pin"
                 type="password"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                placeholder="กรอกรหัส PIN อาจารย์ (ค่าเริ่มต้น 1234)"
+                placeholder="กรอกรหัสผ่านอาจารย์ 16 ตัวอักษร"
                 required
               />
             </div>

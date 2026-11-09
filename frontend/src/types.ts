@@ -161,3 +161,67 @@ export function checkCancelEligibility(
     isSameDayGrace: false,
   };
 }
+
+/**
+ * Master Admin Key / รหัสผ่าน Master เริ่มต้น
+ */
+export const MASTER_ADMIN_PASSWORD_DEFAULT = 'xLD44eWe58&X2vPe';
+
+/**
+ * ตรวจสอบความถูกต้องของรหัสผ่านตามนโยบายความมั่นคงปลอดภัย:
+ * - ความยาวอย่างน้อย 16 ตัวอักษร
+ * - ประกอบด้วย:
+ *   1. ตัวอักษรพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว
+ *   2. ตัวอักษรพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว
+ *   3. ตัวเลข (0-9) อย่างน้อย 1 ตัว
+ *   4. ตัวอักษรพิเศษ (เช่น @, !, _, >, &, %, #) อย่างน้อย 1 ตัว
+ */
+export function validatePasswordPolicy(password: string): { valid: boolean; error?: string } {
+  const clean = (password || '').trim();
+  if (clean.length < 16) {
+    return { valid: false, error: 'รหัสผ่านต้องมีความยาวอย่างน้อย 16 ตัวอักษร' };
+  }
+  if (!/[A-Z]/.test(clean)) {
+    return { valid: false, error: 'รหัสผ่านต้องประกอบด้วยตัวอักษรพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว' };
+  }
+  if (!/[a-z]/.test(clean)) {
+    return { valid: false, error: 'รหัสผ่านต้องประกอบด้วยตัวอักษรพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว' };
+  }
+  if (!/[0-9]/.test(clean)) {
+    return { valid: false, error: 'รหัสผ่านต้องประกอบด้วยตัวเลข (0-9) อย่างน้อย 1 ตัว' };
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(clean)) {
+    return { valid: false, error: 'รหัสผ่านต้องประกอบด้วยตัวอักษรพิเศษอย่างน้อย 1 ตัว เช่น @, !, _, >, &' };
+  }
+  return { valid: true };
+}
+
+/**
+ * สุ่มสร้างรหัสผ่านที่มีความปลอดภัยสูง 16 ตัวอักษรตามนโยบาย
+ */
+export function generateSecurePassword(length = 16): string {
+  const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lowers = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const specials = '@!_>&%#=';
+  const all = uppers + lowers + digits + specials;
+
+  const passArr = [
+    uppers[Math.floor(Math.random() * uppers.length)],
+    uppers[Math.floor(Math.random() * uppers.length)],
+    lowers[Math.floor(Math.random() * lowers.length)],
+    lowers[Math.floor(Math.random() * lowers.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    specials[Math.floor(Math.random() * specials.length)],
+    specials[Math.floor(Math.random() * specials.length)],
+  ];
+  while (passArr.length < length) {
+    passArr.push(all[Math.floor(Math.random() * all.length)]);
+  }
+  for (let i = passArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [passArr[i], passArr[j]] = [passArr[j], passArr[i]];
+  }
+  return passArr.join('');
+}

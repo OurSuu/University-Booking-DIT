@@ -164,14 +164,14 @@ function DashboardInner() {
       });
       const data = await res.json();
       if (!res.ok || !data.valid) {
-        setPinError(data.error || 'รหัส PIN ไม่ถูกต้อง');
+        setPinError(data.error || 'รหัสผ่านอาจารย์ไม่ถูกต้อง');
         setPinLoading(false);
         return;
       }
 
       if (data.role !== 'admin') {
         setPinError(
-          'สิทธิ์ไม่เพียงพอ: หน้านี้สงวนไว้สำหรับอาจารย์ผู้ดูแลระบบ (Master PIN) เท่านั้น รหัส PIN ปัจจุบันของท่านสามารถใช้สำหรับสร้างประกาศงานและถอนชื่อนักศึกษาได้ที่หน้าปฏิทินหลัก'
+          'สิทธิ์ไม่เพียงพอ: หน้านี้สงวนไว้สำหรับอาจารย์ผู้ดูแลระบบที่มี Master Password เท่านั้น รหัสผ่านอาจารย์ทั่วไปสามารถใช้สร้างประกาศงานและถอนชื่อนักศึกษาได้ที่หน้าปฏิทินหลัก'
         );
         setPinLoading(false);
         return;
@@ -663,7 +663,7 @@ function DashboardInner() {
           <div>
             <h2 className={styles.pinTitle}>แดชบอร์ดสถิติสำหรับอาจารย์</h2>
             <p className={styles.pinSub}>
-              กรุณากรอกรหัส PIN สำหรับอาจารย์เพื่อเข้าสู่ระบบรายงานสถิติและกราฟวิเคราะห์ข้อมูล
+              กรุณากรอกรหัสผ่าน Master Password สำหรับอาจารย์ (ความยาว 16 ตัวอักษร) เพื่อเข้าสู่ระบบรายงานสถิติและกราฟวิเคราะห์ข้อมูล
             </p>
           </div>
 
@@ -672,7 +672,7 @@ function DashboardInner() {
               type="password"
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
-              placeholder="กรอกรหัส PIN (เช่น 1234)"
+              placeholder="กรอกรหัสผ่าน Master Password 16 ตัวอักษร"
               autoFocus
               required
               className={styles.pinInput}
@@ -720,9 +720,9 @@ function DashboardInner() {
             <button
               className={styles.pinManageBtn}
               onClick={() => setShowPinManageModal(true)}
-              title="จัดการรหัส PIN ของอาจารย์ท่านอื่น และกำหนด Master PIN"
+              title="จัดการรหัสผ่านของอาจารย์ท่านอื่น และกำหนด Master Password"
             >
-              จัดการรหัส PIN อาจารย์
+              จัดการรหัสผ่านอาจารย์
             </button>
             <button className={styles.refreshBtn} onClick={fetchJobs} title="รีเฟรชข้อมูล">
               ซิงค์ข้อมูลล่าสุด

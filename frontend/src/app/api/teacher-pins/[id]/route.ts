@@ -11,7 +11,9 @@ export async function DELETE(
 
     const body = await request.json().catch(() => ({}));
     const masterPin =
+      body.masterPassword ||
       body.masterPin ||
+      request.headers.get('x-master-password') ||
       request.headers.get('x-master-pin') ||
       request.headers.get('x-teacher-pin') ||
       '';
@@ -20,7 +22,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error?.message || 'ไม่สามารถลบรหัส PIN ได้' },
+      { error: error?.message || 'ไม่สามารถลบรหัสผ่านได้' },
       { status: 400 }
     );
   }

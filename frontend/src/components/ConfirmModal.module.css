@@ -90,17 +90,44 @@
   width: 100%;
 }
 
+.pinInputWrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
 .pinInput {
   width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 1.05rem;
-  font-family: var(--font-heading);
-  text-align: center;
-  letter-spacing: 0.15em;
+  padding: 0.75rem 4.5rem 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-family: var(--font-mono, monospace);
+  text-align: left;
+  letter-spacing: 0.05em;
   border: 1.5px solid var(--border-strong);
   border-radius: 10px;
   outline: none;
   transition: all 0.2s ease;
+}
+
+.toggleShowBtn {
+  position: absolute;
+  right: 0.6rem;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggleShowBtn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-main);
 }
 
 .pinInput:focus {

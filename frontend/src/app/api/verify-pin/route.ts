@@ -4,9 +4,9 @@ import { getTeacherByPin } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pin } = body;
+    const pinOrPassword = (body.password || body.pin || '').trim();
 
-    const teacher = await getTeacherByPin(pin);
+    const teacher = await getTeacherByPin(pinOrPassword);
     if (teacher) {
       return NextResponse.json({
         valid: true,
@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { valid: false, error: 'รหัส PIN อาจารย์ไม่ถูกต้อง' },
+      { valid: false, error: 'รหัสผ่านสำหรับอาจารย์ไม่ถูกต้อง' },
       { status: 403 }
     );
   } catch {
     return NextResponse.json(
-      { valid: false, error: 'เกิดข้อผิดพลาดในการตรวจสอบ PIN' },
+      { valid: false, error: 'เกิดข้อผิดพลาดในการตรวจสอบรหัสผ่าน' },
       { status: 500 }
     );
   }

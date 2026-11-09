@@ -4,16 +4,17 @@ import { updateMasterPin } from '@/lib/db';
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { currentMasterPin, newMasterPin } = body;
+    const currentMaster = (body.currentMasterPassword || body.currentMasterPin || '').trim();
+    const newMaster = (body.newMasterPassword || body.newMasterPin || '').trim();
 
-    if (!currentMasterPin || !newMasterPin) {
+    if (!currentMaster || !newMaster) {
       return NextResponse.json(
-        { error: 'กรุณาระบุรหัส PIN ปัจจุบันและรหัสใหม่' },
+        { error: 'กรุณาระบุรหัสผ่าน Master ปัจจุบันและรหัสผ่านใหม่' },
         { status: 400 }
       );
     }
 
-    const updated = await updateMasterPin(currentMasterPin, newMasterPin);
+    const updated = await updateMasterPin(currentMaster, newMaster);
     return NextResponse.json({
       success: true,
       pin: updated.pin,
@@ -21,7 +22,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error?.message || 'ไม่สามารถเปลี่ยนรหัส Master PIN ได้' },
+      { error: error?.message || 'ไม่สามารถเปลี่ยนรหัส Master Password ได้' },
       { status: 400 }
     );
   }
