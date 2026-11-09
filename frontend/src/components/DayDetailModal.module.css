@@ -296,9 +296,24 @@
 }
 
 .pillBtnDisabled {
-  background: var(--danger-light);
-  border-color: var(--danger-border);
-  color: var(--danger);
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c !important;
+  font-weight: 500;
+}
+
+.pillBtnDisabled:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #991b1b !important;
+}
+
+.pillBtnDisabled.pillBtnActive {
+  background: #b91c1c !important;
+  border-color: #991b1b !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.25);
 }
 
 .policyNote {

@@ -376,7 +376,7 @@ export default function DayDetailModal({
                         key={fac}
                         type="button"
                         className={`${styles.pillBtn} ${faculty === fac ? styles.pillBtnActive : ''}`}
-                        onClick={() => setFaculty(fac)}
+                        onClick={() => setFaculty(faculty === fac ? '' : fac)}
                       >
                         {fac}
                       </button>
@@ -398,14 +398,16 @@ export default function DayDetailModal({
                   <div className={styles.quickPills}>
                     {POPULAR_SCHOLARSHIPS.map((sch) => {
                       const disabledKys = !activeShiftInfo.job.allow_kys && sch === 'กยศ.';
+                      const isSelected = scholarshipName === sch;
                       return (
                         <button
                           key={sch}
                           type="button"
                           className={`${styles.pillBtn} ${
-                            scholarshipName === sch ? styles.pillBtnActive : ''
+                            isSelected ? styles.pillBtnActive : ''
                           } ${disabledKys ? styles.pillBtnDisabled : ''}`}
-                          onClick={() => setScholarshipName(sch)}
+                          onClick={() => setScholarshipName(isSelected ? '' : sch)}
+                          title={disabledKys ? 'งานนี้ไม่รับนักศึกษาทุน กยศ.' : undefined}
                         >
                           {disabledKys ? 'กยศ. (งานนี้ไม่รับ)' : sch}
                         </button>
