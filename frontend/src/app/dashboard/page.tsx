@@ -9,7 +9,9 @@ import {
   getTodayStr,
   isKysScholarship,
 } from '@/types';
-import LineChart, { ChartDataPoint } from '@/components/LineChart';
+import { ToastProvider, useToast } from '@/components/Toast';
+import RechartsLineChart, { ChartDataPoint } from '@/components/RechartsLineChart';
+import PinManagementModal from '@/components/PinManagementModal';
 import styles from './dashboard.module.css';
 
 const THAI_MONTH_SHORT = [
@@ -46,6 +48,15 @@ type ViewMode = 'day' | 'month' | 'year';
 type MetricType = 'registrations' | 'hours' | 'jobs';
 
 export default function DashboardPage() {
+  return (
+    <ToastProvider>
+      <DashboardInner />
+    </ToastProvider>
+  );
+}
+
+function DashboardInner() {
+  const { showToast } = useToast();
   const [jobs, setJobs] = useState<JobAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,6 +66,7 @@ export default function DashboardPage() {
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState<boolean>(false);
   const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
+  const [showPinManageModal, setShowPinManageModal] = useState<boolean>(false);
 
   // Filter States
   const [viewMode, setViewMode] = useState<ViewMode>('day');
@@ -82,13 +94,30 @@ export default function DashboardPage() {
   // Search in table
   const [tableSearch, setTableSearch] = useState<string>('');
 
-  // 1. Check Session Storage for PIN on Mount
+  // 1. Check Session Storage for PIN on Mount and verify Admin role
   useEffect(() => {
     const savedPin = sessionStorage.getItem('dit_teacher_pin');
     if (savedPin) {
-      setTeacherPin(savedPin);
+      fetch('/api/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: savedPin }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.valid && d.role === 'admin') {
+            setTeacherPin(savedPin);
+            sessionStorage.setItem('dit_teacher_role', 'admin');
+          } else {
+            setTeacherPin('');
+            sessionStorage.removeItem('dit_teacher_role');
+          }
+        })
+        .catch(() => setTeacherPin(''))
+        .finally(() => setIsAuthChecked(true));
+    } else {
+      setIsAuthChecked(true);
     }
-    setIsAuthChecked(true);
   }, []);
 
   // 2. Fetch Jobs Data
@@ -112,7 +141,7 @@ export default function DashboardPage() {
     }
   }, [teacherPin, fetchJobs]);
 
-  // Handle PIN Login
+  // Handle PIN Login (Strictly verify that role is admin)
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pinInput.trim()) return;
@@ -127,7 +156,15 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.valid) {
-        setPinError(data.error || 'รหัส PIN อาจารย์ไม่ถูกต้อง');
+        setPinError(data.error || 'รหัส PIN ไม่ถูกต้อง');
+        setPinLoading(false);
+        return;
+      }
+
+      if (data.role !== 'admin') {
+        setPinError(
+          'สิทธิ์ไม่เพียงพอ: หน้านี้สงวนไว้สำหรับอาจารย์ผู้ดูแลระบบ (Master PIN) เท่านั้น รหัส PIN ปัจจุบันของท่านสามารถใช้สำหรับสร้างประกาศงานและถอนชื่อนักศึกษาได้ที่หน้าปฏิทินหลัก'
+        );
         setPinLoading(false);
         return;
       }
@@ -135,7 +172,9 @@ export default function DashboardPage() {
       const verifiedPin = pinInput.trim();
       setTeacherPin(verifiedPin);
       sessionStorage.setItem('dit_teacher_pin', verifiedPin);
+      sessionStorage.setItem('dit_teacher_role', 'admin');
       setPinLoading(false);
+      showToast('ยินดีต้อนรับอาจารย์ผู้ดูแลระบบ เข้าสู่แดชบอร์ดสถิติ', 'success');
     } catch {
       setPinError('ไม่สามารถตรวจสอบรหัส PIN ได้');
       setPinLoading(false);
@@ -145,6 +184,8 @@ export default function DashboardPage() {
   const handleLogout = () => {
     setTeacherPin('');
     sessionStorage.removeItem('dit_teacher_pin');
+    sessionStorage.removeItem('dit_teacher_role');
+    showToast('ออกจากโหมดอาจารย์แล้ว', 'info');
   };
 
   // Quick Range Presets
@@ -519,6 +560,13 @@ export default function DashboardPage() {
           </div>
 
           <div className={styles.headerActions}>
+            <button
+              className={styles.pinManageBtn}
+              onClick={() => setShowPinManageModal(true)}
+              title="จัดการรหัส PIN ของอาจารย์ท่านอื่น และกำหนด Master PIN"
+            >
+              จัดการรหัส PIN อาจารย์
+            </button>
             <button className={styles.refreshBtn} onClick={fetchJobs} title="รีเฟรชข้อมูล">
               ซิงค์ข้อมูลล่าสุด
             </button>
@@ -691,9 +739,9 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Line Chart Section */}
+        {/* Recharts Modern Line/Area Chart Section */}
         <section>
-          <LineChart
+          <RechartsLineChart
             data={chartDataPoints}
             metricName={metricLabel}
             unit={metricUnit}
@@ -829,6 +877,19 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
+
+      {/* Teacher PIN Management Modal for Master Admin */}
+      <PinManagementModal
+        isOpen={showPinManageModal}
+        masterPin={teacherPin}
+        onMasterPinChanged={(newPin) => {
+          setTeacherPin(newPin);
+          sessionStorage.setItem('dit_teacher_pin', newPin);
+          sessionStorage.setItem('dit_teacher_role', 'admin');
+        }}
+        onClose={() => setShowPinManageModal(false)}
+        showToast={showToast}
+      />
     </div>
   );
 }

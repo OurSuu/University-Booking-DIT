@@ -50,6 +50,8 @@ export default function Calendar() {
 
   // Teacher mode state
   const [teacherPin, setTeacherPin] = useState('');
+  const [teacherRole, setTeacherRole] = useState<'admin' | 'teacher'>('teacher');
+  const [teacherName, setTeacherName] = useState('');
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinVerifying, setPinVerifying] = useState(false);
@@ -57,11 +59,18 @@ export default function Calendar() {
     (() => void) | null
   >(null);
 
-  // Restore teacher PIN from session storage if available
+  // Restore teacher PIN and role from session storage if available
   useEffect(() => {
     const savedPin = sessionStorage.getItem('dit_teacher_pin');
+    const savedRole = sessionStorage.getItem('dit_teacher_role') as
+      | 'admin'
+      | 'teacher'
+      | null;
+    const savedName = sessionStorage.getItem('dit_teacher_name');
     if (savedPin) {
       setTeacherPin(savedPin);
+      if (savedRole) setTeacherRole(savedRole);
+      if (savedName) setTeacherName(savedName);
     }
   }, []);
 
@@ -167,10 +176,23 @@ export default function Calendar() {
       }
 
       setTeacherPin(inputPin);
+      const role = data.role || 'teacher';
+      const name = data.teacher_name || '';
+      setTeacherRole(role);
+      setTeacherName(name);
+
       sessionStorage.setItem('dit_teacher_pin', inputPin);
+      sessionStorage.setItem('dit_teacher_role', role);
+      sessionStorage.setItem('dit_teacher_name', name);
+
       setShowPinModal(false);
       setPinVerifying(false);
-      showToast('เปิดใช้งานโหมดอาจารย์เรียบร้อยแล้ว', 'success');
+      showToast(
+        `เปิดโหมดอาจารย์เรียบร้อย: ${name} (${
+          role === 'admin' ? 'ผู้ดูแลระบบ' : 'อาจารย์'
+        })`,
+        'success'
+      );
 
       if (pendingActionAfterPin) {
         const fn = pendingActionAfterPin;
@@ -497,13 +519,23 @@ export default function Calendar() {
           </div>
 
           <div className={styles.teacherToolbar}>
-            <Link href="/dashboard" className={styles.dashboardLinkBtn}>
-              แดชบอร์ดสถิติ
+            <Link
+              href="/dashboard"
+              className={styles.dashboardLinkBtn}
+              title={
+                teacherRole === 'admin'
+                  ? 'แดชบอร์ดสถิติและจัดการรหัส PIN (สำหรับอาจารย์ผู้ดูแล)'
+                  : 'แดชบอร์ดสถิติสำหรับอาจารย์ผู้ดูแลระบบ'
+              }
+            >
+              {teacherRole === 'admin' ? 'แดชบอร์ดสถิติ & PIN' : 'แดชบอร์ดสถิติ'}
             </Link>
             {isTeacherMode ? (
               <div className={styles.teacherActiveGroup}>
                 <span className={styles.teacherActivePill}>
-                  โหมดอาจารย์เปิดอยู่
+                  {teacherRole === 'admin'
+                    ? 'โหมดผู้ดูแล (Admin)'
+                    : `อาจารย์: ${teacherName || 'ผู้สอน'}`}
                 </span>
                 <button
                   className={styles.primaryActionBtn}
@@ -515,6 +547,11 @@ export default function Calendar() {
                   className={styles.lockBtn}
                   onClick={() => {
                     setTeacherPin('');
+                    setTeacherRole('teacher');
+                    setTeacherName('');
+                    sessionStorage.removeItem('dit_teacher_pin');
+                    sessionStorage.removeItem('dit_teacher_role');
+                    sessionStorage.removeItem('dit_teacher_name');
                     showToast('ออกจากโหมดอาจารย์แล้ว', 'info');
                   }}
                 >

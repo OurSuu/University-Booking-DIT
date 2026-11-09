@@ -13,9 +13,12 @@ import {
   checkCancelEligibility,
 } from '@/types';
 
-export function verifyTeacherPin(pin?: string): boolean {
-  const expectedPin = process.env.TEACHER_PIN || '1234';
-  return Boolean(pin && pin.trim() === expectedPin.trim());
+export interface TeacherPinRecord {
+  id: number;
+  pin: string;
+  teacher_name: string;
+  role: 'admin' | 'teacher';
+  created_at: string;
 }
 
 function getDbConnectionString(): string {
@@ -85,7 +88,31 @@ async function ensurePgTables() {
     );
 
     ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
+
+    CREATE TABLE IF NOT EXISTS teacher_pins (
+      id SERIAL PRIMARY KEY,
+      pin VARCHAR(50) UNIQUE NOT NULL,
+      teacher_name VARCHAR(150) NOT NULL,
+      role VARCHAR(20) NOT NULL DEFAULT 'teacher',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
+
+  // ตรวจสอบและสร้าง Default Master PIN หากยังไม่มี
+  const defaultMasterPin = (
+    process.env.MASTER_TEACHER_PIN ||
+    process.env.TEACHER_PIN ||
+    '1234'
+  ).trim();
+
+  await pool.query(
+    `INSERT INTO teacher_pins (pin, teacher_name, role)
+     SELECT $1, 'อาจารย์ผู้ดูแลระบบ (Master)', 'admin'
+     WHERE NOT EXISTS (SELECT 1 FROM teacher_pins WHERE role = 'admin')`,
+    [defaultMasterPin]
+  );
+
   globalForDb._dbInitialized = true;
 }
 
@@ -96,9 +123,11 @@ interface LocalDbData {
   nextJobId: number;
   nextShiftId: number;
   nextRegId: number;
+  nextPinId?: number;
   jobs: Omit<JobAnnouncement, 'shifts'>[];
   shifts: Omit<JobShift, 'registrations'>[];
   registrations: Registration[];
+  teacherPins?: TeacherPinRecord[];
 }
 
 const isServerless = Boolean(
@@ -110,6 +139,12 @@ const LOCAL_DB_DIR = isServerless
 const LOCAL_DB_FILE = path.join(LOCAL_DB_DIR, 'scholarship-db.json');
 
 function readLocalDb(): LocalDbData {
+  const defaultMasterPin = (
+    process.env.MASTER_TEACHER_PIN ||
+    process.env.TEACHER_PIN ||
+    '1234'
+  ).trim();
+
   try {
     if (!fs.existsSync(LOCAL_DB_DIR)) {
       fs.mkdirSync(LOCAL_DB_DIR, { recursive: true });
@@ -119,26 +154,263 @@ function readLocalDb(): LocalDbData {
         nextJobId: 1,
         nextShiftId: 1,
         nextRegId: 1,
+        nextPinId: 2,
         jobs: [],
         shifts: [],
         registrations: [],
+        teacherPins: [
+          {
+            id: 1,
+            pin: defaultMasterPin,
+            teacher_name: 'อาจารย์ผู้ดูแลระบบ (Master)',
+            role: 'admin',
+            created_at: new Date().toISOString(),
+          },
+        ],
       };
       fs.writeFileSync(LOCAL_DB_FILE, JSON.stringify(initial, null, 2), 'utf8');
       return initial;
     }
     const raw = fs.readFileSync(LOCAL_DB_FILE, 'utf8');
-    return JSON.parse(raw) as LocalDbData;
+    const parsed = JSON.parse(raw) as LocalDbData;
+    if (!parsed.teacherPins || parsed.teacherPins.length === 0) {
+      parsed.teacherPins = [
+        {
+          id: 1,
+          pin: defaultMasterPin,
+          teacher_name: 'อาจารย์ผู้ดูแลระบบ (Master)',
+          role: 'admin',
+          created_at: new Date().toISOString(),
+        },
+      ];
+      parsed.nextPinId = 2;
+      writeLocalDb(parsed);
+    }
+    return parsed;
   } catch (err) {
     console.error('Error reading local db:', err);
     return {
       nextJobId: 1,
       nextShiftId: 1,
       nextRegId: 1,
+      nextPinId: 2,
       jobs: [],
       shifts: [],
       registrations: [],
+      teacherPins: [
+        {
+          id: 1,
+          pin: defaultMasterPin,
+          teacher_name: 'อาจารย์ผู้ดูแลระบบ (Master)',
+          role: 'admin',
+          created_at: new Date().toISOString(),
+        },
+      ],
     };
   }
+}
+
+// ==========================================
+// PIN & Authentication Management
+// ==========================================
+export async function getTeacherByPin(
+  pin?: string
+): Promise<TeacherPinRecord | null> {
+  const cleanPin = (pin || '').trim();
+  if (!cleanPin) return null;
+
+  const defaultMasterPin = (
+    process.env.MASTER_TEACHER_PIN ||
+    process.env.TEACHER_PIN ||
+    '1234'
+  ).trim();
+
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    const res = await pool.query<TeacherPinRecord>(
+      'SELECT id, pin, teacher_name, role, created_at FROM teacher_pins WHERE pin = $1',
+      [cleanPin]
+    );
+    if (res.rows.length > 0) {
+      return res.rows[0];
+    }
+
+    if (cleanPin === defaultMasterPin) {
+      const adminCheck = await pool.query(
+        "SELECT 1 FROM teacher_pins WHERE role = 'admin'"
+      );
+      if (adminCheck.rows.length === 0) {
+        const seeded = await pool.query<TeacherPinRecord>(
+          "INSERT INTO teacher_pins (pin, teacher_name, role) VALUES ($1, $2, 'admin') RETURNING id, pin, teacher_name, role, created_at",
+          [defaultMasterPin, 'อาจารย์ผู้ดูแลระบบ (Master)']
+        );
+        return seeded.rows[0];
+      }
+    }
+    return null;
+  }
+
+  const data = readLocalDb();
+  const found = data.teacherPins?.find((p) => p.pin === cleanPin);
+  return found || null;
+}
+
+export async function verifyTeacherPin(pin?: string): Promise<boolean> {
+  const teacher = await getTeacherByPin(pin);
+  return Boolean(teacher);
+}
+
+export async function verifyAdminPin(pin?: string): Promise<boolean> {
+  const teacher = await getTeacherByPin(pin);
+  return Boolean(teacher && teacher.role === 'admin');
+}
+
+export async function getAllTeacherPins(
+  adminPin: string
+): Promise<TeacherPinRecord[]> {
+  const isAdmin = await verifyAdminPin(adminPin);
+  if (!isAdmin) {
+    throw new Error('ไม่มีสิทธิ์เข้าถึง: เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น');
+  }
+
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    const res = await pool.query<TeacherPinRecord>(
+      'SELECT id, pin, teacher_name, role, created_at FROM teacher_pins ORDER BY role ASC, id ASC'
+    );
+    return res.rows;
+  }
+
+  const data = readLocalDb();
+  return data.teacherPins || [];
+}
+
+export async function createTeacherPin(
+  adminPin: string,
+  payload: { pin: string; teacher_name: string; role?: 'admin' | 'teacher' }
+): Promise<TeacherPinRecord> {
+  const isAdmin = await verifyAdminPin(adminPin);
+  if (!isAdmin) {
+    throw new Error('ไม่มีสิทธิ์เข้าถึง: เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น');
+  }
+
+  const cleanPin = (payload.pin || '').trim();
+  const cleanName = (payload.teacher_name || '').trim();
+  const role = payload.role === 'admin' ? 'admin' : 'teacher';
+
+  if (!cleanPin || cleanPin.length < 4 || cleanPin.length > 20) {
+    throw new Error('รหัส PIN ต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+  }
+  if (!cleanName) {
+    throw new Error('กรุณาระบุชื่ออาจารย์หรือหน่วยงานผู้ใช้งาน');
+  }
+
+  const existing = await getTeacherByPin(cleanPin);
+  if (existing) {
+    throw new Error('รหัส PIN นี้ถูกใช้งานในระบบแล้ว กรุณากำหนดรหัสอื่น');
+  }
+
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    const res = await pool.query<TeacherPinRecord>(
+      'INSERT INTO teacher_pins (pin, teacher_name, role) VALUES ($1, $2, $3) RETURNING id, pin, teacher_name, role, created_at',
+      [cleanPin, cleanName, role]
+    );
+    return res.rows[0];
+  }
+
+  const data = readLocalDb();
+  if (!data.teacherPins) data.teacherPins = [];
+  const record: TeacherPinRecord = {
+    id: data.nextPinId ? data.nextPinId++ : data.teacherPins.length + 1,
+    pin: cleanPin,
+    teacher_name: cleanName,
+    role,
+    created_at: new Date().toISOString(),
+  };
+  data.teacherPins.push(record);
+  writeLocalDb(data);
+  return record;
+}
+
+export async function updateMasterPin(
+  currentAdminPin: string,
+  newPin: string
+): Promise<TeacherPinRecord> {
+  const admin = await getTeacherByPin(currentAdminPin);
+  if (!admin || admin.role !== 'admin') {
+    throw new Error('รหัส Master PIN ปัจจุบันไม่ถูกต้อง');
+  }
+
+  const cleanNewPin = (newPin || '').trim();
+  if (!cleanNewPin || cleanNewPin.length < 4 || cleanNewPin.length > 20) {
+    throw new Error('รหัส Master PIN ใหม่ต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+  }
+
+  if (cleanNewPin !== currentAdminPin) {
+    const existing = await getTeacherByPin(cleanNewPin);
+    if (existing) {
+      throw new Error('รหัส PIN นี้ถูกใช้งานในระบบแล้ว กรุณาเลือกรหัสอื่น');
+    }
+  }
+
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    const res = await pool.query<TeacherPinRecord>(
+      "UPDATE teacher_pins SET pin = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND role = 'admin' RETURNING id, pin, teacher_name, role, created_at",
+      [cleanNewPin, admin.id]
+    );
+    return res.rows[0];
+  }
+
+  const data = readLocalDb();
+  if (!data.teacherPins) data.teacherPins = [];
+  const target = data.teacherPins.find((p) => p.id === admin.id);
+  if (target) {
+    target.pin = cleanNewPin;
+    writeLocalDb(data);
+  }
+  return { ...admin, pin: cleanNewPin };
+}
+
+export async function deleteTeacherPin(
+  adminPin: string,
+  pinIdToDelete: number
+): Promise<void> {
+  const isAdmin = await verifyAdminPin(adminPin);
+  if (!isAdmin) {
+    throw new Error('ไม่มีสิทธิ์เข้าถึง: เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น');
+  }
+
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    const check = await pool.query(
+      'SELECT role FROM teacher_pins WHERE id = $1',
+      [pinIdToDelete]
+    );
+    if (check.rows.length === 0) {
+      throw new Error('ไม่พบรหัส PIN นี้ในระบบ');
+    }
+    if (check.rows[0].role === 'admin') {
+      throw new Error('ไม่สามารถลบรหัส Master PIN ของผู้ดูแลระบบได้');
+    }
+    await pool.query('DELETE FROM teacher_pins WHERE id = $1', [pinIdToDelete]);
+    return;
+  }
+
+  const data = readLocalDb();
+  if (!data.teacherPins) return;
+  const target = data.teacherPins.find((p) => p.id === pinIdToDelete);
+  if (target && target.role === 'admin') {
+    throw new Error('ไม่สามารถลบรหัส Master PIN ของผู้ดูแลระบบได้');
+  }
+  data.teacherPins = data.teacherPins.filter((p) => p.id !== pinIdToDelete);
+  writeLocalDb(data);
 }
 
 function writeLocalDb(data: LocalDbData): void {
@@ -697,7 +969,7 @@ export async function cancelRegistration(
     throw new Error('ไม่พบข้อมูลการลงทะเบียนนี้');
   }
 
-  const isTeacherOverride = verifyTeacherPin(options.teacherPin);
+  const isTeacherOverride = await verifyTeacherPin(options.teacherPin);
 
   if (!isTeacherOverride) {
     throw new Error('นักศึกษาไม่สามารถถอนชื่อเองได้ กรุณาแจ้งอาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ');

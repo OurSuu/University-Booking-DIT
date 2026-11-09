@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       shifts,
     } = body;
 
-    if (!verifyTeacherPin(teacherPin)) {
+    if (!(await verifyTeacherPin(teacherPin))) {
       return NextResponse.json(
         { error: 'รหัส PIN สำหรับอาจารย์ไม่ถูกต้อง' },
         { status: 403 }

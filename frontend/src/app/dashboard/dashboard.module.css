@@ -87,6 +87,28 @@
   color: var(--primary);
 }
 
+.pinManageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(200, 30, 36, 0.2);
+}
+
+.pinManageBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
 .refreshBtn {
   padding: 0.55rem 0.9rem;
   background: var(--bg-subtle);

@@ -22,7 +22,7 @@ export async function PUT(
       shifts,
     } = body;
 
-    if (!verifyTeacherPin(teacherPin)) {
+    if (!(await verifyTeacherPin(teacherPin))) {
       return NextResponse.json(
         { error: 'รหัส PIN สำหรับอาจารย์ไม่ถูกต้อง' },
         { status: 403 }
@@ -86,7 +86,7 @@ export async function DELETE(
     const body = await request.json().catch(() => ({}));
     const teacherPin = body.teacherPin || request.headers.get('x-teacher-pin') || '';
 
-    if (!verifyTeacherPin(teacherPin)) {
+    if (!(await verifyTeacherPin(teacherPin))) {
       return NextResponse.json(
         { error: 'รหัส PIN สำหรับอาจารย์ไม่ถูกต้อง' },
         { status: 403 }
