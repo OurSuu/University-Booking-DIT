@@ -788,6 +788,35 @@
   width: fit-content;
 }
 
+.chipDutyBadge {
+  font-size: 0.62rem;
+  color: #9a3412;
+  background: #ffedd5;
+  border: 1px solid #fed7aa;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.chipMajorBadge {
+  font-size: 0.62rem;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ===== FOOTER LEGEND ===== */
 .footerLegend {
   display: flex;
@@ -1139,6 +1168,7 @@
 
   .mobileHoursBadge,
   .mobileNoKysBadge,
+  .mobileMajorBadge,
   .mobileCapBadgeOk,
   .mobileCapBadgeFull {
     font-family: var(--font-heading);
@@ -1146,6 +1176,12 @@
     font-weight: 600;
     padding: 0.12rem 0.45rem;
     border-radius: 6px;
+  }
+
+  .mobileMajorBadge {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
   }
 
   .mobileHoursBadge {

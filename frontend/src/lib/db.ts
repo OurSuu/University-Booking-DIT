@@ -13,7 +13,130 @@ import {
   checkCancelEligibility,
   MASTER_ADMIN_PASSWORD_DEFAULT,
   validatePasswordPolicy,
+  normalizeMajorName,
+  sanitizeAllowedMajors,
+  areTimeRangesOverlappingOrSame,
 } from '@/types';
+
+function parseAllowedMajors(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return sanitizeAllowedMajors(raw);
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === '[]') return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return sanitizeAllowedMajors(parsed);
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+export function validateAndSanitizeShifts(
+  rawShifts: unknown
+): { shifts?: ShiftInput[]; error?: string } {
+  if (!Array.isArray(rawShifts) || rawShifts.length === 0) {
+    return { error: 'กรุณาเพิ่มกะ/ช่วงเวลาทำงานอย่างน้อย 1 ช่วงเวลา' };
+  }
+  const sanitized: ShiftInput[] = [];
+  for (const raw of rawShifts) {
+    if (!raw || typeof raw !== 'object') {
+      return { error: 'ข้อมูลกะ/ช่วงเวลาไม่ถูกต้อง' };
+    }
+    const s = raw as Record<string, unknown>;
+    const label = typeof s.label === 'string' ? s.label.trim() : '';
+    const timeRange = typeof s.time_range === 'string' ? s.time_range.trim() : '';
+    if (!label || !timeRange) {
+      return { error: 'กรุณาระบุชื่อกะและช่วงเวลาให้ครบทุกกะ' };
+    }
+    const hours = Number(s.hours);
+    const capacity = Number(s.capacity);
+    if (!Number.isFinite(hours) || hours <= 0 || !Number.isFinite(capacity) || capacity < 1) {
+      return { error: 'จำนวนชั่วโมงทุนและจำนวนคนที่รับต้องมากกว่า 0' };
+    }
+    sanitized.push({
+      id: s.id ? Number(s.id) : undefined,
+      label,
+      duty_name: typeof s.duty_name === 'string' ? s.duty_name.trim() : '',
+      allowed_majors: sanitizeAllowedMajors(Array.isArray(s.allowed_majors) ? s.allowed_majors : []),
+      time_range: timeRange,
+      hours,
+      capacity,
+    });
+  }
+  return { shifts: sanitized };
+}
+
+interface ShiftSlotCheckItem {
+  id: number;
+  label: string;
+  duty_name?: string;
+  allowed_majors?: string[];
+  time_range: string;
+  capacity: number;
+  registrations: Array<{ student_id: string; student_name: string }>;
+}
+
+function assertShiftRegistrationAllowed(
+  jobShifts: ShiftSlotCheckItem[],
+  targetShiftId: number,
+  facultyClean: string,
+  studentIdClean: string,
+  studentNameClean: string,
+  isAtomicRecheck = false
+): void {
+  const targetShift = jobShifts.find((s) => s.id === targetShiftId);
+  if (!targetShift) {
+    throw new Error('ไม่พบช่วงเวลา/กะที่เลือก');
+  }
+
+  const allowedMajors = sanitizeAllowedMajors(targetShift.allowed_majors);
+  if (allowedMajors.length > 0 && !allowedMajors.includes(facultyClean)) {
+    const positionLabel = targetShift.duty_name
+      ? `ตำแหน่ง "${targetShift.duty_name}" (${targetShift.label})`
+      : targetShift.label;
+    throw new Error(`ขออภัย ${positionLabel} รับเฉพาะสาขา: ${allowedMajors.join(', ')}`);
+  }
+
+  if (targetShift.registrations.length >= targetShift.capacity) {
+    throw new Error(
+      isAtomicRecheck
+        ? 'ขออภัย มีผู้ลงทะเบียนที่นั่งสุดท้ายตัดหน้าไปเมื่อสักครู่ ตำแหน่ง/ช่วงเวลานี้เต็มแล้ว'
+        : 'ตำแหน่ง/ช่วงเวลานี้มีผู้ลงทะเบียนเต็มจำนวนแล้ว'
+    );
+  }
+
+  const studentIdLower = studentIdClean.toLowerCase();
+  const studentNameLower = studentNameClean.toLowerCase();
+
+  for (const s of jobShifts) {
+    const isSameOrOverlapping =
+      s.id === targetShift.id || areTimeRangesOverlappingOrSame(s.time_range, targetShift.time_range);
+    if (!isSameOrOverlapping) continue;
+
+    const sameStudent = s.registrations.some(
+      (r) =>
+        r.student_id.trim().toLowerCase() === studentIdLower ||
+        r.student_name.trim().toLowerCase() === studentNameLower
+    );
+    if (sameStudent) {
+      if (s.id === targetShift.id) {
+        throw new Error('รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในหน้าที่/ช่วงเวลานี้ไปแล้ว');
+      }
+      const existingPos = s.duty_name
+        ? `หน้าที่ "${s.duty_name}" (${s.label} • ${s.time_range})`
+        : `${s.label} (${s.time_range})`;
+      throw new Error(
+        `คุณได้ลงทะเบียนในช่วงเวลาเดียวกันนี้ไปแล้ว (${existingPos}) ไม่สามารถลงซ้ำซ้อนในช่วงเวลาเดียวกันได้`
+      );
+    }
+  }
+}
 
 export interface TeacherPinRecord {
   id: number;
@@ -33,9 +156,11 @@ function getDbConnectionString(): string {
   ).trim();
 }
 
+const DB_SCHEMA_VERSION = 2;
+
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
-  _dbInitialized?: boolean;
+  _dbSchemaVersion?: number;
 };
 
 function getPool(): Pool {
@@ -52,7 +177,7 @@ function getPool(): Pool {
 }
 
 async function ensurePgTables() {
-  if (globalForDb._dbInitialized) return;
+  if (globalForDb._dbSchemaVersion === DB_SCHEMA_VERSION) return;
   const pool = getPool();
   await pool.query(`
     CREATE TABLE IF NOT EXISTS scholarship_jobs (
@@ -73,7 +198,9 @@ async function ensurePgTables() {
       label VARCHAR(100) NOT NULL,
       time_range VARCHAR(100) NOT NULL,
       hours NUMERIC(5,2) NOT NULL DEFAULT 3,
-      capacity INTEGER NOT NULL DEFAULT 5
+      capacity INTEGER NOT NULL DEFAULT 5,
+      duty_name VARCHAR(150) DEFAULT '',
+      allowed_majors TEXT DEFAULT '[]'
     );
 
     CREATE TABLE IF NOT EXISTS scholarship_registrations (
@@ -91,6 +218,8 @@ async function ensurePgTables() {
 
     ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
+    ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';
+    ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS allowed_majors TEXT DEFAULT '[]';
 
     CREATE TABLE IF NOT EXISTS teacher_pins (
       id SERIAL PRIMARY KEY,
@@ -125,7 +254,7 @@ async function ensurePgTables() {
     [defaultMasterPin]
   );
 
-  globalForDb._dbInitialized = true;
+  globalForDb._dbSchemaVersion = DB_SCHEMA_VERSION;
 }
 
 // ==========================================
@@ -488,6 +617,8 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
         id: Number(s.id),
         job_id: Number(s.job_id),
         label: s.label,
+        duty_name: s.duty_name ? String(s.duty_name).trim() : '',
+        allowed_majors: parseAllowedMajors(s.allowed_majors),
         time_range: s.time_range,
         hours: Number(s.hours),
         capacity: Number(s.capacity),
@@ -524,6 +655,8 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       .sort((a, b) => a.id - b.id)
       .map((s) => ({
         ...s,
+        duty_name: s.duty_name ? String(s.duty_name).trim() : '',
+        allowed_majors: parseAllowedMajors(s.allowed_majors),
         registrations: data.registrations
           .filter((r) => r.shift_id === s.id)
           .sort((a, b) => a.id - b.id),
@@ -580,15 +713,19 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       const jobId = Number(jobRow.id);
 
       for (const s of payload.shifts) {
+        const dutyNameClean = (s.duty_name || '').trim();
+        const allowedMajorsClean = sanitizeAllowedMajors(s.allowed_majors);
         await client.query(
-          `INSERT INTO scholarship_shifts (job_id, label, time_range, hours, capacity)
-           VALUES ($1, $2, $3, $4, $5)`,
+          `INSERT INTO scholarship_shifts (job_id, label, time_range, hours, capacity, duty_name, allowed_majors)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
             jobId,
             s.label.trim(),
             s.time_range.trim(),
             Number(s.hours),
             Number(s.capacity),
+            dutyNameClean,
+            JSON.stringify(allowedMajorsClean),
           ]
         );
       }
@@ -628,6 +765,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       id: data.nextShiftId++,
       job_id: jobId,
       label: s.label.trim(),
+      duty_name: (s.duty_name || '').trim(),
+      allowed_majors: sanitizeAllowedMajors(s.allowed_majors),
       time_range: s.time_range.trim(),
       hours: Number(s.hours),
       capacity: Number(s.capacity),
@@ -689,30 +828,36 @@ export async function updateJob(
 
       // Update or insert shifts
       for (const s of payload.shifts) {
+        const dutyNameClean = (s.duty_name || '').trim();
+        const allowedMajorsClean = sanitizeAllowedMajors(s.allowed_majors);
         if (s.id && existing.shifts.some((os) => os.id === s.id)) {
           await client.query(
             `UPDATE scholarship_shifts
-             SET label = $1, time_range = $2, hours = $3, capacity = $4
-             WHERE id = $5 AND job_id = $6`,
+             SET label = $1, time_range = $2, hours = $3, capacity = $4, duty_name = $5, allowed_majors = $6
+             WHERE id = $7 AND job_id = $8`,
             [
               s.label.trim(),
               s.time_range.trim(),
               Number(s.hours),
               Number(s.capacity),
+              dutyNameClean,
+              JSON.stringify(allowedMajorsClean),
               s.id,
               jobId,
             ]
           );
         } else {
           await client.query(
-            `INSERT INTO scholarship_shifts (job_id, label, time_range, hours, capacity)
-             VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO scholarship_shifts (job_id, label, time_range, hours, capacity, duty_name, allowed_majors)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [
               jobId,
               s.label.trim(),
               s.time_range.trim(),
               Number(s.hours),
               Number(s.capacity),
+              dutyNameClean,
+              JSON.stringify(allowedMajorsClean),
             ]
           );
         }
@@ -762,12 +907,16 @@ export async function updateJob(
   );
 
   for (const s of payload.shifts) {
+    const dutyNameClean = (s.duty_name || '').trim();
+    const allowedMajorsClean = sanitizeAllowedMajors(s.allowed_majors);
     if (s.id) {
       const sIdx = data.shifts.findIndex((os) => os.id === s.id && os.job_id === jobId);
       if (sIdx !== -1) {
         data.shifts[sIdx] = {
           ...data.shifts[sIdx],
           label: s.label.trim(),
+          duty_name: dutyNameClean,
+          allowed_majors: allowedMajorsClean,
           time_range: s.time_range.trim(),
           hours: Number(s.hours),
           capacity: Number(s.capacity),
@@ -779,6 +928,8 @@ export async function updateJob(
       id: data.nextShiftId++,
       job_id: jobId,
       label: s.label.trim(),
+      duty_name: dutyNameClean,
+      allowed_majors: allowedMajorsClean,
       time_range: s.time_range.trim(),
       hours: Number(s.hours),
       capacity: Number(s.capacity),
@@ -840,7 +991,7 @@ export async function registerStudent(
 
   const studentIdClean = payload.student_id.trim();
   const studentNameClean = payload.student_name.trim();
-  const facultyClean = payload.faculty.trim();
+  const facultyClean = normalizeMajorName(payload.faculty.trim());
   const scholarshipClean = (payload.scholarship_name || '').trim();
   const phoneClean = (payload.phone || '').trim();
 
@@ -860,18 +1011,14 @@ export async function registerStudent(
     throw new Error('ขออภัย งานนี้ไม่รับนักศึกษาทุน กยศ. (กรุณาเลือกงานอื่นที่รองรับทุน กยศ.)');
   }
 
-  if (shift.registrations.length >= shift.capacity) {
-    throw new Error('ช่วงเวลานี้มีผู้ลงทะเบียนเต็มจำนวนแล้ว');
-  }
-
-  const isDuplicate = shift.registrations.some(
-    (r) =>
-      r.student_id.trim().toLowerCase() === studentIdClean.toLowerCase() ||
-      r.student_name.trim().toLowerCase() === studentNameClean.toLowerCase()
+  assertShiftRegistrationAllowed(
+    job.shifts,
+    shift.id,
+    facultyClean,
+    studentIdClean,
+    studentNameClean,
+    false
   );
-  if (isDuplicate) {
-    throw new Error('รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในช่วงเวลานี้ไปแล้ว');
-  }
 
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
@@ -880,33 +1027,46 @@ export async function registerStudent(
     try {
       await client.query('BEGIN');
 
-      // ล็อกแถวของกะงานนี้ (Row-level Lock) เพื่อป้องกันกรณีคนกดลงทะเบียนพร้อมกันในเสี้ยววินาทีเดียวกัน
-      const lockedShiftRes = await client.query(
-        'SELECT id, capacity FROM scholarship_shifts WHERE id = $1 AND job_id = $2 FOR UPDATE',
-        [shift.id, job.id]
+      // ล็อกแถวของงานและกะงานทั้งหมดในงานนี้ (Row-level Lock) เพื่อป้องกัน race condition และตรวจเวลาซ้ำซ้อน
+      await client.query('SELECT id FROM scholarship_jobs WHERE id = $1 FOR UPDATE', [job.id]);
+      const lockedShiftsRes = await client.query(
+        'SELECT id, label, time_range, capacity, duty_name, allowed_majors FROM scholarship_shifts WHERE job_id = $1 FOR UPDATE',
+        [job.id]
       );
-      if (lockedShiftRes.rowCount === 0) {
-        throw new Error('ไม่พบช่วงเวลา/กะที่เลือก');
-      }
-      const latestCapacity = Number(lockedShiftRes.rows[0].capacity);
-
-      const currentRegsRes = await client.query(
-        'SELECT student_id, student_name FROM scholarship_registrations WHERE shift_id = $1',
-        [shift.id]
+      const jobRegsRes = await client.query(
+        'SELECT shift_id, student_id, student_name FROM scholarship_registrations WHERE job_id = $1',
+        [job.id]
       );
 
-      if (currentRegsRes.rows.length >= latestCapacity) {
-        throw new Error('ขออภัย มีผู้ลงทะเบียนที่นั่งสุดท้ายตัดหน้าไปเมื่อสักครู่ ช่วงเวลานี้เต็มแล้ว');
+      const regsByShiftId = new Map<number, Array<{ student_id: string; student_name: string }>>();
+      for (const r of jobRegsRes.rows) {
+        const sId = Number(r.shift_id);
+        const list = regsByShiftId.get(sId) || [];
+        list.push({
+          student_id: String(r.student_id || ''),
+          student_name: String(r.student_name || ''),
+        });
+        regsByShiftId.set(sId, list);
       }
 
-      const dupInTx = currentRegsRes.rows.some(
-        (r) =>
-          String(r.student_id || '').trim().toLowerCase() === studentIdClean.toLowerCase() ||
-          String(r.student_name || '').trim().toLowerCase() === studentNameClean.toLowerCase()
+      const lockedJobShifts: ShiftSlotCheckItem[] = lockedShiftsRes.rows.map((sRow) => ({
+        id: Number(sRow.id),
+        label: String(sRow.label || ''),
+        duty_name: sRow.duty_name ? String(sRow.duty_name).trim() : '',
+        allowed_majors: parseAllowedMajors(sRow.allowed_majors),
+        time_range: String(sRow.time_range || ''),
+        capacity: Number(sRow.capacity),
+        registrations: regsByShiftId.get(Number(sRow.id)) || [],
+      }));
+
+      assertShiftRegistrationAllowed(
+        lockedJobShifts,
+        shift.id,
+        facultyClean,
+        studentIdClean,
+        studentNameClean,
+        true
       );
-      if (dupInTx) {
-        throw new Error('รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในช่วงเวลานี้ไปแล้ว');
-      }
 
       const res = await client.query(
         `INSERT INTO scholarship_registrations

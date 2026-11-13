@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllJobs, createJob, verifyTeacherPin } from '@/lib/db';
+import { getAllJobs, createJob, verifyTeacherPin, validateAndSanitizeShifts } from '@/lib/db';
 import { getDaysUntilJob } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -78,26 +78,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!Array.isArray(shifts) || shifts.length === 0) {
+    const shiftCheck = validateAndSanitizeShifts(shifts);
+    if (shiftCheck.error || !shiftCheck.shifts) {
       return NextResponse.json(
-        { error: 'กรุณาเพิ่มกะ/ช่วงเวลาทำงานอย่างน้อย 1 ช่วงเวลา' },
+        { error: shiftCheck.error || 'ข้อมูลกะ/ช่วงเวลาไม่ถูกต้อง' },
         { status: 400 }
       );
-    }
-
-    for (const s of shifts) {
-      if (!s.label?.trim() || !s.time_range?.trim()) {
-        return NextResponse.json(
-          { error: 'กรุณาระบุชื่อกะและช่วงเวลาให้ครบทุกกะ' },
-          { status: 400 }
-        );
-      }
-      if (Number(s.hours) <= 0 || Number(s.capacity) < 1) {
-        return NextResponse.json(
-          { error: 'จำนวนชั่วโมงทุนและจำนวนคนที่รับต้องมากกว่า 0' },
-          { status: 400 }
-        );
-      }
     }
 
     const created = await createJob({
@@ -109,7 +95,7 @@ export async function POST(request: NextRequest) {
       require_scholarship_name: Boolean(require_scholarship_name),
       allow_kys: Boolean(allow_kys),
       job_type: job_type === 'external' ? 'external' : 'internal',
-      shifts,
+      shifts: shiftCheck.shifts,
     });
 
     return NextResponse.json(created, { status: 201 });

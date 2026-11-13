@@ -14,10 +14,12 @@ export interface Registration {
 export interface JobShift {
   id: number;
   job_id: number;
-  label: string;       // เช่น "กะเช้า", "กะบ่าย", "ช่วงที่ 1"
-  time_range: string;  // เช่น "09:00 - 12:00"
-  hours: number;       // จำนวนชั่วโมงทุนที่ได้ เช่น 3
-  capacity: number;    // จำนวนรับสูงสุด เช่น 5
+  label: string;             // เช่น "กะเช้า", "กะบ่าย", "ช่วงที่ 1"
+  duty_name?: string;        // ชื่อหน้าที่ / ตำแหน่ง (ถ้ามี เช่น "ช่างภาพ", "ต้อนรับ")
+  allowed_majors?: string[]; // รายชื่อสาขาที่เปิดรับเฉพาะ (ว่าง [] = เปิดรับทุกสาขาใน DIT)
+  time_range: string;        // เช่น "09:00 - 12:00"
+  hours: number;             // จำนวนชั่วโมงทุนที่ได้ เช่น 3
+  capacity: number;          // จำนวนรับสูงสุด เช่น 5
   registrations: Registration[];
 }
 
@@ -38,16 +40,18 @@ export interface JobAnnouncement {
 export interface ShiftInput {
   id?: number;
   label: string;
+  duty_name?: string;
+  allowed_majors?: string[];
   time_range: string;
   hours: number;
   capacity: number;
 }
 
 export const PRESET_SHIFTS: Omit<ShiftInput, 'id'>[] = [
-  { label: 'กะเช้า', time_range: '09:00 - 12:00', hours: 3, capacity: 5 },
-  { label: 'กะบ่าย', time_range: '13:00 - 16:00', hours: 3, capacity: 5 },
-  { label: 'กะเย็น', time_range: '16:30 - 19:30', hours: 3, capacity: 5 },
-  { label: 'เต็มวัน', time_range: '09:00 - 16:00', hours: 6, capacity: 5 },
+  { label: 'กะเช้า', duty_name: '', allowed_majors: [], time_range: '09:00 - 12:00', hours: 3, capacity: 5 },
+  { label: 'กะบ่าย', duty_name: '', allowed_majors: [], time_range: '13:00 - 16:00', hours: 3, capacity: 5 },
+  { label: 'กะเย็น', duty_name: '', allowed_majors: [], time_range: '16:30 - 19:30', hours: 3, capacity: 5 },
+  { label: 'เต็มวัน', duty_name: '', allowed_majors: [], time_range: '09:00 - 17:00', hours: 8, capacity: 5 },
 ];
 
 export const DIT_MAJORS = [
@@ -67,6 +71,55 @@ export const MAJOR_ALIAS_MAP: Record<string, string> = {
   smg: 'เทคโนโลยีสร้างสรรค์และสื่อสังคมออนไลน์',
   fin: 'การวางแผนการเงินด้วยเทคโนโลยีปัญญาประดิษฐ์',
 };
+
+export const MAJOR_SHORT_CODE_MAP: Record<string, string> = {
+  'วิทยาการคอมพิวเตอร์': 'CS',
+  'นวัตกรรมดิจิทัลและปัญญาประดิษฐ์': 'DAI',
+  'คอมพิวเตอร์เกมและอีสปอร์ต': 'CGE',
+  'เทคโนโลยีสร้างสรรค์และสื่อสังคมออนไลน์': 'SMG',
+  'การวางแผนการเงินด้วยเทคโนโลยีปัญญาประดิษฐ์': 'FIN',
+};
+
+export function getMajorShortCode(major: string): string {
+  const norm = normalizeMajorName(major);
+  return MAJOR_SHORT_CODE_MAP[norm] || norm;
+}
+
+export function sanitizeAllowedMajors(majors?: unknown): string[] {
+  if (!Array.isArray(majors)) return [];
+  const validSet = new Set<string>(DIT_MAJORS as readonly string[]);
+  const unique = new Set<string>();
+  for (const item of majors) {
+    const norm = normalizeMajorName(String(item || ''));
+    if (validSet.has(norm)) {
+      unique.add(norm);
+    }
+  }
+  // If all DIT majors are selected, normalize to empty array (open to all)
+  if (unique.size >= DIT_MAJORS.length) return [];
+  return Array.from(unique);
+}
+
+export function parseTimeRangeMinutes(range: string): [number, number] | null {
+  const clean = (range || '').trim();
+  const match = clean.match(/(\d{1,2})[:.](\d{2})\s*[-–ถึง]\s*(\d{1,2})[:.](\d{2})/);
+  if (!match) return null;
+  const start = Number(match[1]) * 60 + Number(match[2]);
+  const end = Number(match[3]) * 60 + Number(match[4]);
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return null;
+  return [start, end];
+}
+
+export function areTimeRangesOverlappingOrSame(rangeA: string, rangeB: string): boolean {
+  const parsedA = parseTimeRangeMinutes(rangeA);
+  const parsedB = parseTimeRangeMinutes(rangeB);
+  if (parsedA && parsedB) {
+    return parsedA[0] < parsedB[1] && parsedB[0] < parsedA[1];
+  }
+  const normA = (rangeA || '').replace(/\s+/g, '').toLowerCase();
+  const normB = (rangeB || '').replace(/\s+/g, '').toLowerCase();
+  return Boolean(normA) && normA === normB;
+}
 
 export function normalizeMajorName(majorOrAlias: string): string {
   const clean = (majorOrAlias || '').trim();

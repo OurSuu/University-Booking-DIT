@@ -6,6 +6,8 @@ import {
   JobAnnouncement,
   DIT_MAJORS,
   normalizeMajorName,
+  sanitizeAllowedMajors,
+  getMajorShortCode,
   getTodayStr,
   isKysScholarship,
 } from '@/types';
@@ -304,6 +306,8 @@ function DashboardInner() {
       teacherName: string;
       location: string;
       shiftLabel: string;
+      dutyName: string;
+      allowedMajors: string[];
       timeRange: string;
       hours: number;
       studentId: string;
@@ -317,6 +321,8 @@ function DashboardInner() {
     for (const job of filteredJobs) {
       const jScope = job.job_type === 'external' ? 'external' : 'internal';
       for (const shift of job.shifts) {
+        const shiftAllowedMajors = sanitizeAllowedMajors(shift.allowed_majors);
+        const shiftDutyName = shift.duty_name ? shift.duty_name.trim() : '';
         for (const reg of shift.registrations) {
           const normFaculty = normalizeMajorName(reg.faculty);
           if (!selectedMajor || normFaculty === selectedMajor) {
@@ -329,6 +335,8 @@ function DashboardInner() {
               teacherName: job.teacher_name,
               location: job.location,
               shiftLabel: shift.label,
+              dutyName: shiftDutyName,
+              allowedMajors: shiftAllowedMajors,
               timeRange: shift.time_range,
               hours: shift.hours,
               studentId: reg.student_id,
@@ -596,7 +604,12 @@ function DashboardInner() {
         j.title.toLowerCase().includes(q) ||
         j.teacher_name.toLowerCase().includes(q) ||
         j.location.toLowerCase().includes(q) ||
-        (j.job_type === 'external' ? 'ภายนอก' : 'ภายใน').includes(q)
+        (j.job_type === 'external' ? 'ภายนอก' : 'ภายใน').includes(q) ||
+        j.shifts.some(
+          (s) =>
+            (s.duty_name || '').toLowerCase().includes(q) ||
+            sanitizeAllowedMajors(s.allowed_majors).some((m) => m.toLowerCase().includes(q))
+        )
     );
   }, [filteredData.jobs, tableSearch, calendarSelectedDate]);
 
@@ -614,9 +627,28 @@ function DashboardInner() {
         r.studentName.toLowerCase().includes(q) ||
         r.faculty.toLowerCase().includes(q) ||
         r.jobTitle.toLowerCase().includes(q) ||
+        r.shiftLabel.toLowerCase().includes(q) ||
+        r.dutyName.toLowerCase().includes(q) ||
         r.scholarshipName.toLowerCase().includes(q)
     );
   }, [filteredData.registrations, tableSearch, calendarSelectedDate]);
+
+  const handleCopyFilteredStudents = () => {
+    if (tableRows.length === 0) return;
+    const lines: string[] = [];
+    lines.push(`รายชื่อนักศึกษาที่ลงทะเบียนตามตัวกรอง (${tableRows.length} รายการ)`);
+    lines.push('----------------------------------------');
+    tableRows.forEach((r, idx) => {
+      const dutyPart = r.dutyName ? ` [หน้าที่: ${r.dutyName}]` : '';
+      const phonePart = r.phone ? ` • โทร: ${r.phone}` : '';
+      const scholPart = r.scholarshipName ? ` [ทุน: ${r.scholarshipName}]` : '';
+      lines.push(
+        `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${r.shiftLabel}${dutyPart} (${r.timeRange}) | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart} | ${r.hours} ชม.`
+      );
+    });
+    navigator.clipboard.writeText(lines.join('\n'));
+    showToast(`คัดลอกรายชื่อ ${tableRows.length} รายการลงคลิปบอร์ดแล้ว`, 'success');
+  };
 
   const isAllMetricsSelected = selectedMetrics.length === DASHBOARD_METRICS.length;
 
@@ -1160,6 +1192,16 @@ function DashboardInner() {
             </div>
 
             <div className={styles.tableHeaderActions}>
+              {activeDetailTab === 'students' && tableRows.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleCopyFilteredStudents}
+                  className={styles.copyFilteredBtn}
+                  title="คัดลอกรายชื่อที่แสดงอยู่ลงคลิปบอร์ด"
+                >
+                  คัดลอกรายชื่อ ({tableRows.length})
+                </button>
+              )}
               {calendarSelectedDate && (
                 <button
                   type="button"
@@ -1174,8 +1216,8 @@ function DashboardInner() {
                 type="text"
                 placeholder={
                   activeDetailTab === 'jobs'
-                    ? 'ค้นหาชื่องาน, อาจารย์, สถานที่...'
-                    : 'ค้นหาชื่อ, รหัส, สาขา, ชื่องาน...'
+                    ? 'ค้นหาชื่องาน, หน้าที่, อาจารย์, สถานที่...'
+                    : 'ค้นหาชื่อ, รหัส, หน้าที่, สาขา, ชื่องาน...'
                 }
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
@@ -1200,7 +1242,7 @@ function DashboardInner() {
                         <th>ประเภทงาน</th>
                         <th>อาจารย์ผู้ประกาศ</th>
                         <th>สถานที่นัดหมาย</th>
-                        <th>กะ / ชั่วโมงทุน</th>
+                        <th>กะ / หน้าที่ / ชั่วโมงทุน</th>
                         <th>ที่นั่งรับ (ลงแล้ว / รับได้)</th>
                       </tr>
                     </thead>
@@ -1210,6 +1252,12 @@ function DashboardInner() {
                         const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
                         const totalJobHours = job.shifts.reduce((s, sh) => s + sh.hours, 0);
                         const isExt = job.job_type === 'external';
+                        const jobDuties = Array.from(
+                          new Set(job.shifts.map((s) => (s.duty_name || '').trim()).filter(Boolean))
+                        );
+                        const jobRestrictedMajors = Array.from(
+                          new Set(job.shifts.flatMap((s) => sanitizeAllowedMajors(s.allowed_majors)))
+                        );
 
                         return (
                           <tr key={job.id}>
@@ -1224,8 +1272,27 @@ function DashboardInner() {
                             </td>
                             <td>{job.teacher_name}</td>
                             <td>{job.location || 'ไม่ระบุ'}</td>
-                            <td>
-                              <strong>{job.shifts.length} กะ</strong> (รวม {totalJobHours} ชม.)
+                            <td style={{ whiteSpace: 'normal', minWidth: '185px' }}>
+                              <div>
+                                <strong>{job.shifts.length} กะ</strong> (รวม {totalJobHours} ชม.)
+                              </div>
+                              {(jobDuties.length > 0 || jobRestrictedMajors.length > 0) && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                  {jobDuties.map((d) => (
+                                    <span key={d} className={styles.dutyTag}>
+                                      {d}
+                                    </span>
+                                  ))}
+                                  {jobRestrictedMajors.length > 0 && (
+                                    <span
+                                      className={styles.majorConstraintTag}
+                                      title={`จำกัดสาขา: ${jobRestrictedMajors.join(', ')}`}
+                                    >
+                                      เฉพาะ: {jobRestrictedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </td>
                             <td>
                               <strong>{totalReg}/{totalCap} ที่</strong>{' '}
@@ -1251,6 +1318,12 @@ function DashboardInner() {
                     const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
                     const totalJobHours = job.shifts.reduce((s, sh) => s + sh.hours, 0);
                     const isExt = job.job_type === 'external';
+                    const jobDuties = Array.from(
+                      new Set(job.shifts.map((s) => (s.duty_name || '').trim()).filter(Boolean))
+                    );
+                    const jobRestrictedMajors = Array.from(
+                      new Set(job.shifts.flatMap((s) => sanitizeAllowedMajors(s.allowed_majors)))
+                    );
 
                     return (
                       <div key={`mj-${job.id}`} className={styles.mobileRegCard}>
@@ -1283,6 +1356,20 @@ function DashboardInner() {
                               </strong>
                             </span>
                           </div>
+                          {(jobDuties.length > 0 || jobRestrictedMajors.length > 0) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                              {jobDuties.map((d) => (
+                                <span key={d} className={styles.dutyTag}>
+                                  หน้าที่: {d}
+                                </span>
+                              ))}
+                              {jobRestrictedMajors.length > 0 && (
+                                <span className={styles.majorConstraintTag}>
+                                  เฉพาะ: {jobRestrictedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1307,6 +1394,7 @@ function DashboardInner() {
                         <th>ชื่องาน / กิจกรรม</th>
                         <th>ขอบเขต</th>
                         <th>กะ / ช่วงเวลา</th>
+                        <th>หน้าที่ / ตำแหน่ง</th>
                         <th>รหัสนักศึกษา</th>
                         <th>ชื่อ - นามสกุล</th>
                         <th>คณะ / สาขาวิชา</th>
@@ -1327,7 +1415,19 @@ function DashboardInner() {
                             </span>
                           </td>
                           <td>
-                            {r.shiftLabel} ({r.timeRange})
+                            <div>{r.shiftLabel} ({r.timeRange})</div>
+                            {r.allowedMajors.length > 0 && (
+                              <div style={{ fontSize: '0.72rem', color: '#1d4ed8', marginTop: '2px' }}>
+                                เฉพาะ: {r.allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            {r.dutyName ? (
+                              <span className={styles.dutyTag}>{r.dutyName}</span>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>-</span>
+                            )}
                           </td>
                           <td>
                             <code>{r.studentId}</code>
@@ -1392,6 +1492,11 @@ function DashboardInner() {
                         <span className={styles.mobileCardJobShift}>
                           {r.shiftLabel} ({r.timeRange})
                         </span>
+                        {r.dutyName && (
+                          <div style={{ marginTop: '4px' }}>
+                            <span className={styles.dutyTag}>หน้าที่: {r.dutyName}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className={styles.mobileCardStudent}>

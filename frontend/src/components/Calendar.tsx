@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {
   JobAnnouncement,
   normalizeMajorName,
+  sanitizeAllowedMajors,
+  getMajorShortCode,
   getTodayStr,
   getDaysUntilJob,
 } from '@/types';
@@ -13,6 +15,25 @@ import BookingModal from './BookingModal';
 import ConfirmModal from './ConfirmModal';
 import DayDetailModal, { formatThaiDate } from './DayDetailModal';
 import styles from './Calendar.module.css';
+
+function summarizeJobRolesAndMajors(job: JobAnnouncement) {
+  const duties = Array.from(
+    new Set(job.shifts.map((s) => (s.duty_name || '').trim()).filter(Boolean))
+  );
+  const restrictedMajors = Array.from(
+    new Set(job.shifts.flatMap((s) => sanitizeAllowedMajors(s.allowed_majors)))
+  );
+  const hasUnrestrictedShift = job.shifts.some(
+    (s) => sanitizeAllowedMajors(s.allowed_majors).length === 0
+  );
+  const majorRestrictionText =
+    restrictedMajors.length > 0
+      ? `${hasUnrestrictedShift ? 'มีตำแหน่งเฉพาะ' : 'เฉพาะ'}: ${restrictedMajors
+          .map((m) => getMajorShortCode(m))
+          .join(', ')}`
+      : '';
+  return { duties, restrictedMajors, majorRestrictionText };
+}
 
 const DAYS_OF_WEEK = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const THAI_MONTH_NAMES = [
@@ -250,6 +271,7 @@ export default function Calendar() {
     const results: {
       job: JobAnnouncement;
       shiftLabel: string;
+      dutyName: string;
       timeRange: string;
       hours: number;
       studentName: string;
@@ -265,6 +287,7 @@ export default function Calendar() {
             results.push({
               job,
               shiftLabel: shift.label,
+              dutyName: shift.duty_name || '',
               timeRange: shift.time_range,
               hours: shift.hours,
               studentName: reg.student_name,
@@ -677,7 +700,8 @@ export default function Calendar() {
                       <span className={styles.searchDateBadge}>
                         {formatThaiDate(item.job.date)}
                       </span>
-                      <strong>{item.job.title}</strong> — {item.shiftLabel} (
+                      <strong>{item.job.title}</strong> — {item.shiftLabel}
+                      {item.dutyName ? ` [หน้าที่: ${item.dutyName}]` : ''} (
                       {item.timeRange}) • {item.hours} ชม.ทุน •{' '}
                       {isTeacherMode ? (
                         <>
@@ -824,6 +848,9 @@ export default function Calendar() {
                         const hoursLabel =
                           minH === maxH ? `${minH} ชม.` : `${minH}-${maxH} ชม.`;
 
+                        const { duties, restrictedMajors, majorRestrictionText } =
+                          summarizeJobRolesAndMajors(job);
+
                         return (
                           <div
                             key={job.id}
@@ -844,6 +871,23 @@ export default function Calendar() {
                                   : `ลงแล้ว ${jobReg}/${jobCap} (ว่าง ${jobCap - jobReg})`}
                               </span>
                             </div>
+                            {duties.length > 0 && (
+                              <div
+                                className={styles.chipDutyBadge}
+                                title={`หน้าที่: ${duties.join(', ')}`}
+                              >
+                                หน้าที่: {duties.slice(0, 2).join(', ')}
+                                {duties.length > 2 ? ` +${duties.length - 2}` : ''}
+                              </div>
+                            )}
+                            {majorRestrictionText && (
+                              <div
+                                className={styles.chipMajorBadge}
+                                title={`เจาะจงสาขา: ${restrictedMajors.join(', ')}`}
+                              >
+                                {majorRestrictionText}
+                              </div>
+                            )}
                             {!job.allow_kys && (
                               <div className={styles.chipNoKys}>ไม่รับ กยศ.</div>
                             )}
@@ -893,6 +937,8 @@ export default function Calendar() {
                       minH === maxH ? `${minH} ชม.ทุน` : `${minH}-${maxH} ชม.ทุน`;
                     const dayNum = Number(job.date.split('-')[2]);
 
+                    const { majorRestrictionText } = summarizeJobRolesAndMajors(job);
+
                     return (
                       <div
                         key={job.id}
@@ -915,6 +961,11 @@ export default function Calendar() {
                             <span className={styles.mobileHoursBadge}>
                               {hoursLabel}
                             </span>
+                            {majorRestrictionText && (
+                              <span className={styles.mobileMajorBadge}>
+                                {majorRestrictionText}
+                              </span>
+                            )}
                             {!job.allow_kys && (
                               <span className={styles.mobileNoKysBadge}>
                                 ไม่รับ กยศ.
@@ -934,7 +985,12 @@ export default function Calendar() {
                           </div>
                           <div className={styles.mobileAgendaTitle}>{job.title}</div>
                           <div className={styles.mobileAgendaSub}>
-                            {job.shifts.map((s) => `${s.label} (${s.time_range})`).join(' • ')}
+                            {job.shifts
+                              .map(
+                                (s) =>
+                                  `${s.label}${s.duty_name ? ` [${s.duty_name}]` : ''} (${s.time_range})`
+                              )
+                              .join(' • ')}
                           </div>
                         </div>
                       </div>

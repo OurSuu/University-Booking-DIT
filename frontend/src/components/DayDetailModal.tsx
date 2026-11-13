@@ -6,6 +6,8 @@ import {
   JobShift,
   Registration,
   DIT_MAJORS,
+  sanitizeAllowedMajors,
+  areTimeRangesOverlappingOrSame,
   getTodayStr,
   getDaysUntilJob,
   isKysScholarship,
@@ -130,8 +132,11 @@ export default function DayDetailModal({
     lines.push('----------------------------------------');
 
     for (const s of job.shifts) {
+      const allowed = sanitizeAllowedMajors(s.allowed_majors);
+      const dutyPart = s.duty_name ? ` [หน้าที่: ${s.duty_name}]` : '';
+      const majorPart = allowed.length > 0 ? ` [เฉพาะสาขา: ${allowed.join(', ')}]` : '';
       lines.push(
-        `\n${s.label} (${s.time_range}) | ${s.hours} ชม.ทุน | ลงทะเบียน ${s.registrations.length}/${s.capacity} คน`
+        `\n${s.label}${dutyPart} (${s.time_range}) | ${s.hours} ชม.ทุน | ลงทะเบียน ${s.registrations.length}/${s.capacity} คน${majorPart}`
       );
       if (s.registrations.length === 0) {
         lines.push('   (ยังไม่มีผู้ลงทะเบียน)');
@@ -150,6 +155,31 @@ export default function DayDetailModal({
     showToast('คัดลอกรายชื่อผู้เข้าร่วมทั้งหมดลงคลิปบอร์ดแล้ว', 'success');
   };
 
+  const liveShiftAllowedMajors = sanitizeAllowedMajors(liveShift?.allowed_majors);
+
+  const isMajorBlockedInForm = Boolean(
+    activeShiftInfo &&
+      liveShiftAllowedMajors.length > 0 &&
+      faculty.trim() &&
+      !liveShiftAllowedMajors.includes(faculty.trim())
+  );
+
+  const studentIdLowerForm = studentId.trim().toLowerCase();
+  const studentNameLowerForm = studentName.trim().toLowerCase();
+  const overlappingRegShift =
+    activeShiftInfo && liveJob && liveShift && (studentIdLowerForm || studentNameLowerForm)
+      ? liveJob.shifts.find((s) => {
+          const sameOrOverlappingPeriod =
+            s.id === liveShift.id || areTimeRangesOverlappingOrSame(s.time_range, liveShift.time_range);
+          if (!sameOrOverlappingPeriod) return false;
+          return s.registrations.some(
+            (r) =>
+              (studentIdLowerForm && r.student_id.trim().toLowerCase() === studentIdLowerForm) ||
+              (studentNameLowerForm && r.student_name.trim().toLowerCase() === studentNameLowerForm)
+          );
+        })
+      : undefined;
+
   const isKysBlockedInForm =
     activeShiftInfo &&
     !activeShiftInfo.job.allow_kys &&
@@ -161,7 +191,26 @@ export default function DayDetailModal({
     setRegError(null);
 
     if (isLiveShiftFull) {
-      setRegError('ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในช่วงเวลานี้ครบจำนวนแล้ว');
+      setRegError('ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในตำแหน่ง/ช่วงเวลานี้ครบจำนวนแล้ว');
+      return;
+    }
+
+    if (isMajorBlockedInForm) {
+      setRegError(
+        `ขออภัย ตำแหน่งนี้รับเฉพาะสาขา: ${liveShiftAllowedMajors.join(', ')}`
+      );
+      return;
+    }
+
+    if (overlappingRegShift) {
+      const conflictText = overlappingRegShift.duty_name
+        ? `หน้าที่ "${overlappingRegShift.duty_name}" (${overlappingRegShift.label} • ${overlappingRegShift.time_range})`
+        : `${overlappingRegShift.label} (${overlappingRegShift.time_range})`;
+      setRegError(
+        overlappingRegShift.id === liveShift?.id
+          ? 'รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในหน้าที่/ช่วงเวลานี้ไปแล้ว'
+          : `คุณได้ลงทะเบียนในช่วงเวลาเดียวกันนี้ไปแล้ว (${conflictText}) ไม่สามารถลงซ้ำซ้อนในช่วงเวลาเดียวกันได้`
+      );
       return;
     }
 
@@ -342,7 +391,13 @@ export default function DayDetailModal({
                   <span className={styles.regStepBadge}>ลงทะเบียนรับงานชั่วโมงทุน</span>
                   <h3>{activeShiftInfo.job.title}</h3>
                   <p className={styles.regSubInfo}>
-                    ช่วงเวลา: <strong>{activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})</strong> • ได้รับ{' '}
+                    ช่วงเวลา: <strong>{activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})</strong>
+                    {activeShiftInfo.shift.duty_name && (
+                      <>
+                        {' '}• หน้าที่: <strong>{activeShiftInfo.shift.duty_name}</strong>
+                      </>
+                    )}
+                    {' '}• ได้รับ{' '}
                     <strong>{activeShiftInfo.shift.hours} ชั่วโมงทุน</strong>
                     {liveShift && (
                       <>
@@ -368,6 +423,16 @@ export default function DayDetailModal({
               {!activeShiftInfo.job.allow_kys && (
                 <div className={styles.kysWarningBanner}>
                   <strong>ข้อกำหนดสำคัญ:</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
+                </div>
+              )}
+
+              {liveShiftAllowedMajors.length > 0 && (
+                <div className={styles.majorWarningBanner}>
+                  <strong>จำกัดสาขาวิชา:</strong>{' '}
+                  {activeShiftInfo.shift.duty_name
+                    ? `หน้าที่ "${activeShiftInfo.shift.duty_name}" (${activeShiftInfo.shift.label})`
+                    : `ช่วงเวลา "${activeShiftInfo.shift.label}"`}{' '}
+                  เปิดรับเฉพาะสาขา <strong>{liveShiftAllowedMajors.join(', ')}</strong> เท่านั้น
                 </div>
               )}
 
@@ -407,11 +472,16 @@ export default function DayDetailModal({
                       className={styles.selectInput}
                     >
                       <option value="">-- กรุณาเลือกสาขาวิชา --</option>
-                      {DIT_MAJORS.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
+                      {DIT_MAJORS.map((m) => {
+                        const notEligible =
+                          liveShiftAllowedMajors.length > 0 && !liveShiftAllowedMajors.includes(m);
+                        return (
+                          <option key={m} value={m} disabled={notEligible}>
+                            {m}
+                            {notEligible ? ' (ไม่เปิดรับในตำแหน่งนี้)' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 
@@ -448,7 +518,25 @@ export default function DayDetailModal({
 
                 {isLiveShiftFull && (
                   <div className={styles.errorBox}>
-                    ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในช่วงเวลานี้ครบจำนวนแล้ว กรุณากดย้อนกลับเพื่อเลือกช่วงเวลาอื่น
+                    ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในตำแหน่ง/ช่วงเวลานี้ครบจำนวนแล้ว กรุณากดย้อนกลับเพื่อเลือกตำแหน่งอื่น
+                  </div>
+                )}
+
+                {isMajorBlockedInForm && (
+                  <div className={styles.errorBox}>
+                    ขออภัย ตำแหน่งนี้รับเฉพาะสาขา: {liveShiftAllowedMajors.join(', ')}
+                  </div>
+                )}
+
+                {overlappingRegShift && (
+                  <div className={styles.errorBox}>
+                    {overlappingRegShift.id === liveShift?.id
+                      ? 'รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในหน้าที่/ช่วงเวลานี้ไปแล้ว'
+                      : `คุณได้ลงทะเบียนในช่วงเวลาเดียวกันนี้ไปแล้ว (${
+                          overlappingRegShift.duty_name
+                            ? `หน้าที่ "${overlappingRegShift.duty_name}"`
+                            : overlappingRegShift.label
+                        } • ${overlappingRegShift.time_range}) ไม่สามารถลงซ้ำซ้อนในช่วงเวลาเดียวกันได้`}
                   </div>
                 )}
 
@@ -458,7 +546,7 @@ export default function DayDetailModal({
                   </div>
                 )}
 
-                {regError && !isKysBlockedInForm && (
+                {regError && !isKysBlockedInForm && !isMajorBlockedInForm && !overlappingRegShift && (
                   <div className={styles.errorBox}>{regError}</div>
                 )}
 
@@ -479,13 +567,19 @@ export default function DayDetailModal({
                     type="button"
                     onClick={handlePreRegister}
                     className={styles.primaryBtn}
-                    disabled={regLoading || Boolean(isKysBlockedInForm) || isLiveShiftFull}
+                    disabled={
+                      regLoading ||
+                      Boolean(isKysBlockedInForm) ||
+                      Boolean(isMajorBlockedInForm) ||
+                      Boolean(overlappingRegShift) ||
+                      isLiveShiftFull
+                    }
                   >
                     {regLoading && <span className={styles.btnSpinner} />}
                     {regLoading
                       ? 'กำลังบันทึก...'
                       : isLiveShiftFull
-                      ? 'ช่วงเวลานี้เต็มแล้ว'
+                      ? 'ตำแหน่งนี้เต็มแล้ว'
                       : 'ลงทะเบียนรับงาน'}
                   </button>
                 </div>
@@ -527,6 +621,11 @@ export default function DayDetailModal({
                   <p>
                     <strong>ชื่องาน:</strong> {activeShiftInfo.job.title}
                   </p>
+                  {activeShiftInfo.shift.duty_name && (
+                    <p>
+                      <strong>หน้าที่ / ตำแหน่ง:</strong> {activeShiftInfo.shift.duty_name}
+                    </p>
+                  )}
                   <p>
                     <strong>ช่วงเวลา:</strong> {activeShiftInfo.shift.label} (
                     {activeShiftInfo.shift.time_range}) •{' '}
@@ -589,7 +688,8 @@ export default function DayDetailModal({
 
               <div className={styles.cancelDetails}>
                 <p>
-                  <strong>งาน:</strong> {cancellingReg.job.title} ({cancellingReg.shift.label}{' '}
+                  <strong>งาน:</strong> {cancellingReg.job.title} ({cancellingReg.shift.label}
+                  {cancellingReg.shift.duty_name ? ` — หน้าที่: ${cancellingReg.shift.duty_name}` : ''}{' '}
                   {cancellingReg.shift.time_range})
                 </p>
                 <p>
@@ -746,16 +846,37 @@ export default function DayDetailModal({
                         const regCount = shift.registrations.length;
                         const remaining = Math.max(0, shift.capacity - regCount);
                         const shiftFull = regCount >= shift.capacity;
+                        const shiftAllowedMajors = sanitizeAllowedMajors(shift.allowed_majors);
+                        const regBtnLabel = shift.duty_name
+                          ? 'ลงทะเบียนรับหน้าที่นี้'
+                          : 'ลงทะเบียนช่วงนี้';
 
                         return (
                           <div key={shift.id} className={styles.shiftBox}>
                             <div className={styles.shiftBoxHeader}>
                               <div className={styles.shiftInfoLeft}>
                                 <span className={styles.shiftName}>{shift.label}</span>
+                                {shift.duty_name && (
+                                  <span className={styles.shiftDutyBadge}>
+                                    หน้าที่: {shift.duty_name}
+                                  </span>
+                                )}
                                 <span className={styles.shiftTime}>{shift.time_range}</span>
                                 <span className={styles.shiftHours}>
                                   {shift.hours} ชม.ทุน
                                 </span>
+                                {shiftAllowedMajors.length > 0 ? (
+                                  <span
+                                    className={styles.shiftMajorBadge}
+                                    title={`รับเฉพาะสาขา: ${shiftAllowedMajors.join(', ')}`}
+                                  >
+                                    เฉพาะ: {shiftAllowedMajors.join(', ')}
+                                  </span>
+                                ) : (
+                                  <span className={styles.shiftMajorAllBadge}>
+                                    เปิดรับทุกสาขาใน DIT
+                                  </span>
+                                )}
                                 <span
                                   className={
                                     shiftFull
@@ -775,7 +896,7 @@ export default function DayDetailModal({
                                     className={styles.registerBtn}
                                     onClick={() => openRegistrationForm(job, shift)}
                                   >
-                                    ลงทะเบียนช่วงนี้
+                                    {regBtnLabel}
                                   </button>
                                 ) : shiftFull ? (
                                   <span className={styles.fullPill}>เต็มแล้ว</span>
@@ -789,7 +910,7 @@ export default function DayDetailModal({
                             <div className={styles.participantsSection}>
                               {shift.registrations.length === 0 ? (
                                 <div className={styles.noParticipants}>
-                                  ยังไม่มีผู้ลงทะเบียนในช่วงเวลานี้ — กดปุ่ม &ldquo;ลงทะเบียนช่วงนี้&rdquo; เพื่อรับงานคนแรกได้เลย
+                                  ยังไม่มีผู้ลงทะเบียนในช่วงเวลานี้ — กดปุ่ม &ldquo;{regBtnLabel}&rdquo; เพื่อรับงานคนแรกได้เลย
                                 </div>
                               ) : (
                                 <div className={styles.participantsList}>

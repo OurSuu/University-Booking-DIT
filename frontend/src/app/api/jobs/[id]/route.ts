@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateJob, deleteJob, verifyTeacherPin } from '@/lib/db';
+import { updateJob, deleteJob, verifyTeacherPin, validateAndSanitizeShifts } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
@@ -44,9 +44,10 @@ export async function PUT(
       );
     }
 
-    if (!Array.isArray(shifts) || shifts.length === 0) {
+    const shiftCheck = validateAndSanitizeShifts(shifts);
+    if (shiftCheck.error || !shiftCheck.shifts) {
       return NextResponse.json(
-        { error: 'กรุณาเพิ่มกะ/ช่วงเวลาทำงานอย่างน้อย 1 ช่วงเวลา' },
+        { error: shiftCheck.error || 'ข้อมูลกะ/ช่วงเวลาไม่ถูกต้อง' },
         { status: 400 }
       );
     }
@@ -60,7 +61,7 @@ export async function PUT(
       require_scholarship_name: Boolean(require_scholarship_name),
       allow_kys: Boolean(allow_kys),
       job_type: job_type === 'external' ? 'external' : 'internal',
-      shifts,
+      shifts: shiftCheck.shifts,
     });
 
     if (!updated) {
