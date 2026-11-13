@@ -886,6 +886,76 @@
   border-radius: 6px;
 }
 
+.jobScheduleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: var(--accent-indigo-light);
+  border: 1px solid #c7d2fe;
+  color: var(--accent-indigo);
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.rolesGroupContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.roleSubCard {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.roleSubHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.8rem;
+  flex-wrap: wrap;
+}
+
+.roleSubLeft {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.roleIndexPill {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-muted);
+  padding: 0.14rem 0.48rem;
+  border-radius: 6px;
+}
+
+.roleSubParticipants {
+  padding: 0.45rem 0.8rem 0.55rem;
+  border-top: 1px dashed var(--border-color);
+  background: #f8fafc;
+}
+
+.roleCountMeta {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
 .shiftTime {
   font-size: 0.85rem;
   color: var(--text-secondary);

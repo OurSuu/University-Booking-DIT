@@ -8,6 +8,8 @@ import {
   normalizeMajorName,
   sanitizeAllowedMajors,
   getMajorShortCode,
+  groupJobShifts,
+  getJobAnnouncedHours,
   getTodayStr,
   isKysScholarship,
 } from '@/types';
@@ -305,6 +307,7 @@ function DashboardInner() {
       jobScope: 'internal' | 'external';
       teacherName: string;
       location: string;
+      shiftMode: 'shifts' | 'roles';
       shiftLabel: string;
       dutyName: string;
       allowedMajors: string[];
@@ -334,6 +337,7 @@ function DashboardInner() {
               jobScope: jScope,
               teacherName: job.teacher_name,
               location: job.location,
+              shiftMode: job.shift_mode === 'roles' ? 'roles' : 'shifts',
               shiftLabel: shift.label,
               dutyName: shiftDutyName,
               allowedMajors: shiftAllowedMajors,
@@ -374,11 +378,12 @@ function DashboardInner() {
       if (isExt) externalJobsCount++;
       else internalJobsCount++;
 
-      for (const s of j.shifts) {
-        totalAnnouncedHours += s.hours;
-        if (isExt) externalAnnouncedHours += s.hours;
-        else internalAnnouncedHours += s.hours;
+      const jobHours = getJobAnnouncedHours(j);
+      totalAnnouncedHours += jobHours;
+      if (isExt) externalAnnouncedHours += jobHours;
+      else internalAnnouncedHours += jobHours;
 
+      for (const s of j.shifts) {
         totalCapacity += s.capacity;
         totalFilled += s.registrations.length;
       }
@@ -427,7 +432,7 @@ function DashboardInner() {
         const dayRegs = filteredData.registrations.filter((r) => r.jobDate === dateStr);
 
         const dayAnnouncedHours = dayJobs.reduce(
-          (acc, j) => acc + j.shifts.reduce((sAcc, s) => sAcc + s.hours, 0),
+          (acc, j) => acc + getJobAnnouncedHours(j),
           0
         );
 
@@ -456,7 +461,7 @@ function DashboardInner() {
         const monthRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(monthStr));
 
         const monthAnnouncedHours = monthJobs.reduce(
-          (acc, j) => acc + j.shifts.reduce((sAcc, s) => sAcc + s.hours, 0),
+          (acc, j) => acc + getJobAnnouncedHours(j),
           0
         );
 
@@ -486,8 +491,8 @@ function DashboardInner() {
         }
         const item = yearMap.get(y)!;
         item.jobs++;
+        item.announcedHours += getJobAnnouncedHours(j);
         for (const s of j.shifts) {
-          item.announcedHours += s.hours;
           item.regs += s.registrations.length;
         }
       }
@@ -579,8 +584,8 @@ function DashboardInner() {
       const loc = j.location?.trim() || 'ไม่ระบุสถานที่';
       const item = map.get(loc) || { jobs: 0, hours: 0, regs: 0 };
       item.jobs++;
+      item.hours += getJobAnnouncedHours(j);
       for (const s of j.shifts) {
-        item.hours += s.hours;
         item.regs += s.registrations.length;
       }
       map.set(loc, item);
@@ -627,7 +632,9 @@ function DashboardInner() {
         r.studentName.toLowerCase().includes(q) ||
         r.faculty.toLowerCase().includes(q) ||
         r.jobTitle.toLowerCase().includes(q) ||
-        r.shiftLabel.toLowerCase().includes(q) ||
+        (r.shiftMode === 'roles' ? 'ทั้งงาน ไม่แบ่งกะ' : r.shiftLabel)
+          .toLowerCase()
+          .includes(q) ||
         r.dutyName.toLowerCase().includes(q) ||
         r.scholarshipName.toLowerCase().includes(q)
     );
@@ -639,11 +646,15 @@ function DashboardInner() {
     lines.push(`รายชื่อนักศึกษาที่ลงทะเบียนตามตัวกรอง (${tableRows.length} รายการ)`);
     lines.push('----------------------------------------');
     tableRows.forEach((r, idx) => {
+      const shiftText =
+        r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
+          ? `ทั้งงาน (${r.timeRange})`
+          : `${r.shiftLabel} (${r.timeRange})`;
       const dutyPart = r.dutyName ? ` [หน้าที่: ${r.dutyName}]` : '';
       const phonePart = r.phone ? ` • โทร: ${r.phone}` : '';
       const scholPart = r.scholarshipName ? ` [ทุน: ${r.scholarshipName}]` : '';
       lines.push(
-        `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${r.shiftLabel}${dutyPart} (${r.timeRange}) | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart} | ${r.hours} ชม.`
+        `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${shiftText}${dutyPart} | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart} | ${r.hours} ชม.`
       );
     });
     navigator.clipboard.writeText(lines.join('\n'));
@@ -1250,7 +1261,9 @@ function DashboardInner() {
                       {jobRows.map((job) => {
                         const totalCap = job.shifts.reduce((s, sh) => s + sh.capacity, 0);
                         const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
-                        const totalJobHours = job.shifts.reduce((s, sh) => s + sh.hours, 0);
+                        const totalJobHours = getJobAnnouncedHours(job);
+                        const shiftGroups = groupJobShifts(job.shifts);
+                        const isRolesMode = job.shift_mode === 'roles';
                         const isExt = job.job_type === 'external';
                         const jobDuties = Array.from(
                           new Set(job.shifts.map((s) => (s.duty_name || '').trim()).filter(Boolean))
@@ -1274,7 +1287,26 @@ function DashboardInner() {
                             <td>{job.location || 'ไม่ระบุ'}</td>
                             <td style={{ whiteSpace: 'normal', minWidth: '185px' }}>
                               <div>
-                                <strong>{job.shifts.length} กะ</strong> (รวม {totalJobHours} ชม.)
+                                {isRolesMode ? (
+                                  <>
+                                    <strong>ไม่แบ่งกะ (ทั้งงาน)</strong> • รวม {totalJobHours} ชม.
+                                    {job.shifts.length > 0 && (
+                                      <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                                        {' '}({job.shifts.length} หน้าที่)
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <strong>{shiftGroups.length} กะ</strong>
+                                    {job.shifts.length > shiftGroups.length && (
+                                      <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                                        {' '}({job.shifts.length} หน้าที่)
+                                      </span>
+                                    )}{' '}
+                                    (รวม {totalJobHours} ชม.)
+                                  </>
+                                )}
                               </div>
                               {(jobDuties.length > 0 || jobRestrictedMajors.length > 0) && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
@@ -1316,7 +1348,9 @@ function DashboardInner() {
                   jobRows.map((job) => {
                     const totalCap = job.shifts.reduce((s, sh) => s + sh.capacity, 0);
                     const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
-                    const totalJobHours = job.shifts.reduce((s, sh) => s + sh.hours, 0);
+                    const totalJobHours = getJobAnnouncedHours(job);
+                    const shiftGroups = groupJobShifts(job.shifts);
+                    const isRolesMode = job.shift_mode === 'roles';
                     const isExt = job.job_type === 'external';
                     const jobDuties = Array.from(
                       new Set(job.shifts.map((s) => (s.duty_name || '').trim()).filter(Boolean))
@@ -1347,7 +1381,21 @@ function DashboardInner() {
                         <div className={styles.mobileCardStudent}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                             <span>
-                              จำนวนกะ: <strong>{job.shifts.length} ช่วงเวลา</strong>
+                              {isRolesMode ? (
+                                <>
+                                  รูปแบบ: <strong>ไม่แบ่งกะ ({job.shifts.length} หน้าที่)</strong>
+                                </>
+                              ) : (
+                                <>
+                                  จำนวนกะ:{' '}
+                                  <strong>
+                                    {shiftGroups.length} ช่วงเวลา
+                                    {job.shifts.length > shiftGroups.length
+                                      ? ` (${job.shifts.length} หน้าที่)`
+                                      : ''}
+                                  </strong>
+                                </>
+                              )}
                             </span>
                             <span>
                               ผู้ลงทะเบียน:{' '}
@@ -1415,7 +1463,11 @@ function DashboardInner() {
                             </span>
                           </td>
                           <td>
-                            <div>{r.shiftLabel} ({r.timeRange})</div>
+                            <div>
+                              {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
+                                ? `ทั้งงาน (${r.timeRange})`
+                                : `${r.shiftLabel} (${r.timeRange})`}
+                            </div>
                             {r.allowedMajors.length > 0 && (
                               <div style={{ fontSize: '0.72rem', color: '#1d4ed8', marginTop: '2px' }}>
                                 เฉพาะ: {r.allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
@@ -1490,7 +1542,9 @@ function DashboardInner() {
                       <div className={styles.mobileCardJob}>
                         <strong className={styles.mobileCardJobTitle}>{r.jobTitle}</strong>
                         <span className={styles.mobileCardJobShift}>
-                          {r.shiftLabel} ({r.timeRange})
+                          {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
+                            ? `เวลา ${r.timeRange} (ทั้งงาน)`
+                            : `${r.shiftLabel} (${r.timeRange})`}
                         </span>
                         {r.dutyName && (
                           <div style={{ marginTop: '4px' }}>

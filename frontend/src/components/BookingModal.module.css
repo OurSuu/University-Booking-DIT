@@ -270,32 +270,82 @@
   background: var(--primary-hover);
 }
 
-.shiftsList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.modeSwitchRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
 }
 
-.shiftItem {
+.singleScheduleBox {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+.singleScheduleFields {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.singleScheduleTotal {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  padding: 0.48rem 0.75rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.shiftsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.shiftGroupCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
   background: #ffffff;
-  padding: 0.85rem;
+  padding: 0.9rem;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .shiftMainRow {
   display: grid;
-  grid-template-columns: 1fr 1.35fr 1.15fr 0.72fr 0.78fr auto;
+  grid-template-columns: auto 1.1fr 1.2fr 0.75fr auto;
   gap: 0.55rem;
   align-items: end;
 }
 
+.shiftGroupBadge {
+  height: 36px;
+  padding: 0 0.65rem;
+  border-radius: 8px;
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .shiftColLabel,
-.shiftColDuty,
 .shiftColTime,
 .shiftColNum {
   display: flex;
@@ -303,40 +353,171 @@
   gap: 0.25rem;
 }
 
-.shiftItem label {
+.shiftGroupCard label,
+.singleScheduleBox label {
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-muted);
 }
 
-.shiftItem input {
+.shiftGroupCard input,
+.singleScheduleBox input {
   width: 100%;
-  padding: 0.5rem 0.65rem;
+  padding: 0.48rem 0.65rem;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
-  font-size: 0.86rem;
+  font-size: 0.85rem;
 }
 
-.shiftExtraRow {
+.rolesSection {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding-top: 0.6rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.65rem;
   border-top: 1px dashed var(--border-color);
+}
+
+.rolesSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.majorPickerGroup {
+.rolesSectionTitle {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.addRoleBtn {
+  padding: 0.34rem 0.7rem;
+  border-radius: 8px;
+  border: 1px dashed var(--primary-border);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.addRoleBtn:hover {
+  background: #fee2e2;
+  border-style: solid;
+}
+
+.rolesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.roleRowCard {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.roleMainRow {
+  display: grid;
+  grid-template-columns: auto 1.6fr 0.65fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.roleIndexTag {
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.25rem 0.45rem;
+  text-align: center;
+  min-width: 30px;
+}
+
+.roleCapWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.roleCapUnit {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.majorTriggerWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.majorSummaryBadgeAll {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.26rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.majorSummaryBadgeRestricted {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.26rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.majorToggleBtn {
+  padding: 0.28rem 0.55rem;
+  border-radius: 7px;
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.majorToggleBtn:hover {
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.majorPickerBox {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  flex: 1;
-  min-width: 240px;
+  padding-top: 0.45rem;
+  border-top: 1px dashed var(--border-color);
 }
 
 .majorPickerLabel {
-  font-size: 0.74rem;
+  font-size: 0.73rem;
   font-weight: 700;
   color: var(--text-secondary);
 }
@@ -348,12 +529,12 @@
 }
 
 .majorPillBtn {
-  padding: 0.28rem 0.6rem;
+  padding: 0.26rem 0.58rem;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: #f8fafc;
+  background: #ffffff;
   color: var(--text-secondary);
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -376,23 +557,23 @@
   color: #1d4ed8;
 }
 
-.duplicateRoleBtn {
-  align-self: flex-end;
-  padding: 0.36rem 0.7rem;
-  border-radius: 8px;
-  border: 1px dashed var(--primary-border);
-  background: var(--primary-light);
-  color: var(--primary);
-  font-size: 0.75rem;
-  font-weight: 700;
+.removeSmallBtn {
+  height: 32px;
+  width: 32px;
+  border-radius: 7px;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 0.78rem;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.duplicateRoleBtn:hover {
-  background: #fee2e2;
-  border-style: solid;
+.removeSmallBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .removeShiftBtn {
@@ -544,20 +725,35 @@
   }
 
   .row2Col,
-  .kysToggleRow {
+  .kysToggleRow,
+  .modeSwitchRow {
     grid-template-columns: 1fr;
+  }
+
+  .singleScheduleFields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .singleScheduleTotal {
+    grid-column: 1 / -1;
+    text-align: center;
   }
 
   .shiftMainRow {
     grid-template-columns: 1fr 1fr;
   }
 
-  .shiftColDuty {
+  .shiftGroupBadge {
     grid-column: 1 / -1;
+    width: fit-content;
   }
 
-  .duplicateRoleBtn {
-    width: 100%;
-    text-align: center;
+  .roleMainRow {
+    grid-template-columns: auto 1fr;
+  }
+
+  .roleMainRow > .roleCapWrap,
+  .roleMainRow > .majorTriggerWrap {
+    grid-column: 1 / -1;
   }
 }

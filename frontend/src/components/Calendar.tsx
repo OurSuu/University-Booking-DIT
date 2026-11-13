@@ -7,6 +7,7 @@ import {
   normalizeMajorName,
   sanitizeAllowedMajors,
   getMajorShortCode,
+  groupJobShifts,
   getTodayStr,
   getDaysUntilJob,
 } from '@/types';
@@ -700,9 +701,11 @@ export default function Calendar() {
                       <span className={styles.searchDateBadge}>
                         {formatThaiDate(item.job.date)}
                       </span>
-                      <strong>{item.job.title}</strong> — {item.shiftLabel}
-                      {item.dutyName ? ` [หน้าที่: ${item.dutyName}]` : ''} (
-                      {item.timeRange}) • {item.hours} ชม.ทุน •{' '}
+                      <strong>{item.job.title}</strong> —{' '}
+                      {item.job.shift_mode === 'roles' || item.shiftLabel === 'ตลอดงาน'
+                        ? `${item.dutyName ? `หน้าที่: ${item.dutyName}` : 'ร่วมงาน'} (${item.timeRange})`
+                        : `${item.shiftLabel}${item.dutyName ? ` [หน้าที่: ${item.dutyName}]` : ''} (${item.timeRange})`}{' '}
+                      • {item.hours} ชม.ทุน •{' '}
                       {isTeacherMode ? (
                         <>
                           ผู้ลง: <strong>{item.studentName}</strong> (รหัส: {item.studentId}) — {item.faculty}
@@ -985,11 +988,38 @@ export default function Calendar() {
                           </div>
                           <div className={styles.mobileAgendaTitle}>{job.title}</div>
                           <div className={styles.mobileAgendaSub}>
-                            {job.shifts
-                              .map(
-                                (s) =>
-                                  `${s.label}${s.duty_name ? ` [${s.duty_name}]` : ''} (${s.time_range})`
-                              )
+                            {groupJobShifts(job.shifts)
+                              .map((group) => {
+                                const duties = group.roles
+                                  .map((r) => (r.duty_name || '').trim())
+                                  .filter(Boolean);
+                                const isRolesOnly =
+                                  job.shift_mode === 'roles' || group.label === 'ตลอดงาน';
+                                if (isRolesOnly) {
+                                  if (duties.length > 0) {
+                                    const shown = duties.slice(0, 3).join(', ');
+                                    const extra =
+                                      duties.length > 3
+                                        ? ` +อีก ${duties.length - 3} หน้าที่`
+                                        : '';
+                                    return `เวลา ${group.time_range} • หน้าที่: ${shown}${extra}`;
+                                  }
+                                  return `เวลา ${group.time_range} (${group.roles.length} ตำแหน่ง)`;
+                                }
+                                if (group.roles.length > 1) {
+                                  if (duties.length > 0) {
+                                    const shown = duties.slice(0, 2).join(', ');
+                                    const extra =
+                                      duties.length > 2 ? ` +อีก ${duties.length - 2}` : '';
+                                    return `${group.label} (${group.time_range}) [${group.roles.length} หน้าที่: ${shown}${extra}]`;
+                                  }
+                                  return `${group.label} (${group.time_range}) [${group.roles.length} ตำแหน่ง]`;
+                                }
+                                if (duties.length === 1) {
+                                  return `${group.label} [${duties[0]}] (${group.time_range})`;
+                                }
+                                return `${group.label} (${group.time_range})`;
+                              })
                               .join(' • ')}
                           </div>
                         </div>

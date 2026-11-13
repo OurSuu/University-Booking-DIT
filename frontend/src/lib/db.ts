@@ -97,9 +97,10 @@ function assertShiftRegistrationAllowed(
 
   const allowedMajors = sanitizeAllowedMajors(targetShift.allowed_majors);
   if (allowedMajors.length > 0 && !allowedMajors.includes(facultyClean)) {
+    const shiftCtx = targetShift.label === 'ตลอดงาน' ? targetShift.time_range : targetShift.label;
     const positionLabel = targetShift.duty_name
-      ? `ตำแหน่ง "${targetShift.duty_name}" (${targetShift.label})`
-      : targetShift.label;
+      ? `ตำแหน่ง "${targetShift.duty_name}" (${shiftCtx})`
+      : shiftCtx;
     throw new Error(`ขออภัย ${positionLabel} รับเฉพาะสาขา: ${allowedMajors.join(', ')}`);
   }
 
@@ -128,9 +129,10 @@ function assertShiftRegistrationAllowed(
       if (s.id === targetShift.id) {
         throw new Error('รหัสนักศึกษาหรือชื่อนี้ได้ลงทะเบียนในหน้าที่/ช่วงเวลานี้ไปแล้ว');
       }
+      const timeCtx = s.label === 'ตลอดงาน' ? s.time_range : `${s.label} • ${s.time_range}`;
       const existingPos = s.duty_name
-        ? `หน้าที่ "${s.duty_name}" (${s.label} • ${s.time_range})`
-        : `${s.label} (${s.time_range})`;
+        ? `หน้าที่ "${s.duty_name}" (${timeCtx})`
+        : timeCtx;
       throw new Error(
         `คุณได้ลงทะเบียนในช่วงเวลาเดียวกันนี้ไปแล้ว (${existingPos}) ไม่สามารถลงซ้ำซ้อนในช่วงเวลาเดียวกันได้`
       );
@@ -156,7 +158,7 @@ function getDbConnectionString(): string {
   ).trim();
 }
 
-const DB_SCHEMA_VERSION = 2;
+const DB_SCHEMA_VERSION = 3;
 
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
@@ -189,6 +191,8 @@ async function ensurePgTables() {
       location VARCHAR(200) DEFAULT '',
       require_scholarship_name BOOLEAN DEFAULT TRUE,
       allow_kys BOOLEAN DEFAULT TRUE,
+      job_type VARCHAR(50) DEFAULT 'internal',
+      shift_mode VARCHAR(20) DEFAULT 'shifts',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -218,6 +222,7 @@ async function ensurePgTables() {
 
     ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
+    ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS shift_mode VARCHAR(20) DEFAULT 'shifts';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS allowed_majors TEXT DEFAULT '[]';
 
@@ -639,6 +644,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       require_scholarship_name: Boolean(j.require_scholarship_name),
       allow_kys: Boolean(j.allow_kys),
       job_type: (j.job_type === 'external' ? 'external' : 'internal') as 'internal' | 'external',
+      shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
       created_at: j.created_at ? new Date(j.created_at).toISOString() : '',
       shifts: shiftsByJob.get(Number(j.id)) || [],
     }));
@@ -663,6 +669,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       }));
     return {
       ...j,
+      shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
       shifts: jobShifts,
     };
   });
@@ -682,11 +689,13 @@ export interface CreateJobPayload {
   require_scholarship_name: boolean;
   allow_kys: boolean;
   job_type?: 'internal' | 'external';
+  shift_mode?: 'shifts' | 'roles';
   shifts: ShiftInput[];
 }
 
 export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncement> {
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
+  const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
@@ -695,8 +704,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       await client.query('BEGIN');
       const jobRes = await client.query(
         `INSERT INTO scholarship_jobs
-          (date, title, description, teacher_name, location, require_scholarship_name, allow_kys, job_type)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          (date, title, description, teacher_name, location, require_scholarship_name, allow_kys, job_type, shift_mode)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           payload.date,
@@ -707,6 +716,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
           payload.require_scholarship_name,
           payload.allow_kys,
           jobScope,
+          shiftMode,
         ]
       );
       const jobRow = jobRes.rows[0];
@@ -757,6 +767,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
     require_scholarship_name: payload.require_scholarship_name,
     allow_kys: payload.allow_kys,
     job_type: jobScope,
+    shift_mode: shiftMode,
     created_at: nowIso,
   });
 
@@ -787,6 +798,7 @@ export async function updateJob(
   if (!existing) return null;
 
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
+  const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
 
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
@@ -797,8 +809,8 @@ export async function updateJob(
       await client.query(
         `UPDATE scholarship_jobs
          SET date = $1, title = $2, description = $3, teacher_name = $4,
-             location = $5, require_scholarship_name = $6, allow_kys = $7, job_type = $8
-         WHERE id = $9`,
+             location = $5, require_scholarship_name = $6, allow_kys = $7, job_type = $8, shift_mode = $9
+         WHERE id = $10`,
         [
           payload.date,
           payload.title.trim(),
@@ -808,6 +820,7 @@ export async function updateJob(
           payload.require_scholarship_name,
           payload.allow_kys,
           jobScope,
+          shiftMode,
           jobId,
         ]
       );
@@ -888,6 +901,7 @@ export async function updateJob(
     require_scholarship_name: payload.require_scholarship_name,
     allow_kys: payload.allow_kys,
     job_type: jobScope,
+    shift_mode: shiftMode,
   };
 
   const incomingShiftIds = payload.shifts

@@ -8,6 +8,7 @@ import {
   DIT_MAJORS,
   sanitizeAllowedMajors,
   areTimeRangesOverlappingOrSame,
+  groupJobShifts,
   getTodayStr,
   getDaysUntilJob,
   isKysScholarship,
@@ -131,23 +132,35 @@ export default function DayDetailModal({
     if (job.location) lines.push(`สถานที่: ${job.location}`);
     lines.push('----------------------------------------');
 
-    for (const s of job.shifts) {
-      const allowed = sanitizeAllowedMajors(s.allowed_majors);
-      const dutyPart = s.duty_name ? ` [หน้าที่: ${s.duty_name}]` : '';
-      const majorPart = allowed.length > 0 ? ` [เฉพาะสาขา: ${allowed.join(', ')}]` : '';
-      lines.push(
-        `\n${s.label}${dutyPart} (${s.time_range}) | ${s.hours} ชม.ทุน | ลงทะเบียน ${s.registrations.length}/${s.capacity} คน${majorPart}`
-      );
-      if (s.registrations.length === 0) {
-        lines.push('   (ยังไม่มีผู้ลงทะเบียน)');
+    const isRolesOnly = job.shift_mode === 'roles';
+    const groups = groupJobShifts(job.shifts);
+
+    for (const group of groups) {
+      if (isRolesOnly || group.label === 'ตลอดงาน') {
+        lines.push(`\nช่วงเวลาทั้งงาน: ${group.time_range} | ${group.hours} ชม.ทุน`);
       } else {
-        s.registrations.forEach((r, i) => {
-          lines.push(
-            `   ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา: ${r.faculty}${
-              r.phone ? ` • โทร: ${r.phone}` : ''
-            })${r.scholarship_name ? ` [ทุน: ${r.scholarship_name}]` : ''}`
-          );
-        });
+        lines.push(`\n${group.label} (${group.time_range}) | ${group.hours} ชม.ทุน`);
+      }
+
+      for (const s of group.roles) {
+        const allowed = sanitizeAllowedMajors(s.allowed_majors);
+        const majorPart = allowed.length > 0 ? ` [เฉพาะสาขา: ${allowed.join(', ')}]` : '';
+        const roleHeading = s.duty_name
+          ? `  - หน้าที่: ${s.duty_name} (${s.registrations.length}/${s.capacity} คน)${majorPart}`
+          : `  - ลงทะเบียน ${s.registrations.length}/${s.capacity} คน${majorPart}`;
+        lines.push(roleHeading);
+
+        if (s.registrations.length === 0) {
+          lines.push('     (ยังไม่มีผู้ลงทะเบียน)');
+        } else {
+          s.registrations.forEach((r, i) => {
+            lines.push(
+              `     ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา: ${r.faculty}${
+                r.phone ? ` • โทร: ${r.phone}` : ''
+              })${r.scholarship_name ? ` [ทุน: ${r.scholarship_name}]` : ''}`
+            );
+          });
+        }
       }
     }
 
@@ -323,6 +336,82 @@ export default function DayDetailModal({
     }
   };
 
+  const renderParticipantsList = (
+    job: JobAnnouncement,
+    shift: JobShift,
+    regBtnLabel: string,
+    emptyEntityLabel: string
+  ) => {
+    if (shift.registrations.length === 0) {
+      return (
+        <div className={styles.noParticipants}>
+          ยังไม่มีผู้ลงทะเบียน{emptyEntityLabel} — กดปุ่ม &ldquo;{regBtnLabel}&rdquo; เพื่อรับงานคนแรกได้เลย
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.participantsList}>
+        {shift.registrations.map((reg, index) => (
+          <div key={reg.id} className={styles.participantRow}>
+            {isTeacherMode ? (
+              <div className={styles.participantInfo}>
+                <span className={styles.participantIndex}>#{index + 1}</span>
+                <span className={styles.participantName}>{reg.student_name}</span>
+                <span className={styles.participantCode}>รหัส: {reg.student_id}</span>
+                <span className={styles.participantFaculty}>สาขา: {reg.faculty}</span>
+                {reg.phone && (
+                  <a
+                    href={`tel:${reg.phone}`}
+                    className={styles.participantPhone}
+                    title="โทรติดต่อนักศึกษา"
+                  >
+                    โทร: {reg.phone}
+                  </a>
+                )}
+                {reg.scholarship_name && (
+                  <span className={styles.participantScholarship}>
+                    ทุน: {reg.scholarship_name}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className={styles.participantInfo}>
+                <span className={styles.participantIndex}>#{index + 1}</span>
+                <span className={styles.participantCode}>
+                  รหัสนักศึกษา: <strong>{reg.student_id}</strong>
+                </span>
+                <span
+                  className={styles.pdpaProtectedBadge}
+                  title="สงวนข้อมูลชื่อ สาขา และเบอร์โทรศัพท์ ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)"
+                >
+                  สงวนข้อมูลส่วนตัว (PDPA)
+                </span>
+              </div>
+            )}
+
+            <div className={styles.participantActions}>
+              {isTeacherMode && (
+                <button
+                  type="button"
+                  className={styles.withdrawBtn}
+                  onClick={() => {
+                    setCancellingReg({ reg, job, shift });
+                    setActiveShiftInfo(null);
+                    setCancelError(null);
+                  }}
+                  title="ถอนชื่อนักศึกษาคนนี้ (สำหรับอาจารย์)"
+                >
+                  ถอนชื่อ (อาจารย์)
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className={styles.backdrop} onClick={handleBackdropClick}>
       <div className={styles.modal}>
@@ -391,7 +480,19 @@ export default function DayDetailModal({
                   <span className={styles.regStepBadge}>ลงทะเบียนรับงานชั่วโมงทุน</span>
                   <h3>{activeShiftInfo.job.title}</h3>
                   <p className={styles.regSubInfo}>
-                    ช่วงเวลา: <strong>{activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})</strong>
+                    {activeShiftInfo.job.shift_mode === 'roles' ||
+                    activeShiftInfo.shift.label === 'ตลอดงาน' ? (
+                      <>
+                        เวลา: <strong>{activeShiftInfo.shift.time_range}</strong>
+                      </>
+                    ) : (
+                      <>
+                        ช่วงเวลา:{' '}
+                        <strong>
+                          {activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})
+                        </strong>
+                      </>
+                    )}
                     {activeShiftInfo.shift.duty_name && (
                       <>
                         {' '}• หน้าที่: <strong>{activeShiftInfo.shift.duty_name}</strong>
@@ -430,7 +531,13 @@ export default function DayDetailModal({
                 <div className={styles.majorWarningBanner}>
                   <strong>จำกัดสาขาวิชา:</strong>{' '}
                   {activeShiftInfo.shift.duty_name
-                    ? `หน้าที่ "${activeShiftInfo.shift.duty_name}" (${activeShiftInfo.shift.label})`
+                    ? activeShiftInfo.job.shift_mode === 'roles' ||
+                      activeShiftInfo.shift.label === 'ตลอดงาน'
+                      ? `หน้าที่ "${activeShiftInfo.shift.duty_name}"`
+                      : `หน้าที่ "${activeShiftInfo.shift.duty_name}" (${activeShiftInfo.shift.label})`
+                    : activeShiftInfo.job.shift_mode === 'roles' ||
+                      activeShiftInfo.shift.label === 'ตลอดงาน'
+                    ? 'งานนี้'
                     : `ช่วงเวลา "${activeShiftInfo.shift.label}"`}{' '}
                   เปิดรับเฉพาะสาขา <strong>{liveShiftAllowedMajors.join(', ')}</strong> เท่านั้น
                 </div>
@@ -627,9 +734,12 @@ export default function DayDetailModal({
                     </p>
                   )}
                   <p>
-                    <strong>ช่วงเวลา:</strong> {activeShiftInfo.shift.label} (
-                    {activeShiftInfo.shift.time_range}) •{' '}
-                    {activeShiftInfo.shift.hours} ชม.ทุน
+                    <strong>ช่วงเวลา:</strong>{' '}
+                    {activeShiftInfo.job.shift_mode === 'roles' ||
+                    activeShiftInfo.shift.label === 'ตลอดงาน'
+                      ? `${activeShiftInfo.shift.time_range} (ทั้งงาน)`
+                      : `${activeShiftInfo.shift.label} (${activeShiftInfo.shift.time_range})`}{' '}
+                    • {activeShiftInfo.shift.hours} ชม.ทุน
                   </p>
                   <p>
                     <strong>ผู้ลงทะเบียน:</strong> {studentName} (รหัส: {studentId})
@@ -688,9 +798,17 @@ export default function DayDetailModal({
 
               <div className={styles.cancelDetails}>
                 <p>
-                  <strong>งาน:</strong> {cancellingReg.job.title} ({cancellingReg.shift.label}
-                  {cancellingReg.shift.duty_name ? ` — หน้าที่: ${cancellingReg.shift.duty_name}` : ''}{' '}
-                  {cancellingReg.shift.time_range})
+                  <strong>งาน:</strong> {cancellingReg.job.title} (
+                  {cancellingReg.job.shift_mode === 'roles' ||
+                  cancellingReg.shift.label === 'ตลอดงาน'
+                    ? cancellingReg.shift.time_range
+                    : cancellingReg.shift.label}
+                  {cancellingReg.shift.duty_name ? ` — หน้าที่: ${cancellingReg.shift.duty_name}` : ''}
+                  {cancellingReg.job.shift_mode === 'roles' ||
+                  cancellingReg.shift.label === 'ตลอดงาน'
+                    ? ''
+                    : ` ${cancellingReg.shift.time_range}`}
+                  )
                 </p>
                 <p>
                   <strong>นักศึกษา:</strong> {cancellingReg.reg.student_name} (รหัส:{' '}
@@ -834,157 +952,219 @@ export default function DayDetailModal({
                           <strong>สถานที่:</strong> {job.location}
                         </span>
                       )}
+                      {job.shift_mode === 'roles' && job.shifts[0] && (
+                        <span className={styles.jobScheduleBadge}>
+                          เวลา {job.shifts[0].time_range} • {job.shifts[0].hours} ชม.ทุน
+                        </span>
+                      )}
                     </div>
 
                     {job.description && (
                       <p className={styles.jobDesc}>{job.description}</p>
                     )}
 
-                    {/* รายการกะ / ช่วงเวลา */}
+                    {/* รายการกะ / ช่วงเวลา หรือ ตำแหน่งหน้าที่ */}
                     <div className={styles.shiftsContainer}>
-                      {job.shifts.map((shift) => {
-                        const regCount = shift.registrations.length;
-                        const remaining = Math.max(0, shift.capacity - regCount);
-                        const shiftFull = regCount >= shift.capacity;
-                        const shiftAllowedMajors = sanitizeAllowedMajors(shift.allowed_majors);
-                        const regBtnLabel = shift.duty_name
-                          ? 'ลงทะเบียนรับหน้าที่นี้'
-                          : 'ลงทะเบียนช่วงนี้';
+                      {groupJobShifts(job.shifts).map((group) => {
+                        const isRolesMode =
+                          job.shift_mode === 'roles' || group.label === 'ตลอดงาน';
+                        const isClassicSingleShift =
+                          !isRolesMode &&
+                          group.roles.length === 1 &&
+                          !group.roles[0].duty_name;
+
+                        if (isClassicSingleShift) {
+                          const shift = group.roles[0];
+                          const regCount = shift.registrations.length;
+                          const remaining = Math.max(0, shift.capacity - regCount);
+                          const shiftFull = regCount >= shift.capacity;
+                          const shiftAllowedMajors = sanitizeAllowedMajors(
+                            shift.allowed_majors
+                          );
+                          const regBtnLabel = 'ลงทะเบียนช่วงนี้';
+
+                          return (
+                            <div key={group.key} className={styles.shiftBox}>
+                              <div className={styles.shiftBoxHeader}>
+                                <div className={styles.shiftInfoLeft}>
+                                  <span className={styles.shiftName}>{group.label}</span>
+                                  <span className={styles.shiftTime}>{group.time_range}</span>
+                                  <span className={styles.shiftHours}>
+                                    {group.hours} ชม.ทุน
+                                  </span>
+                                  {shiftAllowedMajors.length > 0 ? (
+                                    <span
+                                      className={styles.shiftMajorBadge}
+                                      title={`รับเฉพาะสาขา: ${shiftAllowedMajors.join(', ')}`}
+                                    >
+                                      เฉพาะ: {shiftAllowedMajors.join(', ')}
+                                    </span>
+                                  ) : (
+                                    <span className={styles.shiftMajorAllBadge}>
+                                      เปิดรับทุกสาขาใน DIT
+                                    </span>
+                                  )}
+                                  <span
+                                    className={
+                                      shiftFull
+                                        ? styles.shiftCapFull
+                                        : styles.shiftCapOk
+                                    }
+                                  >
+                                    ลงแล้ว {regCount}/{shift.capacity} คน{' '}
+                                    {shiftFull ? '(เต็ม)' : `(ว่าง ${remaining})`}
+                                  </span>
+                                </div>
+
+                                <div className={styles.shiftActionRight}>
+                                  {daysUntil >= 0 && !shiftFull ? (
+                                    <button
+                                      type="button"
+                                      className={styles.registerBtn}
+                                      onClick={() => openRegistrationForm(job, shift)}
+                                    >
+                                      {regBtnLabel}
+                                    </button>
+                                  ) : shiftFull ? (
+                                    <span className={styles.fullPill}>เต็มแล้ว</span>
+                                  ) : (
+                                    <span className={styles.pastPill}>ปิดรับสมัคร</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className={styles.participantsSection}>
+                                {renderParticipantsList(
+                                  job,
+                                  shift,
+                                  regBtnLabel,
+                                  'ในช่วงเวลานี้'
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const totalGroupCapacity = group.roles.reduce(
+                          (sum, r) => sum + r.capacity,
+                          0
+                        );
+                        const totalGroupFilled = group.roles.reduce(
+                          (sum, r) => sum + r.registrations.length,
+                          0
+                        );
+                        const totalGroupRemaining = Math.max(
+                          0,
+                          totalGroupCapacity - totalGroupFilled
+                        );
 
                         return (
-                          <div key={shift.id} className={styles.shiftBox}>
+                          <div key={group.key} className={styles.shiftBox}>
                             <div className={styles.shiftBoxHeader}>
                               <div className={styles.shiftInfoLeft}>
-                                <span className={styles.shiftName}>{shift.label}</span>
-                                {shift.duty_name && (
-                                  <span className={styles.shiftDutyBadge}>
-                                    หน้าที่: {shift.duty_name}
-                                  </span>
-                                )}
-                                <span className={styles.shiftTime}>{shift.time_range}</span>
-                                <span className={styles.shiftHours}>
-                                  {shift.hours} ชม.ทุน
+                                <span className={styles.shiftName}>
+                                  {isRolesMode
+                                    ? 'ตำแหน่ง / หน้าที่ที่เปิดรับ'
+                                    : group.label}
                                 </span>
-                                {shiftAllowedMajors.length > 0 ? (
-                                  <span
-                                    className={styles.shiftMajorBadge}
-                                    title={`รับเฉพาะสาขา: ${shiftAllowedMajors.join(', ')}`}
-                                  >
-                                    เฉพาะ: {shiftAllowedMajors.join(', ')}
-                                  </span>
-                                ) : (
-                                  <span className={styles.shiftMajorAllBadge}>
-                                    เปิดรับทุกสาขาใน DIT
-                                  </span>
-                                )}
+                                <span className={styles.shiftTime}>{group.time_range}</span>
+                                <span className={styles.shiftHours}>
+                                  {group.hours} ชม.ทุน
+                                </span>
+                                <span className={styles.roleCountMeta}>
+                                  {group.roles.length} หน้าที่
+                                </span>
                                 <span
                                   className={
-                                    shiftFull
+                                    totalGroupFilled >= totalGroupCapacity
                                       ? styles.shiftCapFull
                                       : styles.shiftCapOk
                                   }
                                 >
-                                  ลงแล้ว {regCount}/{shift.capacity} คน{' '}
-                                  {shiftFull ? '(เต็ม)' : `(ว่าง ${remaining})`}
+                                  รวม {totalGroupFilled}/{totalGroupCapacity} คน{' '}
+                                  {totalGroupFilled >= totalGroupCapacity
+                                    ? '(เต็มทุกหน้าที่)'
+                                    : `(ว่าง ${totalGroupRemaining})`}
                                 </span>
-                              </div>
-
-                              <div className={styles.shiftActionRight}>
-                                {daysUntil >= 0 && !shiftFull ? (
-                                  <button
-                                    type="button"
-                                    className={styles.registerBtn}
-                                    onClick={() => openRegistrationForm(job, shift)}
-                                  >
-                                    {regBtnLabel}
-                                  </button>
-                                ) : shiftFull ? (
-                                  <span className={styles.fullPill}>เต็มแล้ว</span>
-                                ) : (
-                                  <span className={styles.pastPill}>ปิดรับสมัคร</span>
-                                )}
                               </div>
                             </div>
 
-                            {/* รายชื่อนักศึกษาที่ลงทะเบียนในกะนี้ */}
-                            <div className={styles.participantsSection}>
-                              {shift.registrations.length === 0 ? (
-                                <div className={styles.noParticipants}>
-                                  ยังไม่มีผู้ลงทะเบียนในช่วงเวลานี้ — กดปุ่ม &ldquo;{regBtnLabel}&rdquo; เพื่อรับงานคนแรกได้เลย
-                                </div>
-                              ) : (
-                                <div className={styles.participantsList}>
-                                  {shift.registrations.map((reg, index) => (
-                                    <div
-                                      key={reg.id}
-                                      className={styles.participantRow}
-                                    >
-                                      {isTeacherMode ? (
-                                        <div className={styles.participantInfo}>
-                                          <span className={styles.participantIndex}>
-                                            #{index + 1}
-                                          </span>
-                                          <span className={styles.participantName}>
-                                            {reg.student_name}
-                                          </span>
-                                          <span className={styles.participantCode}>
-                                            รหัส: {reg.student_id}
-                                          </span>
-                                          <span className={styles.participantFaculty}>
-                                            สาขา: {reg.faculty}
-                                          </span>
-                                          {reg.phone && (
-                                            <a
-                                              href={`tel:${reg.phone}`}
-                                              className={styles.participantPhone}
-                                              title="โทรติดต่อนักศึกษา"
-                                            >
-                                              โทร: {reg.phone}
-                                            </a>
-                                          )}
-                                          {reg.scholarship_name && (
-                                            <span className={styles.participantScholarship}>
-                                              ทุน: {reg.scholarship_name}
-                                            </span>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <div className={styles.participantInfo}>
-                                          <span className={styles.participantIndex}>
-                                            #{index + 1}
-                                          </span>
-                                          <span className={styles.participantCode}>
-                                            รหัสนักศึกษา: <strong>{reg.student_id}</strong>
-                                          </span>
-                                          <span
-                                            className={styles.pdpaProtectedBadge}
-                                            title="สงวนข้อมูลชื่อ สาขา และเบอร์โทรศัพท์ ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)"
-                                          >
-                                            สงวนข้อมูลส่วนตัว (PDPA)
-                                          </span>
-                                        </div>
-                                      )}
+                            <div className={styles.rolesGroupContainer}>
+                              {group.roles.map((shift, roleIdx) => {
+                                const regCount = shift.registrations.length;
+                                const remaining = Math.max(0, shift.capacity - regCount);
+                                const shiftFull = regCount >= shift.capacity;
+                                const shiftAllowedMajors = sanitizeAllowedMajors(
+                                  shift.allowed_majors
+                                );
+                                const regBtnLabel = shift.duty_name
+                                  ? 'ลงทะเบียนรับหน้าที่นี้'
+                                  : 'ลงทะเบียนตำแหน่งนี้';
 
-                                      <div className={styles.participantActions}>
-                                        {isTeacherMode && (
+                                return (
+                                  <div key={shift.id} className={styles.roleSubCard}>
+                                    <div className={styles.roleSubHeader}>
+                                      <div className={styles.roleSubLeft}>
+                                        <span className={styles.roleIndexPill}>
+                                          หน้าที่ {roleIdx + 1}
+                                        </span>
+                                        <span className={styles.shiftDutyBadge}>
+                                          {shift.duty_name || 'ร่วมงานทั่วไป'}
+                                        </span>
+                                        {shiftAllowedMajors.length > 0 ? (
+                                          <span
+                                            className={styles.shiftMajorBadge}
+                                            title={`รับเฉพาะสาขา: ${shiftAllowedMajors.join(', ')}`}
+                                          >
+                                            เฉพาะ: {shiftAllowedMajors.join(', ')}
+                                          </span>
+                                        ) : (
+                                          <span className={styles.shiftMajorAllBadge}>
+                                            เปิดรับทุกสาขาใน DIT
+                                          </span>
+                                        )}
+                                        <span
+                                          className={
+                                            shiftFull
+                                              ? styles.shiftCapFull
+                                              : styles.shiftCapOk
+                                          }
+                                        >
+                                          ลงแล้ว {regCount}/{shift.capacity} คน{' '}
+                                          {shiftFull ? '(เต็ม)' : `(ว่าง ${remaining})`}
+                                        </span>
+                                      </div>
+
+                                      <div className={styles.shiftActionRight}>
+                                        {daysUntil >= 0 && !shiftFull ? (
                                           <button
                                             type="button"
-                                            className={styles.withdrawBtn}
-                                            onClick={() => {
-                                              setCancellingReg({ reg, job, shift });
-                                              setActiveShiftInfo(null);
-                                              setCancelError(null);
-                                            }}
-                                            title="ถอนชื่อนักศึกษาคนนี้ (สำหรับอาจารย์)"
+                                            className={styles.registerBtn}
+                                            onClick={() => openRegistrationForm(job, shift)}
                                           >
-                                            ถอนชื่อ (อาจารย์)
+                                            {regBtnLabel}
                                           </button>
+                                        ) : shiftFull ? (
+                                          <span className={styles.fullPill}>เต็มแล้ว</span>
+                                        ) : (
+                                          <span className={styles.pastPill}>
+                                            ปิดรับสมัคร
+                                          </span>
                                         )}
                                       </div>
                                     </div>
-                                  ))}
-                                </div>
-                              )}
+
+                                    <div className={styles.roleSubParticipants}>
+                                      {renderParticipantsList(
+                                        job,
+                                        shift,
+                                        regBtnLabel,
+                                        'ในหน้าที่นี้'
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );

@@ -33,8 +33,51 @@ export interface JobAnnouncement {
   require_scholarship_name: boolean;// บังคับระบุชื่อทุนหรือไม่
   allow_kys: boolean;               // อนุญาตทุน กยศ. หรือไม่ (false = กยศ. ทำไม่ได้)
   job_type?: 'internal' | 'external'; // 'internal' = ภายในคณะ, 'external' = ภายนอกคณะ
+  shift_mode?: 'shifts' | 'roles';  // 'shifts' = แบ่งตามกะ/ช่วงเวลา, 'roles' = ไม่แบ่งกะ (เวลาเดียวทั้งงาน เลือกตามหน้าที่)
   created_at: string;
   shifts: JobShift[];
+}
+
+export interface GroupedJobShift {
+  key: string;
+  label: string;
+  time_range: string;
+  hours: number;
+  totalCapacity: number;
+  totalRegistrations: number;
+  roles: JobShift[];
+}
+
+export function groupJobShifts(shifts: JobShift[]): GroupedJobShift[] {
+  const groups: GroupedJobShift[] = [];
+  const indexByKey = new Map<string, number>();
+
+  for (const shift of shifts) {
+    const key = `${shift.label.trim().toLowerCase()}||${shift.time_range.trim().toLowerCase()}||${Number(shift.hours)}`;
+    const existingIdx = indexByKey.get(key);
+    if (existingIdx !== undefined) {
+      const g = groups[existingIdx];
+      g.totalCapacity += shift.capacity;
+      g.totalRegistrations += shift.registrations.length;
+      g.roles.push(shift);
+    } else {
+      indexByKey.set(key, groups.length);
+      groups.push({
+        key,
+        label: shift.label.trim(),
+        time_range: shift.time_range.trim(),
+        hours: Number(shift.hours),
+        totalCapacity: shift.capacity,
+        totalRegistrations: shift.registrations.length,
+        roles: [shift],
+      });
+    }
+  }
+  return groups;
+}
+
+export function getJobAnnouncedHours(job: Pick<JobAnnouncement, 'shifts'>): number {
+  return groupJobShifts(job.shifts).reduce((sum, g) => sum + g.hours, 0);
 }
 
 export interface ShiftInput {

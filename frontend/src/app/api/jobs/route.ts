@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       require_scholarship_name,
       allow_kys,
       job_type,
+      shift_mode,
       shifts,
     } = body;
 
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
       require_scholarship_name: Boolean(require_scholarship_name),
       allow_kys: Boolean(allow_kys),
       job_type: job_type === 'external' ? 'external' : 'internal',
+      shift_mode: shift_mode === 'roles' ? 'roles' : 'shifts',
       shifts: shiftCheck.shifts,
     });
 
