@@ -6,10 +6,13 @@ import {
   JobAnnouncement,
   JobShift,
   Registration,
+  ScholarshipPolicy,
   ShiftInput,
   getTodayStr,
   getDaysUntilJob,
   isKysScholarship,
+  normalizeScholarshipPolicy,
+  getJobScholarshipPolicy,
   checkCancelEligibility,
   MASTER_ADMIN_PASSWORD_DEFAULT,
   validatePasswordPolicy,
@@ -158,7 +161,7 @@ function getDbConnectionString(): string {
   ).trim();
 }
 
-const DB_SCHEMA_VERSION = 4;
+const DB_SCHEMA_VERSION = 5;
 
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
@@ -192,6 +195,7 @@ async function ensurePgTables() {
       location VARCHAR(200) DEFAULT '',
       require_scholarship_name BOOLEAN DEFAULT TRUE,
       allow_kys BOOLEAN DEFAULT TRUE,
+      scholarship_policy VARCHAR(20) DEFAULT '',
       job_type VARCHAR(50) DEFAULT 'internal',
       shift_mode VARCHAR(20) DEFAULT 'shifts',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -225,8 +229,14 @@ async function ensurePgTables() {
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS shift_mode VARCHAR(20) DEFAULT 'shifts';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS teacher_contact VARCHAR(255) DEFAULT '';
+    ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS scholarship_policy VARCHAR(20) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS allowed_majors TEXT DEFAULT '[]';
+
+    CREATE TABLE IF NOT EXISTS dashboard_hidden_teachers (
+      teacher_name VARCHAR(200) PRIMARY KEY,
+      hidden_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
     CREATE TABLE IF NOT EXISTS teacher_pins (
       id SERIAL PRIMARY KEY,
@@ -276,6 +286,7 @@ interface LocalDbData {
   shifts: Omit<JobShift, 'registrations'>[];
   registrations: Registration[];
   teacherPins?: TeacherPinRecord[];
+  hiddenTeachers?: string[];
 }
 
 const isServerless = Boolean(
@@ -636,21 +647,25 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       shiftsByJob.set(shift.job_id, list);
     }
 
-    return jobsRes.rows.map((j) => ({
-      id: Number(j.id),
-      date: formatDateStr(j.date),
-      title: j.title,
-      description: j.description || '',
-      teacher_name: j.teacher_name,
-      teacher_contact: j.teacher_contact ? String(j.teacher_contact).trim() : '',
-      location: j.location || '',
-      require_scholarship_name: Boolean(j.require_scholarship_name),
-      allow_kys: Boolean(j.allow_kys),
-      job_type: (j.job_type === 'external' ? 'external' : 'internal') as 'internal' | 'external',
-      shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
-      created_at: j.created_at ? new Date(j.created_at).toISOString() : '',
-      shifts: shiftsByJob.get(Number(j.id)) || [],
-    }));
+    return jobsRes.rows.map((j) => {
+      const policy = normalizeScholarshipPolicy(j.scholarship_policy, j.allow_kys);
+      return {
+        id: Number(j.id),
+        date: formatDateStr(j.date),
+        title: j.title,
+        description: j.description || '',
+        teacher_name: j.teacher_name,
+        teacher_contact: j.teacher_contact ? String(j.teacher_contact).trim() : '',
+        location: j.location || '',
+        require_scholarship_name: Boolean(j.require_scholarship_name),
+        allow_kys: policy !== 'non_kys',
+        scholarship_policy: policy,
+        job_type: (j.job_type === 'external' ? 'external' : 'internal') as 'internal' | 'external',
+        shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
+        created_at: j.created_at ? new Date(j.created_at).toISOString() : '',
+        shifts: shiftsByJob.get(Number(j.id)) || [],
+      };
+    });
   }
 
   // Local fallback
@@ -659,6 +674,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
     (a, b) => a.date.localeCompare(b.date) || a.id - b.id
   );
   return sortedJobs.map((j) => {
+    const policy = normalizeScholarshipPolicy(j.scholarship_policy, j.allow_kys);
     const jobShifts = data.shifts
       .filter((s) => s.job_id === j.id)
       .sort((a, b) => a.id - b.id)
@@ -672,6 +688,8 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       }));
     return {
       ...j,
+      allow_kys: policy !== 'non_kys',
+      scholarship_policy: policy,
       teacher_contact: j.teacher_contact ? String(j.teacher_contact).trim() : '',
       shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
       shifts: jobShifts,
@@ -693,6 +711,7 @@ export interface CreateJobPayload {
   location: string;
   require_scholarship_name: boolean;
   allow_kys: boolean;
+  scholarship_policy?: ScholarshipPolicy;
   job_type?: 'internal' | 'external';
   shift_mode?: 'shifts' | 'roles';
   shifts: ShiftInput[];
@@ -702,6 +721,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
   const teacherContact = (payload.teacher_contact || '').trim();
+  const scholarshipPolicy = normalizeScholarshipPolicy(payload.scholarship_policy, payload.allow_kys);
+  const allowKysBool = scholarshipPolicy !== 'non_kys';
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
@@ -710,8 +731,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       await client.query('BEGIN');
       const jobRes = await client.query(
         `INSERT INTO scholarship_jobs
-          (date, title, description, teacher_name, teacher_contact, location, require_scholarship_name, allow_kys, job_type, shift_mode)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          (date, title, description, teacher_name, teacher_contact, location, require_scholarship_name, allow_kys, scholarship_policy, job_type, shift_mode)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
           payload.date,
@@ -721,7 +742,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
           teacherContact,
           payload.location.trim(),
           payload.require_scholarship_name,
-          payload.allow_kys,
+          allowKysBool,
+          scholarshipPolicy,
           jobScope,
           shiftMode,
         ]
@@ -773,7 +795,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
     teacher_contact: teacherContact,
     location: payload.location.trim(),
     require_scholarship_name: payload.require_scholarship_name,
-    allow_kys: payload.allow_kys,
+    allow_kys: allowKysBool,
+    scholarship_policy: scholarshipPolicy,
     job_type: jobScope,
     shift_mode: shiftMode,
     created_at: nowIso,
@@ -808,6 +831,8 @@ export async function updateJob(
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
   const teacherContact = (payload.teacher_contact || '').trim();
+  const scholarshipPolicy = normalizeScholarshipPolicy(payload.scholarship_policy, payload.allow_kys);
+  const allowKysBool = scholarshipPolicy !== 'non_kys';
 
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
@@ -818,8 +843,8 @@ export async function updateJob(
       await client.query(
         `UPDATE scholarship_jobs
          SET date = $1, title = $2, description = $3, teacher_name = $4, teacher_contact = $5,
-             location = $6, require_scholarship_name = $7, allow_kys = $8, job_type = $9, shift_mode = $10
-         WHERE id = $11`,
+             location = $6, require_scholarship_name = $7, allow_kys = $8, scholarship_policy = $9, job_type = $10, shift_mode = $11
+         WHERE id = $12`,
         [
           payload.date,
           payload.title.trim(),
@@ -828,7 +853,8 @@ export async function updateJob(
           teacherContact,
           payload.location.trim(),
           payload.require_scholarship_name,
-          payload.allow_kys,
+          allowKysBool,
+          scholarshipPolicy,
           jobScope,
           shiftMode,
           jobId,
@@ -910,7 +936,8 @@ export async function updateJob(
     teacher_contact: teacherContact,
     location: payload.location.trim(),
     require_scholarship_name: payload.require_scholarship_name,
-    allow_kys: payload.allow_kys,
+    allow_kys: allowKysBool,
+    scholarship_policy: scholarshipPolicy,
     job_type: jobScope,
     shift_mode: shiftMode,
   };
@@ -1032,8 +1059,12 @@ export async function registerStudent(
     throw new Error('งานนี้กำหนดให้ต้องระบุชื่อทุน กรุณาระบุชื่อทุนของคุณ');
   }
 
-  if (!job.allow_kys && isKysScholarship(scholarshipClean)) {
+  const jobPolicy = getJobScholarshipPolicy(job);
+  if (jobPolicy === 'non_kys' && isKysScholarship(scholarshipClean)) {
     throw new Error('ขออภัย งานนี้ไม่รับนักศึกษาทุน กยศ. (กรุณาเลือกงานอื่นที่รองรับทุน กยศ.)');
+  }
+  if (jobPolicy === 'kys_only' && !isKysScholarship(scholarshipClean)) {
+    throw new Error('ขออภัย งานนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น');
   }
 
   assertShiftRegistrationAllowed(
@@ -1200,4 +1231,72 @@ export async function cancelRegistration(
   const data = readLocalDb();
   data.registrations = data.registrations.filter((r) => r.id !== registrationId);
   writeLocalDb(data);
+}
+
+export async function getHiddenTeacherFilters(): Promise<string[]> {
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    const res = await pool.query(
+      'SELECT teacher_name FROM dashboard_hidden_teachers ORDER BY teacher_name ASC'
+    );
+    return res.rows.map((r) => String(r.teacher_name || '').trim()).filter(Boolean);
+  }
+
+  const data = readLocalDb();
+  return Array.from(
+    new Set((data.hiddenTeachers || []).map((t) => String(t || '').trim()).filter(Boolean))
+  ).sort();
+}
+
+export async function updateHiddenTeacherFilter(
+  adminPin: string,
+  action: 'hide' | 'restore' | 'restore_all',
+  teacherName?: string
+): Promise<string[]> {
+  const isAdmin = await verifyAdminPin(adminPin);
+  if (!isAdmin) {
+    throw new Error('ไม่มีสิทธิ์เข้าถึง (เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น)');
+  }
+
+  const cleanName = (teacherName || '').trim();
+  if ((action === 'hide' || action === 'restore') && !cleanName) {
+    throw new Error('กรุณาระบุชื่ออาจารย์');
+  }
+
+  if (getDbConnectionString().length > 0) {
+    await ensurePgTables();
+    const pool = getPool();
+    if (action === 'hide') {
+      await pool.query(
+        `INSERT INTO dashboard_hidden_teachers (teacher_name)
+         VALUES ($1)
+         ON CONFLICT (teacher_name) DO NOTHING`,
+        [cleanName]
+      );
+    } else if (action === 'restore') {
+      await pool.query(
+        'DELETE FROM dashboard_hidden_teachers WHERE teacher_name = $1',
+        [cleanName]
+      );
+    } else if (action === 'restore_all') {
+      await pool.query('DELETE FROM dashboard_hidden_teachers');
+    }
+    return await getHiddenTeacherFilters();
+  }
+
+  const data = readLocalDb();
+  const currentSet = new Set(
+    (data.hiddenTeachers || []).map((t) => String(t || '').trim()).filter(Boolean)
+  );
+  if (action === 'hide') {
+    currentSet.add(cleanName);
+  } else if (action === 'restore') {
+    currentSet.delete(cleanName);
+  } else if (action === 'restore_all') {
+    currentSet.clear();
+  }
+  data.hiddenTeachers = Array.from(currentSet).sort();
+  writeLocalDb(data);
+  return data.hiddenTeachers;
 }

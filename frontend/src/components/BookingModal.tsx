@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import {
   JobAnnouncement,
+  ScholarshipPolicy,
   ShiftInput,
   PRESET_SHIFTS,
   DIT_MAJORS,
   getMajorShortCode,
   sanitizeAllowedMajors,
+  getJobScholarshipPolicy,
   groupJobShifts,
   getTodayStr,
   getDaysUntilJob,
@@ -57,7 +59,7 @@ export default function BookingModal({
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [requireScholarshipName, setRequireScholarshipName] = useState(true);
-  const [allowKys, setAllowKys] = useState(true);
+  const [scholarshipPolicy, setScholarshipPolicy] = useState<ScholarshipPolicy>('all');
   const [jobType, setJobType] = useState<'internal' | 'external'>('internal');
   const [shiftMode, setShiftMode] = useState<'shifts' | 'roles'>('shifts');
   const [shiftGroups, setShiftGroups] = useState<ShiftGroupDraft[]>([
@@ -81,7 +83,7 @@ export default function BookingModal({
       setLocation(editingJob.location);
       setDescription(editingJob.description);
       setRequireScholarshipName(editingJob.require_scholarship_name);
-      setAllowKys(editingJob.allow_kys);
+      setScholarshipPolicy(getJobScholarshipPolicy(editingJob));
       setJobType(editingJob.job_type === 'external' ? 'external' : 'internal');
       setShiftMode(editingJob.shift_mode === 'roles' ? 'roles' : 'shifts');
 
@@ -348,7 +350,8 @@ export default function BookingModal({
           location: location.trim(),
           description: description.trim(),
           require_scholarship_name: requireScholarshipName,
-          allow_kys: allowKys,
+          allow_kys: scholarshipPolicy !== 'non_kys',
+          scholarship_policy: scholarshipPolicy,
           job_type: jobType,
           shift_mode: shiftMode,
           shifts: flattenedShifts,
@@ -630,23 +633,38 @@ export default function BookingModal({
           {/* เงื่อนไขทุน */}
           <div className={styles.sectionBox}>
             <div className={styles.sectionTitle}>เงื่อนไขประเภททุนที่รับสมัคร</div>
-            <div className={styles.kysToggleRow}>
+            <div className={styles.kysToggleRow3Col}>
               <button
                 type="button"
-                className={`${styles.kysOption} ${allowKys ? styles.kysOptionActiveOk : ''}`}
-                onClick={() => setAllowKys(true)}
+                className={`${styles.kysOption} ${scholarshipPolicy === 'all' ? styles.kysOptionActiveOk : ''}`}
+                onClick={() => setScholarshipPolicy('all')}
               >
                 <div className={styles.kysOptionTitle}>รับทุกทุน (รวม กยศ.)</div>
-                <div className={styles.kysOptionSub}>นักศึกษาทุน กยศ. และทุนอื่นๆ ลงทะเบียนได้ทั้งหมด</div>
+                <div className={styles.kysOptionSub}>นักศึกษาทุน กยศ. และทุนอื่นๆ ลงได้ทั้งหมด</div>
               </button>
 
               <button
                 type="button"
-                className={`${styles.kysOption} ${!allowKys ? styles.kysOptionActiveNo : ''}`}
-                onClick={() => setAllowKys(false)}
+                className={`${styles.kysOption} ${scholarshipPolicy === 'non_kys' ? styles.kysOptionActiveNo : ''}`}
+                onClick={() => {
+                  setScholarshipPolicy('non_kys');
+                  setRequireScholarshipName(true);
+                }}
               >
-                <div className={styles.kysOptionTitle}>ไม่รับทุน กยศ.</div>
-                <div className={styles.kysOptionSub}>บล็อกการลงทะเบียนหากนักศึกษาเลือกทุน กยศ.</div>
+                <div className={styles.kysOptionTitle}>รับเฉพาะทุนอื่น (ไม่รับ กยศ.)</div>
+                <div className={styles.kysOptionSub}>บล็อกการลงทะเบียนหากนักศึกษาใช้ทุน กยศ.</div>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.kysOption} ${scholarshipPolicy === 'kys_only' ? styles.kysOptionActiveKysOnly : ''}`}
+                onClick={() => {
+                  setScholarshipPolicy('kys_only');
+                  setRequireScholarshipName(true);
+                }}
+              >
+                <div className={styles.kysOptionTitle}>รับเฉพาะทุน กยศ.</div>
+                <div className={styles.kysOptionSub}>เปิดรับเฉพาะนักศึกษาทุน กยศ. เท่านั้น</div>
               </button>
             </div>
 

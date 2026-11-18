@@ -12,6 +12,7 @@ import {
   getTodayStr,
   getDaysUntilJob,
   isKysScholarship,
+  getJobScholarshipPolicy,
 } from '@/types';
 import { useToast } from './Toast';
 import styles from './DayDetailModal.module.css';
@@ -194,10 +195,20 @@ export default function DayDetailModal({
         })
       : undefined;
 
+  const activeJobPolicy = activeShiftInfo
+    ? getJobScholarshipPolicy(activeShiftInfo.job)
+    : 'all';
+
   const isKysBlockedInForm =
     activeShiftInfo &&
-    !activeShiftInfo.job.allow_kys &&
+    activeJobPolicy === 'non_kys' &&
     isKysScholarship(scholarshipName);
+
+  const isNonKysBlockedForKysOnlyInForm =
+    activeShiftInfo &&
+    activeJobPolicy === 'kys_only' &&
+    scholarshipName.trim().length > 0 &&
+    !isKysScholarship(scholarshipName);
 
   const handlePreRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,6 +217,11 @@ export default function DayDetailModal({
 
     if (isLiveShiftFull) {
       setRegError('ขณะนี้มีนักศึกษาท่านอื่นลงทะเบียนในตำแหน่ง/ช่วงเวลานี้ครบจำนวนแล้ว');
+      return;
+    }
+
+    if (activeJobPolicy === 'kys_only' && !isKysScholarship(scholarshipName)) {
+      setRegError('ขออภัย งานนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น กรุณาระบุชื่อทุนเป็น กยศ.');
       return;
     }
 
@@ -522,9 +538,15 @@ export default function DayDetailModal({
                 </button>
               </div>
 
-              {!activeShiftInfo.job.allow_kys && (
+              {activeJobPolicy === 'non_kys' && (
                 <div className={styles.kysWarningBanner}>
                   <strong>ข้อกำหนดสำคัญ</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
+                </div>
+              )}
+
+              {activeJobPolicy === 'kys_only' && (
+                <div className={styles.kysOnlyWarningBanner}>
+                  <strong>ข้อกำหนดสำคัญ</strong> งานนี้ <u>รับเฉพาะนักศึกษาทุน กยศ.</u> เท่านั้น
                 </div>
               )}
 
@@ -608,7 +630,7 @@ export default function DayDetailModal({
 
                 <div className={styles.field}>
                   <label htmlFor="student-scholarship">
-                    ชื่อทุนการศึกษา {activeShiftInfo.job.require_scholarship_name ? '*' : '(ถ้ามี)'}
+                    ชื่อทุนการศึกษา {activeShiftInfo.job.require_scholarship_name || activeJobPolicy === 'kys_only' ? '*' : '(ถ้ามี)'}
                   </label>
                   <input
                     id="student-scholarship"
@@ -616,11 +638,13 @@ export default function DayDetailModal({
                     value={scholarshipName}
                     onChange={(e) => setScholarshipName(e.target.value)}
                     placeholder={
-                      activeShiftInfo.job.require_scholarship_name
+                      activeJobPolicy === 'kys_only'
+                        ? 'งานนี้รับเฉพาะ กยศ. กรุณาระบุ กยศ.'
+                        : activeShiftInfo.job.require_scholarship_name
                         ? 'ระบุชื่อทุนของคุณ เช่น ทุนเพชรประกาย, กยศ., ฯลฯ...'
                         : 'ระบุชื่อทุนของคุณ (ถ้ามี)...'
                     }
-                    required={activeShiftInfo.job.require_scholarship_name}
+                    required={activeShiftInfo.job.require_scholarship_name || activeJobPolicy === 'kys_only'}
                   />
                 </div>
 
@@ -654,7 +678,13 @@ export default function DayDetailModal({
                   </div>
                 )}
 
-                {regError && !isKysBlockedInForm && !isMajorBlockedInForm && !overlappingRegShift && (
+                {isNonKysBlockedForKysOnlyInForm && (
+                  <div className={styles.errorBox}>
+                    ขออภัย งานนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น
+                  </div>
+                )}
+
+                {regError && !isKysBlockedInForm && !isNonKysBlockedForKysOnlyInForm && !isMajorBlockedInForm && !overlappingRegShift && (
                   <div className={styles.errorBox}>{regError}</div>
                 )}
 
@@ -678,6 +708,7 @@ export default function DayDetailModal({
                     disabled={
                       regLoading ||
                       Boolean(isKysBlockedInForm) ||
+                      Boolean(isNonKysBlockedForKysOnlyInForm) ||
                       Boolean(isMajorBlockedInForm) ||
                       Boolean(overlappingRegShift) ||
                       isLiveShiftFull
@@ -900,13 +931,26 @@ export default function DayDetailModal({
                           >
                             {job.job_type === 'external' ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
                           </span>
-                          <span
-                            className={
-                              job.allow_kys ? styles.badgeKysOk : styles.badgeKysNo
-                            }
-                          >
-                            {job.allow_kys ? 'รับทุกทุน (กยศ. ทำได้)' : 'ไม่รับทุน กยศ.'}
-                          </span>
+                          {(() => {
+                            const policy = getJobScholarshipPolicy(job);
+                            return (
+                              <span
+                                className={
+                                  policy === 'non_kys'
+                                    ? styles.badgeKysNo
+                                    : policy === 'kys_only'
+                                    ? styles.badgeKysOnly
+                                    : styles.badgeKysOk
+                                }
+                              >
+                                {policy === 'non_kys'
+                                  ? 'ไม่รับทุน กยศ.'
+                                  : policy === 'kys_only'
+                                  ? 'รับเฉพาะทุน กยศ.'
+                                  : 'รับทุกทุน (กยศ. ทำได้)'}
+                              </span>
+                            );
+                          })()}
                           <span
                             className={
                               isJobFull ? styles.badgeFull : styles.badgeAvailable

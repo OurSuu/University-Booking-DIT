@@ -7,6 +7,7 @@ import {
   normalizeMajorName,
   sanitizeAllowedMajors,
   getMajorShortCode,
+  getJobScholarshipPolicy,
   groupJobShifts,
   getTodayStr,
   getDaysUntilJob,
@@ -65,6 +66,7 @@ export default function Calendar() {
   // Filters & Student lookup
   const [filterAvailableOnly, setFilterAvailableOnly] = useState(false);
   const [filterKysOnly, setFilterKysOnly] = useState(false);
+  const [filterKysStrictOnly, setFilterKysStrictOnly] = useState(false);
   const [filterNonKysOnly, setFilterNonKysOnly] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
 
@@ -258,12 +260,14 @@ export default function Calendar() {
       );
       const hasAvailable = totalReg < totalCap;
 
+      const policy = getJobScholarshipPolicy(job);
       if (filterAvailableOnly && !hasAvailable) return false;
-      if (filterKysOnly && !job.allow_kys) return false;
-      if (filterNonKysOnly && job.allow_kys) return false;
+      if (filterKysOnly && policy === 'non_kys') return false;
+      if (filterKysStrictOnly && policy !== 'kys_only') return false;
+      if (filterNonKysOnly && policy !== 'non_kys') return false;
       return true;
     });
-  }, [jobs, filterAvailableOnly, filterKysOnly, filterNonKysOnly]);
+  }, [jobs, filterAvailableOnly, filterKysOnly, filterKysStrictOnly, filterNonKysOnly]);
 
   // Student search matches (strictly student ID only for PDPA privacy)
   const myRegistrations = useMemo(() => {
@@ -313,7 +317,7 @@ export default function Calendar() {
     let nonKysCount = 0;
 
     for (const j of monthJobs) {
-      if (j.allow_kys) {
+      if (getJobScholarshipPolicy(j) !== 'non_kys') {
         kysEligibleCount++;
       } else {
         nonKysCount++;
@@ -620,6 +624,7 @@ export default function Calendar() {
                 onClick={() => {
                   setFilterAvailableOnly(false);
                   setFilterKysOnly(false);
+                  setFilterKysStrictOnly(false);
                   setFilterNonKysOnly(false);
                 }}
               >
@@ -631,7 +636,6 @@ export default function Calendar() {
                 }`}
                 onClick={() => {
                   setFilterAvailableOnly((prev) => !prev);
-                  setFilterNonKysOnly(false);
                 }}
               >
                 เฉพาะที่ยังว่าง
@@ -642,10 +646,23 @@ export default function Calendar() {
                 }`}
                 onClick={() => {
                   setFilterKysOnly((prev) => !prev);
+                  setFilterKysStrictOnly(false);
                   setFilterNonKysOnly(false);
                 }}
               >
                 กยศ. ทำได้
+              </button>
+              <button
+                className={`${styles.filterTab} ${
+                  filterKysStrictOnly ? styles.filterTabActive : ''
+                }`}
+                onClick={() => {
+                  setFilterKysStrictOnly((prev) => !prev);
+                  setFilterKysOnly(false);
+                  setFilterNonKysOnly(false);
+                }}
+              >
+                เฉพาะ กยศ.
               </button>
               <button
                 className={`${styles.filterTab} ${
@@ -654,6 +671,7 @@ export default function Calendar() {
                 onClick={() => {
                   setFilterNonKysOnly((prev) => !prev);
                   setFilterKysOnly(false);
+                  setFilterKysStrictOnly(false);
                 }}
               >
                 ไม่รับ กยศ. (เฉพาะทุนอื่น)
@@ -891,8 +909,11 @@ export default function Calendar() {
                                 {majorRestrictionText}
                               </div>
                             )}
-                            {!job.allow_kys && (
+                            {getJobScholarshipPolicy(job) === 'non_kys' && (
                               <div className={styles.chipNoKys}>ไม่รับ กยศ.</div>
+                            )}
+                            {getJobScholarshipPolicy(job) === 'kys_only' && (
+                              <div className={styles.chipKysOnly}>เฉพาะ กยศ.</div>
                             )}
                           </div>
                         );
@@ -969,9 +990,14 @@ export default function Calendar() {
                                 {majorRestrictionText}
                               </span>
                             )}
-                            {!job.allow_kys && (
+                            {getJobScholarshipPolicy(job) === 'non_kys' && (
                               <span className={styles.mobileNoKysBadge}>
                                 ไม่รับ กยศ.
+                              </span>
+                            )}
+                            {getJobScholarshipPolicy(job) === 'kys_only' && (
+                              <span className={styles.mobileKysOnlyBadge}>
+                                เฉพาะ กยศ.
                               </span>
                             )}
                             <span

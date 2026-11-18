@@ -4,18 +4,27 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   JobAnnouncement,
+  ScholarshipPolicy,
   DIT_MAJORS,
   normalizeMajorName,
   sanitizeAllowedMajors,
   getMajorShortCode,
+  getJobScholarshipPolicy,
   groupJobShifts,
   getJobAnnouncedHours,
   getTodayStr,
   isKysScholarship,
 } from '@/types';
 import { ToastProvider, useToast } from '@/components/Toast';
-import RechartsLineChart, { ChartDataPoint, MetricConfig } from '@/components/RechartsLineChart';
+import RechartsLineChart, {
+  ChartDataPoint,
+  MetricBreakdownNoteItem,
+  MetricConfig,
+} from '@/components/RechartsLineChart';
 import PinManagementModal from '@/components/PinManagementModal';
+import TeacherFilterBackupModal, {
+  TeacherFilterItem,
+} from '@/components/TeacherFilterBackupModal';
 import DashboardCalendar from '@/components/DashboardCalendar';
 import DayDetailModal, { formatThaiDate } from '@/components/DayDetailModal';
 import styles from './dashboard.module.css';
@@ -127,6 +136,9 @@ function DashboardInner() {
   const [selectedScope, setSelectedScope] = useState<ScopeFilter>('all');
   const [selectedMajor, setSelectedMajor] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  const [hiddenTeachers, setHiddenTeachers] = useState<string[]>([]);
+  const [teacherFilterSaving, setTeacherFilterSaving] = useState<boolean>(false);
+  const [showTeacherBackupModal, setShowTeacherBackupModal] = useState<boolean>(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'jobs' | 'students'>('jobs');
 
   const todayStr = getTodayStr();
@@ -185,7 +197,25 @@ function DashboardInner() {
     }
   }, []);
 
-  // 2. Fetch Jobs Data
+  // 2. Fetch Jobs Data + Hidden Teacher Filters
+  const fetchHiddenTeachers = useCallback(async (pinToUse: string) => {
+    if (!pinToUse) return;
+    try {
+      const res = await fetch('/api/teacher-filters', {
+        cache: 'no-store',
+        headers: { 'x-teacher-pin': pinToUse },
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { hiddenTeachers?: string[] };
+        if (Array.isArray(data.hiddenTeachers)) {
+          setHiddenTeachers(data.hiddenTeachers);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching hidden teacher filters:', err);
+    }
+  }, []);
+
   const fetchJobs = useCallback(async () => {
     try {
       setLoading(true);
@@ -203,8 +233,9 @@ function DashboardInner() {
   useEffect(() => {
     if (teacherPin) {
       fetchJobs();
+      fetchHiddenTeachers(teacherPin);
     }
-  }, [teacherPin, fetchJobs]);
+  }, [teacherPin, fetchJobs, fetchHiddenTeachers]);
 
   // Handle PIN Login (Strictly verify that role is admin)
   const handlePinSubmit = async (e: React.FormEvent) => {
@@ -248,6 +279,8 @@ function DashboardInner() {
 
   const handleLogout = () => {
     setTeacherPin('');
+    setSelectedTeacher('');
+    setHiddenTeachers([]);
     sessionStorage.removeItem('dit_teacher_pin');
     sessionStorage.removeItem('dit_teacher_role');
     showToast('ออกจากโหมดอาจารย์แล้ว', 'info');
@@ -352,14 +385,77 @@ function DashboardInner() {
     }
   };
 
-  // Extract unique teacher names
-  const allTeacherNames = useMemo(() => {
-    const set = new Set<string>();
+  // Extract unique teacher names & job counts across all jobs
+  const teacherJobCountMap = useMemo(() => {
+    const map = new Map<string, number>();
     for (const j of jobs) {
-      if (j.teacher_name?.trim()) set.add(j.teacher_name.trim());
+      const name = j.teacher_name?.trim();
+      if (name) {
+        map.set(name, (map.get(name) || 0) + 1);
+      }
     }
-    return Array.from(set).sort();
+    return map;
   }, [jobs]);
+
+  const allTeacherNames = useMemo(() => {
+    return Array.from(teacherJobCountMap.keys()).sort();
+  }, [teacherJobCountMap]);
+
+  const hiddenTeacherSet = useMemo(() => new Set(hiddenTeachers), [hiddenTeachers]);
+
+  const visibleTeacherNames = useMemo(() => {
+    return allTeacherNames.filter((t) => !hiddenTeacherSet.has(t));
+  }, [allTeacherNames, hiddenTeacherSet]);
+
+  const teacherBackupItems: TeacherFilterItem[] = useMemo(() => {
+    const combined = Array.from(new Set([...allTeacherNames, ...hiddenTeachers])).sort();
+    return combined.map((name) => ({
+      name,
+      jobCount: teacherJobCountMap.get(name) || 0,
+      isHidden: hiddenTeacherSet.has(name),
+    }));
+  }, [allTeacherNames, hiddenTeachers, teacherJobCountMap, hiddenTeacherSet]);
+
+  const handleTeacherFilterAction = async (
+    action: 'hide' | 'restore' | 'restore_all',
+    teacherName?: string
+  ) => {
+    if (!teacherPin) return;
+    setTeacherFilterSaving(true);
+    try {
+      const res = await fetch('/api/teacher-filters', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teacherPin,
+          action,
+          teacherName,
+        }),
+      });
+      const data = (await res.json()) as { hiddenTeachers?: string[]; error?: string };
+      if (!res.ok) {
+        showToast(data.error || 'ไม่สามารถอัปเดตรายชื่อตัวกรองอาจารย์ได้', 'error');
+        return;
+      }
+      const nextHidden = Array.isArray(data.hiddenTeachers) ? data.hiddenTeachers : [];
+      setHiddenTeachers(nextHidden);
+
+      if (action === 'hide' && teacherName) {
+        if (selectedTeacher === teacherName) {
+          setSelectedTeacher('');
+        }
+        showToast(`ซ่อน "${teacherName}" จากตัวกรองแล้ว (เก็บไว้ใน Backup)`, 'info');
+      } else if (action === 'restore' && teacherName) {
+        showToast(`ดึงชื่อ "${teacherName}" กลับมาแสดงในตัวกรองแล้ว`, 'success');
+      } else if (action === 'restore_all') {
+        showToast('ดึงรายชื่ออาจารย์ทั้งหมดกลับมาแสดงในตัวกรองแล้ว', 'success');
+      }
+    } catch {
+      showToast('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้', 'error');
+    } finally {
+      setTeacherFilterSaving(false);
+    }
+  };
 
   // Extract non-DIT faculties from registrations
   const nonDitFaculties = useMemo(() => {
@@ -420,10 +516,12 @@ function DashboardInner() {
       scholarshipName: string;
       phone: string;
       allowKys: boolean;
+      jobPolicy: ScholarshipPolicy;
     }[] = [];
 
     for (const job of filteredJobs) {
       const jScope = job.job_type === 'external' ? 'external' : 'internal';
+      const jPolicy = getJobScholarshipPolicy(job);
       for (const shift of job.shifts) {
         const shiftAllowedMajors = sanitizeAllowedMajors(shift.allowed_majors);
         const shiftDutyName = shift.duty_name ? shift.duty_name.trim() : '';
@@ -450,6 +548,7 @@ function DashboardInner() {
               scholarshipName: reg.scholarship_name,
               phone: reg.phone || '',
               allowKys: job.allow_kys,
+              jobPolicy: jPolicy,
             });
           }
         }
@@ -510,6 +609,41 @@ function DashboardInner() {
       totalCapacity,
       totalFilled,
       occupancyRate,
+    };
+  }, [filteredData]);
+
+  // Compact 3-category Scholarship Policy Notes for all 3 graph summary cards
+  const metricNotes: Record<string, MetricBreakdownNoteItem[]> = useMemo(() => {
+    const hours = { all: 0, non_kys: 0, kys_only: 0 };
+    const jobsCount = { all: 0, non_kys: 0, kys_only: 0 };
+    const regsCount = { all: 0, non_kys: 0, kys_only: 0 };
+
+    for (const j of filteredData.jobs) {
+      const p = getJobScholarshipPolicy(j);
+      hours[p] += getJobAnnouncedHours(j);
+      jobsCount[p] += 1;
+    }
+
+    for (const r of filteredData.registrations) {
+      regsCount[r.jobPolicy] += 1;
+    }
+
+    return {
+      announcedHours: [
+        { label: 'รับทั้งหมด', value: hours.all, unit: 'ชม.', color: '#16a34a' },
+        { label: 'เฉพาะทุนอื่น', value: hours.non_kys, unit: 'ชม.', color: '#dc2626' },
+        { label: 'เฉพาะ กยศ.', value: hours.kys_only, unit: 'ชม.', color: '#2563eb' },
+      ],
+      registrations: [
+        { label: 'รับทั้งหมด', value: regsCount.all, unit: 'คน', color: '#16a34a' },
+        { label: 'เฉพาะทุนอื่น', value: regsCount.non_kys, unit: 'คน', color: '#dc2626' },
+        { label: 'เฉพาะ กยศ.', value: regsCount.kys_only, unit: 'คน', color: '#2563eb' },
+      ],
+      jobs: [
+        { label: 'รับทั้งหมด', value: jobsCount.all, unit: 'งาน', color: '#16a34a' },
+        { label: 'เฉพาะทุนอื่น', value: jobsCount.non_kys, unit: 'งาน', color: '#dc2626' },
+        { label: 'เฉพาะ กยศ.', value: jobsCount.kys_only, unit: 'งาน', color: '#2563eb' },
+      ],
     };
   }, [filteredData]);
 
@@ -1144,23 +1278,47 @@ function DashboardInner() {
               </select>
             </div>
 
-            {/* Filter by Teacher */}
-            {allTeacherNames.length > 0 && (
+            {/* Filter by Teacher + Remove & Backup Management */}
+            {(allTeacherNames.length > 0 || hiddenTeachers.length > 0) && (
               <div className={styles.majorFilterGroup}>
                 <label htmlFor="teacher-filter">อาจารย์ผู้ประกาศ</label>
-                <select
-                  id="teacher-filter"
-                  value={selectedTeacher}
-                  onChange={(e) => setSelectedTeacher(e.target.value)}
-                  className={styles.filterSelect}
-                >
-                  <option value="">อาจารย์ทุกคน</option>
-                  {allTeacherNames.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                <div className={styles.teacherFilterControls}>
+                  <select
+                    id="teacher-filter"
+                    value={selectedTeacher}
+                    onChange={(e) => setSelectedTeacher(e.target.value)}
+                    className={styles.filterSelect}
+                  >
+                    <option value="">อาจารย์ทุกคน</option>
+                    {visibleTeacherNames.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedTeacher && (
+                    <button
+                      type="button"
+                      className={styles.teacherHideBtn}
+                      onClick={() => handleTeacherFilterAction('hide', selectedTeacher)}
+                      disabled={teacherFilterSaving}
+                      title="ลบชื่ออาจารย์นี้ออกจากรายการตัวกรอง (ข้อมูลในตารางยังคงอยู่)"
+                    >
+                      ลบชื่อนี้
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.teacherBackupBtn}
+                    onClick={() => setShowTeacherBackupModal(true)}
+                    title="ดูรายชื่ออาจารย์ทั้งหมดและรายชื่อที่ลบไว้ (Backup)"
+                  >
+                    <span>Backup รายชื่อ</span>
+                    {hiddenTeachers.length > 0 && (
+                      <span className={styles.teacherBackupBadge}>{hiddenTeachers.length}</span>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1217,6 +1375,7 @@ function DashboardInner() {
             allMetrics={DASHBOARD_METRICS}
             onToggleMetric={handleToggleMetric}
             onSelectAllMetrics={handleSelectAllMetrics}
+            metricNotes={metricNotes}
             title={chartTitle}
             subtitle={
               selectedMajor
@@ -1770,6 +1929,17 @@ function DashboardInner() {
           )}
         </section>
       </div>
+
+      {/* Teacher Filter Backup & Restore Modal */}
+      <TeacherFilterBackupModal
+        isOpen={showTeacherBackupModal}
+        teachers={teacherBackupItems}
+        saving={teacherFilterSaving}
+        onHideTeacher={(name) => handleTeacherFilterAction('hide', name)}
+        onRestoreTeacher={(name) => handleTeacherFilterAction('restore', name)}
+        onRestoreAll={() => handleTeacherFilterAction('restore_all')}
+        onClose={() => setShowTeacherBackupModal(false)}
+      />
 
       {/* Teacher PIN Management Modal for Master Admin */}
       <PinManagementModal

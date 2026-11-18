@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllJobs, createJob, verifyTeacherPin, validateAndSanitizeShifts } from '@/lib/db';
-import { getDaysUntilJob } from '@/types';
+import { getDaysUntilJob, normalizeScholarshipPolicy } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       location,
       require_scholarship_name,
       allow_kys,
+      scholarship_policy,
       job_type,
       shift_mode,
       shifts,
@@ -88,6 +89,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedPolicy = normalizeScholarshipPolicy(scholarship_policy, allow_kys);
+
     const created = await createJob({
       date,
       title,
@@ -96,7 +99,8 @@ export async function POST(request: NextRequest) {
       teacher_contact: typeof teacher_contact === 'string' ? teacher_contact : '',
       location: location || '',
       require_scholarship_name: Boolean(require_scholarship_name),
-      allow_kys: Boolean(allow_kys),
+      allow_kys: normalizedPolicy !== 'non_kys',
+      scholarship_policy: normalizedPolicy,
       job_type: job_type === 'external' ? 'external' : 'internal',
       shift_mode: shift_mode === 'roles' ? 'roles' : 'shifts',
       shifts: shiftCheck.shifts,

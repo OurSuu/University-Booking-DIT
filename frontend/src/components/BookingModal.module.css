@@ -167,6 +167,12 @@
   gap: 0.75rem;
 }
 
+.kysToggleRow3Col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+
 .kysOption {
   text-align: left;
   padding: 0.75rem 0.9rem;
@@ -185,6 +191,11 @@
 .kysOptionActiveNo {
   border-color: var(--danger);
   background: var(--danger-light);
+}
+
+.kysOptionActiveKysOnly {
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
 .kysOptionActiveScope {
@@ -726,6 +737,7 @@
 
   .row2Col,
   .kysToggleRow,
+  .kysToggleRow3Col,
   .modeSwitchRow {
     grid-template-columns: 1fr;
   }

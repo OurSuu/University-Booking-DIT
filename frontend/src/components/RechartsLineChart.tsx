@@ -33,12 +33,20 @@ export interface ChartDataPoint {
   [key: string]: any;
 }
 
+export interface MetricBreakdownNoteItem {
+  label: string;
+  value: number;
+  unit?: string;
+  color?: string;
+}
+
 interface Props {
   data: ChartDataPoint[];
   activeMetrics?: MetricConfig[];
   allMetrics?: MetricConfig[];
   onToggleMetric?: (key: string) => void;
   onSelectAllMetrics?: () => void;
+  metricNotes?: Record<string, MetricBreakdownNoteItem[]>;
   // Optional single-metric fallback props
   metricName?: string;
   unit?: string;
@@ -53,6 +61,7 @@ export default function RechartsLineChart({
   allMetrics: passedAllMetrics,
   onToggleMetric,
   onSelectAllMetrics,
+  metricNotes,
   metricName,
   unit,
   color = '#c81e24',
@@ -185,6 +194,7 @@ export default function RechartsLineChart({
             color: '#c81e24',
           };
           const summary = (m && metricSummaries[m.key]) || { total: 0, peak: 0 };
+          const notes = metricNotes?.[m.key];
           return (
             <div className={styles.kpiBar}>
               <div className={styles.kpiItem}>
@@ -199,6 +209,26 @@ export default function RechartsLineChart({
                   {summary.peak.toLocaleString()} {m.unit}
                 </strong>
               </div>
+              {notes && notes.length > 0 && (
+                <div className={styles.kpiNoteGridSingle}>
+                  {notes.map((note) => (
+                    <div key={note.label} className={styles.kpiNoteItem}>
+                      <span className={styles.kpiNoteLabelRow}>
+                        {note.color && (
+                          <span
+                            className={styles.kpiNoteDot}
+                            style={{ backgroundColor: note.color }}
+                          />
+                        )}
+                        {note.label}
+                      </span>
+                      <span className={styles.kpiNoteValue}>
+                        {note.value.toLocaleString()} {note.unit ?? m.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()
@@ -207,6 +237,7 @@ export default function RechartsLineChart({
         <div className={styles.kpiBarMulti}>
           {activeMetrics.map((m) => {
             const summary = metricSummaries[m.key] || { total: 0, peak: 0 };
+            const notes = metricNotes?.[m.key];
             return (
               <div
                 key={m.key}
@@ -223,6 +254,26 @@ export default function RechartsLineChart({
                 <span className={styles.kpiCardMultiSub}>
                   สูงสุดต่อช่วง {summary.peak.toLocaleString()} {m.unit}
                 </span>
+                {notes && notes.length > 0 && (
+                  <div className={styles.kpiNoteGrid}>
+                    {notes.map((note) => (
+                      <div key={note.label} className={styles.kpiNoteItem}>
+                        <span className={styles.kpiNoteLabelRow} title={note.label}>
+                          {note.color && (
+                            <span
+                              className={styles.kpiNoteDot}
+                              style={{ backgroundColor: note.color }}
+                            />
+                          )}
+                          {note.label}
+                        </span>
+                        <span className={styles.kpiNoteValue}>
+                          {note.value.toLocaleString()} {note.unit ?? m.unit}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

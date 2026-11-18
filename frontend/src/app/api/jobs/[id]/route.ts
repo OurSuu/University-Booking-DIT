@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateJob, deleteJob, verifyTeacherPin, validateAndSanitizeShifts } from '@/lib/db';
+import { normalizeScholarshipPolicy } from '@/types';
 
 export async function PUT(
   request: NextRequest,
@@ -20,6 +21,7 @@ export async function PUT(
       location,
       require_scholarship_name,
       allow_kys,
+      scholarship_policy,
       job_type,
       shift_mode,
       shifts,
@@ -54,6 +56,8 @@ export async function PUT(
       );
     }
 
+    const normalizedPolicy = normalizeScholarshipPolicy(scholarship_policy, allow_kys);
+
     const updated = await updateJob(jobId, {
       date,
       title,
@@ -62,7 +66,8 @@ export async function PUT(
       teacher_contact: typeof teacher_contact === 'string' ? teacher_contact : '',
       location: location || '',
       require_scholarship_name: Boolean(require_scholarship_name),
-      allow_kys: Boolean(allow_kys),
+      allow_kys: normalizedPolicy !== 'non_kys',
+      scholarship_policy: normalizedPolicy,
       job_type: job_type === 'external' ? 'external' : 'internal',
       shift_mode: shift_mode === 'roles' ? 'roles' : 'shifts',
       shifts: shiftCheck.shifts,

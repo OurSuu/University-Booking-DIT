@@ -23,6 +23,8 @@ export interface JobShift {
   registrations: Registration[];
 }
 
+export type ScholarshipPolicy = 'all' | 'non_kys' | 'kys_only';
+
 export interface JobAnnouncement {
   id: number;
   date: string;                     // YYYY-MM-DD
@@ -33,10 +35,27 @@ export interface JobAnnouncement {
   location: string;                 // สถานที่นัดหมาย/ทำงาน
   require_scholarship_name: boolean;// บังคับระบุชื่อทุนหรือไม่
   allow_kys: boolean;               // อนุญาตทุน กยศ. หรือไม่ (false = กยศ. ทำไม่ได้)
+  scholarship_policy?: ScholarshipPolicy; // 'all' = รับทุกทุน, 'non_kys' = ไม่รับ กยศ., 'kys_only' = รับเฉพาะ กยศ.
   job_type?: 'internal' | 'external'; // 'internal' = ภายในคณะ, 'external' = ภายนอกคณะ
   shift_mode?: 'shifts' | 'roles';  // 'shifts' = แบ่งตามกะ/ช่วงเวลา, 'roles' = ไม่แบ่งกะ (เวลาเดียวทั้งงาน เลือกตามหน้าที่)
   created_at: string;
   shifts: JobShift[];
+}
+
+export function normalizeScholarshipPolicy(
+  policy: unknown,
+  allowKys: unknown
+): ScholarshipPolicy {
+  if (policy === 'all' || policy === 'non_kys' || policy === 'kys_only') {
+    return policy;
+  }
+  return allowKys === false ? 'non_kys' : 'all';
+}
+
+export function getJobScholarshipPolicy(
+  job: Pick<JobAnnouncement, 'allow_kys' | 'scholarship_policy'>
+): ScholarshipPolicy {
+  return normalizeScholarshipPolicy(job.scholarship_policy, job.allow_kys);
 }
 
 export interface GroupedJobShift {

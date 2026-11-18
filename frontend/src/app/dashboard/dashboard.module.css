@@ -362,6 +362,66 @@
   white-space: nowrap;
 }
 
+.teacherFilterControls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.teacherHideBtn {
+  padding: 0.42rem 0.68rem;
+  border-radius: 8px;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.teacherHideBtn:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.teacherHideBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.teacherBackupBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.72rem;
+  border-radius: 8px;
+  border: 1.5px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.teacherBackupBtn:hover {
+  background: #dbeafe;
+}
+
+.teacherBackupBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+}
+
 .dateInputsRow input[type="date"],
 .filterSelect {
   padding: 0.45rem 0.75rem;
@@ -1276,6 +1336,23 @@
   .majorFilterGroup select {
     width: 100%;
     font-size: 0.82rem;
+  }
+  .teacherFilterControls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    width: 100%;
+  }
+  .teacherFilterControls select {
+    grid-column: 1 / -1;
+  }
+  .teacherHideBtn,
+  .teacherBackupBtn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 0.42rem 0.4rem;
+    font-size: 0.76rem;
   }
   .kpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
