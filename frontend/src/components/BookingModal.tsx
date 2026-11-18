@@ -651,7 +651,7 @@ export default function BookingModal({
                   setRequireScholarshipName(true);
                 }}
               >
-                <div className={styles.kysOptionTitle}>รับเฉพาะทุนอื่น (ไม่รับ กยศ.)</div>
+                <div className={styles.kysOptionTitle}>รับเฉพาะทุน (ไม่รับ กยศ.)</div>
                 <div className={styles.kysOptionSub}>บล็อกการลงทะเบียนหากนักศึกษาใช้ทุน กยศ.</div>
               </button>
 

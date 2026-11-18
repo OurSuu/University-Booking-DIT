@@ -233,6 +233,13 @@ async function ensurePgTables() {
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS allowed_majors TEXT DEFAULT '[]';
 
+    UPDATE scholarship_jobs
+    SET scholarship_policy = CASE
+      WHEN allow_kys = FALSE THEN 'non_kys'
+      ELSE 'all'
+    END
+    WHERE COALESCE(scholarship_policy, '') = '';
+
     CREATE TABLE IF NOT EXISTS dashboard_hidden_teachers (
       teacher_name VARCHAR(200) PRIMARY KEY,
       hidden_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

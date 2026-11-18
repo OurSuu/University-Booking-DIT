@@ -83,12 +83,20 @@
 /* KPI Summary Bar (Single Metric) */
 .kpiBar {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 0.75rem 1rem;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
   background: var(--bg-subtle);
   border-radius: 12px;
   border: 1px solid var(--border-color);
+  border-left-width: 4px;
+}
+
+.kpiBarTopRow {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
 .kpiItem {
@@ -164,11 +172,13 @@
 }
 
 .kpiNoteGridSingle {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
-  margin-left: auto;
-  align-items: center;
+  max-width: 540px;
+  width: 100%;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--border-color);
 }
 
 .kpiNoteItem {
@@ -395,18 +405,22 @@
     font-size: 0.78rem;
   }
   .kpiBar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.7rem 0.75rem;
+  }
+  .kpiBarTopRow {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.35rem;
-    padding: 0.65rem 0.45rem;
+    width: 100%;
   }
   .kpiNoteGridSingle {
-    grid-column: 1 / -1;
-    margin-left: 0;
-    display: grid;
+    max-width: none;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.3rem;
-    padding-top: 0.4rem;
+    gap: 0.28rem;
+    padding-top: 0.45rem;
     border-top: 1px dashed var(--border-color);
   }
   .kpiNoteGrid {

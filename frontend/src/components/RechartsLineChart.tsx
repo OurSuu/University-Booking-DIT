@@ -196,18 +196,20 @@ export default function RechartsLineChart({
           const summary = (m && metricSummaries[m.key]) || { total: 0, peak: 0 };
           const notes = metricNotes?.[m.key];
           return (
-            <div className={styles.kpiBar}>
-              <div className={styles.kpiItem}>
-                <span className={styles.kpiLabel}>ยอดรวมทั้งหมด ({m.label})</span>
-                <strong className={styles.kpiValue} style={{ color: m.color }}>
-                  {summary.total.toLocaleString()} {m.unit}
-                </strong>
-              </div>
-              <div className={styles.kpiItem}>
-                <span className={styles.kpiLabel}>จุดสูงสุดต่อช่วง</span>
-                <strong className={styles.kpiValue}>
-                  {summary.peak.toLocaleString()} {m.unit}
-                </strong>
+            <div className={styles.kpiBar} style={{ borderLeftColor: m.color }}>
+              <div className={styles.kpiBarTopRow}>
+                <div className={styles.kpiItem}>
+                  <span className={styles.kpiLabel}>ยอดรวมทั้งหมด ({m.label})</span>
+                  <strong className={styles.kpiValue} style={{ color: m.color }}>
+                    {summary.total.toLocaleString()} {m.unit}
+                  </strong>
+                </div>
+                <div className={styles.kpiItem}>
+                  <span className={styles.kpiLabel}>จุดสูงสุดต่อช่วง</span>
+                  <strong className={styles.kpiValue}>
+                    {summary.peak.toLocaleString()} {m.unit}
+                  </strong>
+                </div>
               </div>
               {notes && notes.length > 0 && (
                 <div className={styles.kpiNoteGridSingle}>

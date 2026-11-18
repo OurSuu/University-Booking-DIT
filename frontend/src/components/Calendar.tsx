@@ -576,11 +576,12 @@ export default function Calendar() {
             onClick={() => {
               setFilterNonKysOnly((prev) => !prev);
               setFilterKysOnly(false);
+              setFilterKysStrictOnly(false);
               setFilterAvailableOnly(false);
             }}
             title="คลิกเพื่อกรองเฉพาะงานที่ไม่รับ กยศ."
           >
-            <span className={styles.statLabel}>งานที่ไม่รับ กยศ. (เฉพาะทุนอื่น)</span>
+            <span className={styles.statLabel}>งานที่ไม่รับ กยศ. (เฉพาะทุน)</span>
             <strong className={`${styles.statValue} ${styles.statDanger}`}>
               {monthStats.nonKysCount} งาน
             </strong>
@@ -674,7 +675,7 @@ export default function Calendar() {
                   setFilterKysStrictOnly(false);
                 }}
               >
-                ไม่รับ กยศ. (เฉพาะทุนอื่น)
+                ไม่รับ กยศ. (เฉพาะทุน)
               </button>
             </div>
 

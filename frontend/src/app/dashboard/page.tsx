@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   JobAnnouncement,
+  JobShift,
   ScholarshipPolicy,
   DIT_MAJORS,
   normalizeMajorName,
@@ -82,6 +83,35 @@ function shiftYearMonth(ym: string, deltaMonths: number): string {
   const { year, month } = parseYearMonth(ym);
   const d = new Date(year, month - 1 + deltaMonths, 1);
   return formatYearMonth(d.getFullYear(), d.getMonth() + 1);
+}
+
+function filterJobByMajor(
+  job: JobAnnouncement,
+  selectedMajor: string
+): JobAnnouncement | null {
+  if (!selectedMajor) return job;
+
+  const matchingShifts: JobShift[] = [];
+  for (const s of job.shifts) {
+    const allowed = sanitizeAllowedMajors(s.allowed_majors);
+    const matchingRegs = s.registrations.filter(
+      (r) => normalizeMajorName(r.faculty) === selectedMajor
+    );
+    const isExplicitlyTargeted = allowed.includes(selectedMajor);
+
+    if (matchingRegs.length > 0 || isExplicitlyTargeted) {
+      matchingShifts.push({
+        ...s,
+        registrations: matchingRegs,
+      });
+    }
+  }
+
+  if (matchingShifts.length === 0) return null;
+  return {
+    ...job,
+    shifts: matchingShifts,
+  };
 }
 
 const DASHBOARD_METRICS: MetricConfig[] = [
@@ -475,26 +505,31 @@ function DashboardInner() {
 
   // Filtered registrations and jobs in the active time frame & filters
   const filteredData = useMemo(() => {
-    const filteredJobs = jobs.filter((j) => {
+    const filteredJobs: JobAnnouncement[] = [];
+    for (const j of jobs) {
       if (viewMode === 'day') {
-        if (j.date < startDate || j.date > endDate) return false;
+        if (j.date < startDate || j.date > endDate) continue;
       } else if (viewMode === 'month') {
         const ym = j.date.slice(0, 7);
-        if (ym < startMonth || ym > endMonth) return false;
+        if (ym < startMonth || ym > endMonth) continue;
       } else if (viewMode === 'year') {
         const jy = Number(j.date.slice(0, 4));
-        if (!Number.isFinite(jy) || jy < startYear || jy > endYear) return false;
+        if (!Number.isFinite(jy) || jy < startYear || jy > endYear) continue;
       }
 
       // Filter by Scope (Internal vs External)
       const jScope = j.job_type === 'external' ? 'external' : 'internal';
-      if (selectedScope !== 'all' && jScope !== selectedScope) return false;
+      if (selectedScope !== 'all' && jScope !== selectedScope) continue;
 
       // Filter by Teacher
-      if (selectedTeacher && j.teacher_name.trim() !== selectedTeacher) return false;
+      if (selectedTeacher && j.teacher_name.trim() !== selectedTeacher) continue;
 
-      return true;
-    });
+      // Filter by Major (keeps only jobs & shift periods where major participated or was targeted)
+      const scopedJob = filterJobByMajor(j, selectedMajor);
+      if (!scopedJob) continue;
+
+      filteredJobs.push(scopedJob);
+    }
 
     const registrationsList: {
       regId: number;
@@ -631,17 +666,17 @@ function DashboardInner() {
     return {
       announcedHours: [
         { label: 'รับทั้งหมด', value: hours.all, unit: 'ชม.', color: '#16a34a' },
-        { label: 'เฉพาะทุนอื่น', value: hours.non_kys, unit: 'ชม.', color: '#dc2626' },
+        { label: 'เฉพาะทุน', value: hours.non_kys, unit: 'ชม.', color: '#dc2626' },
         { label: 'เฉพาะ กยศ.', value: hours.kys_only, unit: 'ชม.', color: '#2563eb' },
       ],
       registrations: [
         { label: 'รับทั้งหมด', value: regsCount.all, unit: 'คน', color: '#16a34a' },
-        { label: 'เฉพาะทุนอื่น', value: regsCount.non_kys, unit: 'คน', color: '#dc2626' },
+        { label: 'เฉพาะทุน', value: regsCount.non_kys, unit: 'คน', color: '#dc2626' },
         { label: 'เฉพาะ กยศ.', value: regsCount.kys_only, unit: 'คน', color: '#2563eb' },
       ],
       jobs: [
         { label: 'รับทั้งหมด', value: jobsCount.all, unit: 'งาน', color: '#16a34a' },
-        { label: 'เฉพาะทุนอื่น', value: jobsCount.non_kys, unit: 'งาน', color: '#dc2626' },
+        { label: 'เฉพาะทุน', value: jobsCount.non_kys, unit: 'งาน', color: '#dc2626' },
         { label: 'เฉพาะ กยศ.', value: jobsCount.kys_only, unit: 'งาน', color: '#2563eb' },
       ],
     };
