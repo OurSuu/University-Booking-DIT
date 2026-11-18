@@ -320,8 +320,9 @@
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  min-width: 190px;
+  gap: 0.45rem;
+  min-width: 245px;
+  max-width: 340px;
   animation: fadeIn 0.15s ease;
 }
 
@@ -332,7 +333,43 @@
   color: var(--text-main);
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.35rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.1rem;
+}
+
+.tooltipMetricGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.tooltipMetricGroup:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.tooltipBreakdownRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding-left: 0.85rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.tooltipBdItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  white-space: nowrap;
+}
+
+.tooltipBdDot {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .tooltipRow {
@@ -480,5 +517,10 @@
   .chartContainer {
     height: 270px;
     min-height: 270px;
+  }
+  .tooltipCard {
+    min-width: 195px;
+    max-width: 265px;
+    padding: 0.6rem 0.75rem;
   }
 }

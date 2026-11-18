@@ -21,6 +21,12 @@ export interface MetricConfig {
   color: string;
 }
 
+export interface ChartMetricPolicyBreakdown {
+  all: number;
+  non_kys: number;
+  kys_only: number;
+}
+
 export interface ChartDataPoint {
   label: string;           // e.g. "1 พ.ย.", "พ.ย. 69", "2569"
   fullDate?: string;       // e.g. "วันศุกร์ที่ 7 พฤศจิกายน 2569"
@@ -30,7 +36,8 @@ export interface ChartDataPoint {
   jobs?: number;
   secondaryValue?: number;
   secondaryLabel?: string;
-  [key: string]: any;
+  breakdown?: Record<string, ChartMetricPolicyBreakdown>;
+  [key: string]: unknown;
 }
 
 export interface MetricBreakdownNoteItem {
@@ -114,9 +121,15 @@ export default function RechartsLineChart({
   }, [data, allMetrics]);
 
   // Custom Multi-Metric Tooltip
-  const renderCustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload || !payload.length) return null;
-    const current = payload[0].payload as ChartDataPoint;
+  const renderCustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: ReadonlyArray<{ payload?: ChartDataPoint }>;
+  }) => {
+    if (!active || !payload || !payload.length || !payload[0]?.payload) return null;
+    const current = payload[0].payload;
 
     return (
       <div className={styles.tooltipCard}>
@@ -125,15 +138,34 @@ export default function RechartsLineChart({
         </div>
         {activeMetrics.map((m) => {
           const val = Number(current[m.key] ?? (m.key === 'value' ? current.value : 0) ?? 0);
+          const bd = current.breakdown?.[m.key];
           return (
-            <div key={m.key} className={styles.tooltipRow}>
-              <span className={styles.tooltipMetricLabel}>
-                <span className={styles.dot} style={{ backgroundColor: m.color }} />
-                {m.label}
-              </span>
-              <strong className={styles.tooltipValue} style={{ color: m.color }}>
-                {val.toLocaleString()} {m.unit}
-              </strong>
+            <div key={m.key} className={styles.tooltipMetricGroup}>
+              <div className={styles.tooltipRow}>
+                <span className={styles.tooltipMetricLabel}>
+                  <span className={styles.dot} style={{ backgroundColor: m.color }} />
+                  {m.label}
+                </span>
+                <strong className={styles.tooltipValue} style={{ color: m.color }}>
+                  {val.toLocaleString()} {m.unit}
+                </strong>
+              </div>
+              {bd && (
+                <div className={styles.tooltipBreakdownRow}>
+                  <span className={styles.tooltipBdItem}>
+                    <span className={styles.tooltipBdDot} style={{ backgroundColor: '#16a34a' }} />
+                    รับทั้งหมด {bd.all.toLocaleString()} {m.unit}
+                  </span>
+                  <span className={styles.tooltipBdItem}>
+                    <span className={styles.tooltipBdDot} style={{ backgroundColor: '#dc2626' }} />
+                    เฉพาะทุน {bd.non_kys.toLocaleString()} {m.unit}
+                  </span>
+                  <span className={styles.tooltipBdItem}>
+                    <span className={styles.tooltipBdDot} style={{ backgroundColor: '#2563eb' }} />
+                    เฉพาะ กยศ. {bd.kys_only.toLocaleString()} {m.unit}
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}

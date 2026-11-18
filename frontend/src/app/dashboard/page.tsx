@@ -114,6 +114,44 @@ function filterJobByMajor(
   };
 }
 
+function buildChartPointData(
+  label: string,
+  fullDate: string,
+  periodJobs: JobAnnouncement[],
+  periodRegs: Array<{ jobPolicy: ScholarshipPolicy }>
+): ChartDataPoint {
+  const hoursBd = { all: 0, non_kys: 0, kys_only: 0 };
+  const jobsBd = { all: 0, non_kys: 0, kys_only: 0 };
+  const regsBd = { all: 0, non_kys: 0, kys_only: 0 };
+
+  let totalHours = 0;
+  for (const j of periodJobs) {
+    const h = getJobAnnouncedHours(j);
+    const p = getJobScholarshipPolicy(j);
+    totalHours += h;
+    hoursBd[p] += h;
+    jobsBd[p] += 1;
+  }
+
+  for (const r of periodRegs) {
+    regsBd[r.jobPolicy] += 1;
+  }
+
+  return {
+    label,
+    fullDate,
+    announcedHours: totalHours,
+    registrations: periodRegs.length,
+    jobs: periodJobs.length,
+    value: totalHours,
+    breakdown: {
+      announcedHours: hoursBd,
+      registrations: regsBd,
+      jobs: jobsBd,
+    },
+  };
+}
+
 const DASHBOARD_METRICS: MetricConfig[] = [
   {
     key: 'announcedHours',
@@ -700,23 +738,17 @@ function DashboardInner() {
 
         const dayJobs = filteredData.jobs.filter((j) => j.date === dateStr);
         const dayRegs = filteredData.registrations.filter((r) => r.jobDate === dateStr);
-
-        const dayAnnouncedHours = dayJobs.reduce(
-          (acc, j) => acc + getJobAnnouncedHours(j),
-          0
-        );
-
         const dayNum = cur.getDate();
         const monthShort = THAI_MONTH_SHORT[cur.getMonth()];
 
-        points.push({
-          label: `${dayNum} ${monthShort}`,
-          fullDate: `วันที่ ${dayNum} ${THAI_MONTH_FULL[cur.getMonth()]} ${y + 543}`,
-          announcedHours: dayAnnouncedHours,
-          registrations: dayRegs.length,
-          jobs: dayJobs.length,
-          value: dayAnnouncedHours,
-        });
+        points.push(
+          buildChartPointData(
+            `${dayNum} ${monthShort}`,
+            `วันที่ ${dayNum} ${THAI_MONTH_FULL[cur.getMonth()]} ${y + 543}`,
+            dayJobs,
+            dayRegs
+          )
+        );
 
         cur.setDate(cur.getDate() + 1);
       }
@@ -739,23 +771,18 @@ function DashboardInner() {
         const monthStr = formatYearMonth(curY, curM);
         const monthJobs = filteredData.jobs.filter((j) => j.date.startsWith(monthStr));
         const monthRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(monthStr));
-
-        const monthAnnouncedHours = monthJobs.reduce(
-          (acc, j) => acc + getJobAnnouncedHours(j),
-          0
-        );
-
         const shortYearBE = String((curY + 543) % 100);
-        points.push({
-          label: spansMultipleYears
-            ? `${THAI_MONTH_SHORT[curM - 1]} ${shortYearBE}`
-            : THAI_MONTH_SHORT[curM - 1],
-          fullDate: `เดือน${THAI_MONTH_FULL[curM - 1]} ${curY + 543}`,
-          announcedHours: monthAnnouncedHours,
-          registrations: monthRegs.length,
-          jobs: monthJobs.length,
-          value: monthAnnouncedHours,
-        });
+
+        points.push(
+          buildChartPointData(
+            spansMultipleYears
+              ? `${THAI_MONTH_SHORT[curM - 1]} ${shortYearBE}`
+              : THAI_MONTH_SHORT[curM - 1],
+            `เดือน${THAI_MONTH_FULL[curM - 1]} ${curY + 543}`,
+            monthJobs,
+            monthRegs
+          )
+        );
 
         curM++;
         if (curM > 12) {
@@ -773,19 +800,15 @@ function DashboardInner() {
         const yPrefix = String(y);
         const yearJobs = filteredData.jobs.filter((j) => j.date.startsWith(yPrefix));
         const yearRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(yPrefix));
-        const yearAnnouncedHours = yearJobs.reduce(
-          (acc, j) => acc + getJobAnnouncedHours(j),
-          0
-        );
 
-        points.push({
-          label: `ปี ${y + 543}`,
-          fullDate: `ปี พ.ศ. ${y + 543} (${y})`,
-          announcedHours: yearAnnouncedHours,
-          registrations: yearRegs.length,
-          jobs: yearJobs.length,
-          value: yearAnnouncedHours,
-        });
+        points.push(
+          buildChartPointData(
+            `ปี ${y + 543}`,
+            `ปี พ.ศ. ${y + 543} (${y})`,
+            yearJobs,
+            yearRegs
+          )
+        );
       }
       return points;
     }
