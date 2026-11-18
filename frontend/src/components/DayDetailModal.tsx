@@ -942,7 +942,7 @@ export default function DayDetailModal({
                 <h3 className={styles.confirmTitle}>ยืนยันการลงทะเบียนรับงาน</h3>
 
                 <div className={styles.confirmNoticeBox}>
-                  หากลงทะเบียนเเล้ว ไม่สามารถถอนได้ โปรดเเจ้งอาจารย์ที่รับผิดชอบเพื่อ ถอนชื่อ
+                  หากลงทะเบียนเเล้ว ไม่สามารถถอนได้ โปรดเเจ้งอาจารย์ที่รับผิดชอบเพื่อถอนชื่อ
                   {activeShiftInfo.job.teacher_contact && (
                     <div style={{ marginTop: '0.35rem', fontWeight: 700 }}>
                       ช่องทางติดต่อ ({activeShiftInfo.job.teacher_name}){' '}
