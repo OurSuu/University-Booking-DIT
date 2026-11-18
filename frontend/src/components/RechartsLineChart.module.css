@@ -432,6 +432,11 @@
     align-items: stretch;
     gap: 0.65rem;
   }
+  .chartControls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
   .typeToggleGroup {
     width: 100%;
   }

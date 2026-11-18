@@ -77,6 +77,7 @@ export default function RechartsLineChart({
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [chartType, setChartType] = useState<'area' | 'bar'>('area');
+  const [valueMode, setValueMode] = useState<'period' | 'cumulative'>('period');
 
   useEffect(() => {
     setMounted(true);
@@ -120,6 +121,45 @@ export default function RechartsLineChart({
     return map;
   }, [data, allMetrics]);
 
+  // Apply cumulative running totals when valueMode is 'cumulative'
+  const chartDisplayData: ChartDataPoint[] = useMemo(() => {
+    if (valueMode === 'period' || data.length === 0) return data;
+
+    const runningTotals: Record<string, number> = {};
+    const runningBreakdowns: Record<string, ChartMetricPolicyBreakdown> = {};
+
+    return data.map((point) => {
+      const nextPoint: ChartDataPoint = { ...point };
+      const nextBreakdown: Record<string, ChartMetricPolicyBreakdown> = {};
+
+      for (const m of allMetrics) {
+        const val = Number(point[m.key] ?? (m.key === 'value' ? point.value : 0) ?? 0);
+        runningTotals[m.key] = (runningTotals[m.key] || 0) + val;
+        nextPoint[m.key] = runningTotals[m.key];
+        if (m.key === 'announcedHours') {
+          nextPoint.value = runningTotals[m.key];
+        }
+
+        const ptBd = point.breakdown?.[m.key];
+        if (ptBd) {
+          const prevBd = runningBreakdowns[m.key] || { all: 0, non_kys: 0, kys_only: 0 };
+          const updatedBd = {
+            all: prevBd.all + ptBd.all,
+            non_kys: prevBd.non_kys + ptBd.non_kys,
+            kys_only: prevBd.kys_only + ptBd.kys_only,
+          };
+          runningBreakdowns[m.key] = updatedBd;
+          nextBreakdown[m.key] = updatedBd;
+        }
+      }
+
+      if (Object.keys(nextBreakdown).length > 0) {
+        nextPoint.breakdown = nextBreakdown;
+      }
+      return nextPoint;
+    });
+  }, [data, allMetrics, valueMode]);
+
   // Custom Multi-Metric Tooltip
   const renderCustomTooltip = ({
     active,
@@ -130,11 +170,14 @@ export default function RechartsLineChart({
   }) => {
     if (!active || !payload || !payload.length || !payload[0]?.payload) return null;
     const current = payload[0].payload;
+    const dateHeading = current.fullDate || current.label;
 
     return (
       <div className={styles.tooltipCard}>
         <div className={styles.tooltipDate}>
-          {current.fullDate || current.label}
+          {valueMode === 'cumulative'
+            ? `ยอดสะสมถึง ${dateHeading}`
+            : `ข้อมูลเฉพาะ ${dateHeading}`}
         </div>
         {activeMetrics.map((m) => {
           const val = Number(current[m.key] ?? (m.key === 'value' ? current.value : 0) ?? 0);
@@ -192,6 +235,29 @@ export default function RechartsLineChart({
         </div>
 
         <div className={styles.chartControls}>
+          <div className={styles.typeToggleGroup}>
+            <button
+              type="button"
+              className={`${styles.typeBtn} ${
+                valueMode === 'period' ? styles.typeBtnActive : ''
+              }`}
+              onClick={() => setValueMode('period')}
+              title="แสดงยอดเฉพาะของแต่ละวัน/เดือน/ปี"
+            >
+              รายช่วง
+            </button>
+            <button
+              type="button"
+              className={`${styles.typeBtn} ${
+                valueMode === 'cumulative' ? styles.typeBtnActive : ''
+              }`}
+              onClick={() => setValueMode('cumulative')}
+              title="แสดงยอดสะสมต่อเนื่องจนถึงจุดที่เลือก"
+            >
+              ยอดสะสม
+            </button>
+          </div>
+
           <div className={styles.typeToggleGroup}>
             <button
               type="button"
@@ -389,7 +455,7 @@ export default function RechartsLineChart({
         ) : chartType === 'area' ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={data}
+              data={chartDisplayData}
               margin={{ top: 20, right: 20, left: -10, bottom: 5 }}
             >
               <defs>
@@ -458,7 +524,7 @@ export default function RechartsLineChart({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={data}
+              data={chartDisplayData}
               margin={{ top: 20, right: 20, left: -10, bottom: 5 }}
             >
               <CartesianGrid
