@@ -18,6 +18,7 @@ import {
   validatePasswordPolicy,
   normalizeMajorName,
   sanitizeAllowedMajors,
+  isDitMajor,
   areTimeRangesOverlappingOrSame,
 } from '@/types';
 
@@ -91,6 +92,7 @@ function assertShiftRegistrationAllowed(
   facultyClean: string,
   studentIdClean: string,
   studentNameClean: string,
+  allowOtherFaculty: boolean,
   isAtomicRecheck = false
 ): void {
   const targetShift = jobShifts.find((s) => s.id === targetShiftId);
@@ -105,6 +107,10 @@ function assertShiftRegistrationAllowed(
       ? `ตำแหน่ง "${targetShift.duty_name}" (${shiftCtx})`
       : shiftCtx;
     throw new Error(`ขออภัย ${positionLabel} รับเฉพาะสาขา ${allowedMajors.join(', ')}`);
+  }
+
+  if (!allowOtherFaculty && !isDitMajor(facultyClean)) {
+    throw new Error('ขออภัย งานนี้เปิดรับเฉพาะนักศึกษาในคณะ DIT เท่านั้น');
   }
 
   if (targetShift.registrations.length >= targetShift.capacity) {
@@ -161,7 +167,7 @@ function getDbConnectionString(): string {
   ).trim();
 }
 
-const DB_SCHEMA_VERSION = 5;
+const DB_SCHEMA_VERSION = 6;
 
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
@@ -198,6 +204,7 @@ async function ensurePgTables() {
       scholarship_policy VARCHAR(20) DEFAULT '',
       job_type VARCHAR(50) DEFAULT 'internal',
       shift_mode VARCHAR(20) DEFAULT 'shifts',
+      allow_other_faculty BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -228,6 +235,7 @@ async function ensurePgTables() {
     ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS shift_mode VARCHAR(20) DEFAULT 'shifts';
+    ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS allow_other_faculty BOOLEAN DEFAULT FALSE;
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS teacher_contact VARCHAR(255) DEFAULT '';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS scholarship_policy VARCHAR(20) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';
@@ -669,6 +677,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
         scholarship_policy: policy,
         job_type: (j.job_type === 'external' ? 'external' : 'internal') as 'internal' | 'external',
         shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
+        allow_other_faculty: Boolean(j.allow_other_faculty),
         created_at: j.created_at ? new Date(j.created_at).toISOString() : '',
         shifts: shiftsByJob.get(Number(j.id)) || [],
       };
@@ -699,6 +708,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       scholarship_policy: policy,
       teacher_contact: j.teacher_contact ? String(j.teacher_contact).trim() : '',
       shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
+      allow_other_faculty: Boolean(j.allow_other_faculty),
       shifts: jobShifts,
     };
   });
@@ -721,12 +731,14 @@ export interface CreateJobPayload {
   scholarship_policy?: ScholarshipPolicy;
   job_type?: 'internal' | 'external';
   shift_mode?: 'shifts' | 'roles';
+  allow_other_faculty?: boolean;
   shifts: ShiftInput[];
 }
 
 export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncement> {
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
+  const allowOtherFaculty = Boolean(payload.allow_other_faculty);
   const teacherContact = (payload.teacher_contact || '').trim();
   const scholarshipPolicy = normalizeScholarshipPolicy(payload.scholarship_policy, payload.allow_kys);
   const allowKysBool = scholarshipPolicy !== 'non_kys';
@@ -738,8 +750,8 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       await client.query('BEGIN');
       const jobRes = await client.query(
         `INSERT INTO scholarship_jobs
-          (date, title, description, teacher_name, teacher_contact, location, require_scholarship_name, allow_kys, scholarship_policy, job_type, shift_mode)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          (date, title, description, teacher_name, teacher_contact, location, require_scholarship_name, allow_kys, scholarship_policy, job_type, shift_mode, allow_other_faculty)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING *`,
         [
           payload.date,
@@ -753,6 +765,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
           scholarshipPolicy,
           jobScope,
           shiftMode,
+          allowOtherFaculty,
         ]
       );
       const jobRow = jobRes.rows[0];
@@ -806,6 +819,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
     scholarship_policy: scholarshipPolicy,
     job_type: jobScope,
     shift_mode: shiftMode,
+    allow_other_faculty: allowOtherFaculty,
     created_at: nowIso,
   });
 
@@ -837,6 +851,7 @@ export async function updateJob(
 
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
+  const allowOtherFaculty = Boolean(payload.allow_other_faculty);
   const teacherContact = (payload.teacher_contact || '').trim();
   const scholarshipPolicy = normalizeScholarshipPolicy(payload.scholarship_policy, payload.allow_kys);
   const allowKysBool = scholarshipPolicy !== 'non_kys';
@@ -850,8 +865,8 @@ export async function updateJob(
       await client.query(
         `UPDATE scholarship_jobs
          SET date = $1, title = $2, description = $3, teacher_name = $4, teacher_contact = $5,
-             location = $6, require_scholarship_name = $7, allow_kys = $8, scholarship_policy = $9, job_type = $10, shift_mode = $11
-         WHERE id = $12`,
+             location = $6, require_scholarship_name = $7, allow_kys = $8, scholarship_policy = $9, job_type = $10, shift_mode = $11, allow_other_faculty = $12
+         WHERE id = $13`,
         [
           payload.date,
           payload.title.trim(),
@@ -864,6 +879,7 @@ export async function updateJob(
           scholarshipPolicy,
           jobScope,
           shiftMode,
+          allowOtherFaculty,
           jobId,
         ]
       );
@@ -947,6 +963,7 @@ export async function updateJob(
     scholarship_policy: scholarshipPolicy,
     job_type: jobScope,
     shift_mode: shiftMode,
+    allow_other_faculty: allowOtherFaculty,
   };
 
   const incomingShiftIds = payload.shifts
@@ -1055,7 +1072,7 @@ export async function registerStudent(
   const phoneClean = (payload.phone || '').trim();
 
   if (!studentIdClean || !studentNameClean || !facultyClean) {
-    throw new Error('กรุณากรอก รหัสนักศึกษา, ชื่อ-นามสกุล และสาขา ให้ครบถ้วน');
+    throw new Error('กรุณากรอก รหัสนักศึกษา, ชื่อ-นามสกุล และคณะ/สาขา ให้ครบถ้วน');
   }
 
   if (!phoneClean) {
@@ -1074,12 +1091,15 @@ export async function registerStudent(
     throw new Error('ขออภัย งานนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น');
   }
 
+  const allowOtherFaculty = Boolean(job.allow_other_faculty);
+
   assertShiftRegistrationAllowed(
     job.shifts,
     shift.id,
     facultyClean,
     studentIdClean,
     studentNameClean,
+    allowOtherFaculty,
     false
   );
 
@@ -1091,7 +1111,13 @@ export async function registerStudent(
       await client.query('BEGIN');
 
       // ล็อกแถวของงานและกะงานทั้งหมดในงานนี้ (Row-level Lock) เพื่อป้องกัน race condition และตรวจเวลาซ้ำซ้อน
-      await client.query('SELECT id FROM scholarship_jobs WHERE id = $1 FOR UPDATE', [job.id]);
+      const lockedJobRes = await client.query(
+        'SELECT id, allow_other_faculty FROM scholarship_jobs WHERE id = $1 FOR UPDATE',
+        [job.id]
+      );
+      const lockedAllowOtherFaculty = Boolean(
+        lockedJobRes.rows[0]?.allow_other_faculty ?? allowOtherFaculty
+      );
       const lockedShiftsRes = await client.query(
         'SELECT id, label, time_range, capacity, duty_name, allowed_majors FROM scholarship_shifts WHERE job_id = $1 FOR UPDATE',
         [job.id]
@@ -1128,6 +1154,7 @@ export async function registerStudent(
         facultyClean,
         studentIdClean,
         studentNameClean,
+        lockedAllowOtherFaculty,
         true
       );
 

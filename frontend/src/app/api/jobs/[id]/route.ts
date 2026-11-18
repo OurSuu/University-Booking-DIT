@@ -24,6 +24,7 @@ export async function PUT(
       scholarship_policy,
       job_type,
       shift_mode,
+      allow_other_faculty,
       shifts,
     } = body;
 
@@ -70,6 +71,7 @@ export async function PUT(
       scholarship_policy: normalizedPolicy,
       job_type: job_type === 'external' ? 'external' : 'internal',
       shift_mode: shift_mode === 'roles' ? 'roles' : 'shifts',
+      allow_other_faculty: Boolean(allow_other_faculty),
       shifts: shiftCheck.shifts,
     });
 

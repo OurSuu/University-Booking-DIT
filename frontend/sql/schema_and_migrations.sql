@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS scholarship_jobs (
   scholarship_policy VARCHAR(20) DEFAULT '',
   job_type VARCHAR(50) DEFAULT 'internal',
   shift_mode VARCHAR(20) DEFAULT 'shifts',
+  allow_other_faculty BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -69,6 +70,7 @@ CREATE TABLE IF NOT EXISTS dashboard_hidden_teachers (
 ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS shift_mode VARCHAR(20) DEFAULT 'shifts';
+ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS allow_other_faculty BOOLEAN DEFAULT FALSE;
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS teacher_contact VARCHAR(255) DEFAULT '';
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS scholarship_policy VARCHAR(20) DEFAULT '';
 ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';

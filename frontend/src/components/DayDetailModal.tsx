@@ -6,6 +6,8 @@ import {
   JobShift,
   Registration,
   DIT_MAJORS,
+  DIT_FACULTY_LABEL,
+  isDitMajor,
   sanitizeAllowedMajors,
   areTimeRangesOverlappingOrSame,
   groupJobShifts,
@@ -85,7 +87,9 @@ export default function DayDetailModal({
   } | null>(null);
   const [studentId, setStudentId] = useState('');
   const [studentName, setStudentName] = useState('');
+  const [facultyGroup, setFacultyGroup] = useState<'DIT' | 'OTHER' | ''>('');
   const [faculty, setFaculty] = useState('');
+  const [customFaculty, setCustomFaculty] = useState('');
   const [phone, setPhone] = useState('');
   const [scholarshipName, setScholarshipName] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
@@ -111,6 +115,9 @@ export default function DayDetailModal({
     setActiveShiftInfo({ job, shift });
     setCancellingReg(null);
     setRegError(null);
+    setFacultyGroup(job.allow_other_faculty ? '' : 'DIT');
+    setFaculty('');
+    setCustomFaculty('');
     setPhone('');
     onRefresh();
   };
@@ -156,8 +163,9 @@ export default function DayDetailModal({
           lines.push('     (ยังไม่มีผู้ลงทะเบียน)');
         } else {
           s.registrations.forEach((r, i) => {
+            const facultyLabel = isDitMajor(r.faculty) ? `สาขา ${r.faculty}` : r.faculty;
             lines.push(
-              `     ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา ${r.faculty}${
+              `     ${i + 1}. ${r.student_id} - ${r.student_name} (${facultyLabel}${
                 r.phone ? ` • โทร ${r.phone}` : ''
               })${r.scholarship_name ? ` [ทุน ${r.scholarship_name}]` : ''}`
             );
@@ -171,12 +179,20 @@ export default function DayDetailModal({
   };
 
   const liveShiftAllowedMajors = sanitizeAllowedMajors(liveShift?.allowed_majors);
+  const allowsOtherFacultyInForm = Boolean(liveJob?.allow_other_faculty);
+  const effectiveFacultyGroup = allowsOtherFacultyInForm ? facultyGroup : 'DIT';
+  const resolvedFaculty =
+    effectiveFacultyGroup === 'OTHER'
+      ? customFaculty.trim()
+      : effectiveFacultyGroup === 'DIT'
+      ? faculty.trim()
+      : '';
 
   const isMajorBlockedInForm = Boolean(
     activeShiftInfo &&
       liveShiftAllowedMajors.length > 0 &&
-      faculty.trim() &&
-      !liveShiftAllowedMajors.includes(faculty.trim())
+      ((allowsOtherFacultyInForm && effectiveFacultyGroup === 'OTHER') ||
+        (resolvedFaculty && !liveShiftAllowedMajors.includes(resolvedFaculty)))
   );
 
   const studentIdLowerForm = studentId.trim().toLowerCase();
@@ -249,8 +265,28 @@ export default function DayDetailModal({
       return;
     }
 
-    if (!studentId.trim() || !studentName.trim() || !faculty.trim()) {
-      setRegError('กรุณากรอกรหัสนักศึกษา, ชื่อ-นามสกุล และเลือกสาขาวิชาให้ครบถ้วน');
+    if (!studentId.trim() || !studentName.trim()) {
+      setRegError('กรุณากรอกรหัสนักศึกษา และชื่อ-นามสกุล ให้ครบถ้วน');
+      return;
+    }
+
+    if (allowsOtherFacultyInForm && !effectiveFacultyGroup) {
+      setRegError('กรุณาเลือกคณะที่สังกัด');
+      return;
+    }
+
+    if (effectiveFacultyGroup === 'OTHER' && !customFaculty.trim()) {
+      setRegError('กรุณาระบุชื่อคณะที่คุณสังกัด');
+      return;
+    }
+
+    if (effectiveFacultyGroup === 'DIT' && !faculty.trim()) {
+      setRegError('กรุณาเลือกสาขาวิชาให้ครบถ้วน');
+      return;
+    }
+
+    if (!resolvedFaculty) {
+      setRegError('กรุณาเลือกคณะหรือสาขาวิชาให้ครบถ้วน');
       return;
     }
 
@@ -289,7 +325,7 @@ export default function DayDetailModal({
           shift_id: activeShiftInfo.shift.id,
           student_id: studentId.trim(),
           student_name: studentName.trim(),
-          faculty: faculty.trim(),
+          faculty: resolvedFaculty,
           scholarship_name: scholarshipName.trim(),
           phone: cleanPhone,
         }),
@@ -308,7 +344,9 @@ export default function DayDetailModal({
       setActiveShiftInfo(null);
       setStudentId('');
       setStudentName('');
+      setFacultyGroup('');
       setFaculty('');
+      setCustomFaculty('');
       setPhone('');
       setScholarshipName('');
       setRegLoading(false);
@@ -376,7 +414,9 @@ export default function DayDetailModal({
                 <span className={styles.participantIndex}>#{index + 1}</span>
                 <span className={styles.participantName}>{reg.student_name}</span>
                 <span className={styles.participantCode}>รหัส {reg.student_id}</span>
-                <span className={styles.participantFaculty}>สาขา {reg.faculty}</span>
+                <span className={styles.participantFaculty}>
+                  {isDitMajor(reg.faculty) ? `สาขา ${reg.faculty}` : reg.faculty}
+                </span>
                 {reg.phone && (
                   <a
                     href={`tel:${reg.phone}`}
@@ -550,6 +590,12 @@ export default function DayDetailModal({
                 </div>
               )}
 
+              {allowsOtherFacultyInForm && liveShiftAllowedMajors.length === 0 && (
+                <div className={styles.otherFacultyBanner}>
+                  <strong>เปิดรับคณะอื่นด้วย</strong> งานนี้เปิดรับนักศึกษาคณะ {DIT_FACULTY_LABEL} และนักศึกษาจากคณะอื่น (กรุณาเลือกคณะของคุณด้านล่าง)
+                </div>
+              )}
+
               {liveShiftAllowedMajors.length > 0 && (
                 <div className={styles.majorWarningBanner}>
                   <strong>จำกัดสาขาวิชา</strong>{' '}
@@ -591,61 +637,164 @@ export default function DayDetailModal({
                   </div>
                 </div>
 
-                <div className={styles.formGrid2}>
-                  <div className={styles.field}>
-                    <label htmlFor="student-faculty">สาขาวิชา *</label>
-                    <select
-                      id="student-faculty"
-                      value={faculty}
-                      onChange={(e) => setFaculty(e.target.value)}
-                      required
-                      className={styles.selectInput}
-                    >
-                      <option value="">-- กรุณาเลือกสาขาวิชา --</option>
-                      {DIT_MAJORS.map((m) => {
-                        const notEligible =
-                          liveShiftAllowedMajors.length > 0 && !liveShiftAllowedMajors.includes(m);
-                        return (
-                          <option key={m} value={m} disabled={notEligible}>
-                            {m}
-                            {notEligible ? ' (ไม่เปิดรับในตำแหน่งนี้)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
+                {allowsOtherFacultyInForm ? (
+                  <div className={styles.formGrid2}>
+                    <div className={styles.field}>
+                      <label htmlFor="student-faculty-group">คณะ *</label>
+                      <select
+                        id="student-faculty-group"
+                        value={facultyGroup}
+                        onChange={(e) => {
+                          const nextVal = e.target.value as 'DIT' | 'OTHER' | '';
+                          setFacultyGroup(nextVal);
+                          if (nextVal !== 'DIT') setFaculty('');
+                          if (nextVal !== 'OTHER') setCustomFaculty('');
+                        }}
+                        required
+                        className={styles.selectInput}
+                      >
+                        <option value="">-- กรุณาเลือกคณะ --</option>
+                        <option value="DIT">{DIT_FACULTY_LABEL}</option>
+                        <option value="OTHER" disabled={liveShiftAllowedMajors.length > 0}>
+                          คณะอื่น
+                          {liveShiftAllowedMajors.length > 0
+                            ? ' (ตำแหน่งนี้รับเฉพาะสาขาใน DIT)'
+                            : ''}
+                        </option>
+                      </select>
+                    </div>
+
+                    {facultyGroup === 'OTHER' ? (
+                      <div className={styles.field}>
+                        <label htmlFor="student-custom-faculty">ระบุชื่อคณะ *</label>
+                        <input
+                          id="student-custom-faculty"
+                          type="text"
+                          value={customFaculty}
+                          onChange={(e) => setCustomFaculty(e.target.value)}
+                          placeholder="ระบุว่ามาจากคณะอะไร เช่น คณะนิเทศศาสตร์"
+                          required
+                          autoFocus
+                        />
+                      </div>
+                    ) : facultyGroup === 'DIT' ? (
+                      <div className={styles.field}>
+                        <label htmlFor="student-faculty">สาขาวิชา *</label>
+                        <select
+                          id="student-faculty"
+                          value={faculty}
+                          onChange={(e) => setFaculty(e.target.value)}
+                          required
+                          className={styles.selectInput}
+                        >
+                          <option value="">-- กรุณาเลือกสาขาวิชา --</option>
+                          {DIT_MAJORS.map((m) => {
+                            const notEligible =
+                              liveShiftAllowedMajors.length > 0 &&
+                              !liveShiftAllowedMajors.includes(m);
+                            return (
+                              <option key={m} value={m} disabled={notEligible}>
+                                {m}
+                                {notEligible ? ' (ไม่เปิดรับในตำแหน่งนี้)' : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className={styles.field}>
+                        <label htmlFor="student-faculty-placeholder">สาขาวิชา / ระบุคณะ *</label>
+                        <input
+                          id="student-faculty-placeholder"
+                          type="text"
+                          value=""
+                          disabled
+                          placeholder="กรุณาเลือกคณะทางซ้ายก่อน"
+                        />
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <div className={styles.formGrid2}>
+                    <div className={styles.field}>
+                      <label htmlFor="student-faculty">สาขาวิชา *</label>
+                      <select
+                        id="student-faculty"
+                        value={faculty}
+                        onChange={(e) => setFaculty(e.target.value)}
+                        required
+                        className={styles.selectInput}
+                      >
+                        <option value="">-- กรุณาเลือกสาขาวิชา --</option>
+                        {DIT_MAJORS.map((m) => {
+                          const notEligible =
+                            liveShiftAllowedMajors.length > 0 &&
+                            !liveShiftAllowedMajors.includes(m);
+                          return (
+                            <option key={m} value={m} disabled={notEligible}>
+                              {m}
+                              {notEligible ? ' (ไม่เปิดรับในตำแหน่งนี้)' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label htmlFor="student-phone">เบอร์โทรศัพท์ติดต่อ *</label>
+                      <input
+                        id="student-phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="เช่น 0812345678"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className={allowsOtherFacultyInForm ? styles.formGrid2 : undefined}>
+                  {allowsOtherFacultyInForm && (
+                    <div className={styles.field}>
+                      <label htmlFor="student-phone">เบอร์โทรศัพท์ติดต่อ *</label>
+                      <input
+                        id="student-phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="เช่น 0812345678"
+                        required
+                      />
+                    </div>
+                  )}
 
                   <div className={styles.field}>
-                    <label htmlFor="student-phone">เบอร์โทรศัพท์ติดต่อ *</label>
+                    <label htmlFor="student-scholarship">
+                      ชื่อทุนการศึกษา{' '}
+                      {activeShiftInfo.job.require_scholarship_name ||
+                      activeJobPolicy === 'kys_only'
+                        ? '*'
+                        : '(ถ้ามี)'}
+                    </label>
                     <input
-                      id="student-phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="เช่น 0812345678"
-                      required
+                      id="student-scholarship"
+                      type="text"
+                      value={scholarshipName}
+                      onChange={(e) => setScholarshipName(e.target.value)}
+                      placeholder={
+                        activeJobPolicy === 'kys_only'
+                          ? 'งานนี้รับเฉพาะ กยศ. กรุณาระบุ กยศ.'
+                          : activeShiftInfo.job.require_scholarship_name
+                          ? 'ระบุชื่อทุนของคุณ เช่น ทุนเพชรประกาย, กยศ., ฯลฯ...'
+                          : 'ระบุชื่อทุนของคุณ (ถ้ามี)...'
+                      }
+                      required={
+                        activeShiftInfo.job.require_scholarship_name ||
+                        activeJobPolicy === 'kys_only'
+                      }
                     />
                   </div>
-                </div>
-
-                <div className={styles.field}>
-                  <label htmlFor="student-scholarship">
-                    ชื่อทุนการศึกษา {activeShiftInfo.job.require_scholarship_name || activeJobPolicy === 'kys_only' ? '*' : '(ถ้ามี)'}
-                  </label>
-                  <input
-                    id="student-scholarship"
-                    type="text"
-                    value={scholarshipName}
-                    onChange={(e) => setScholarshipName(e.target.value)}
-                    placeholder={
-                      activeJobPolicy === 'kys_only'
-                        ? 'งานนี้รับเฉพาะ กยศ. กรุณาระบุ กยศ.'
-                        : activeShiftInfo.job.require_scholarship_name
-                        ? 'ระบุชื่อทุนของคุณ เช่น ทุนเพชรประกาย, กยศ., ฯลฯ...'
-                        : 'ระบุชื่อทุนของคุณ (ถ้ามี)...'
-                    }
-                    required={activeShiftInfo.job.require_scholarship_name || activeJobPolicy === 'kys_only'}
-                  />
                 </div>
 
                 {isLiveShiftFull && (
@@ -783,7 +932,7 @@ export default function DayDetailModal({
                     <strong>ผู้ลงทะเบียน</strong> {studentName} (รหัส {studentId})
                   </p>
                   <p>
-                    <strong>สาขาวิชา</strong> {faculty}
+                    <strong>{isDitMajor(resolvedFaculty) ? 'สาขาวิชา' : 'คณะ'}</strong> {resolvedFaculty}
                   </p>
                   <p>
                     <strong>เบอร์โทรศัพท์</strong> {phone}
@@ -931,6 +1080,11 @@ export default function DayDetailModal({
                           >
                             {job.job_type === 'external' ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
                           </span>
+                          {job.allow_other_faculty && (
+                            <span className={styles.badgeOtherFaculty}>
+                              เปิดรับคณะอื่นด้วย
+                            </span>
+                          )}
                           {(() => {
                             const policy = getJobScholarshipPolicy(job);
                             return (
@@ -1057,7 +1211,9 @@ export default function DayDetailModal({
                                     </span>
                                   ) : (
                                     <span className={styles.shiftMajorAllBadge}>
-                                      เปิดรับทุกสาขาใน DIT
+                                      {job.allow_other_faculty
+                                        ? 'เปิดรับทุกสาขา DIT และคณะอื่น'
+                                        : 'เปิดรับทุกสาขาใน DIT'}
                                     </span>
                                   )}
                                   <span
@@ -1176,7 +1332,9 @@ export default function DayDetailModal({
                                           </span>
                                         ) : (
                                           <span className={styles.shiftMajorAllBadge}>
-                                            เปิดรับทุกสาขาใน DIT
+                                            {job.allow_other_faculty
+                                              ? 'เปิดรับทุกสาขา DIT และคณะอื่น'
+                                              : 'เปิดรับทุกสาขาใน DIT'}
                                           </span>
                                         )}
                                         <span

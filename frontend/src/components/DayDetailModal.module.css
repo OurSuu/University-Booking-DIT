@@ -244,6 +244,16 @@
   line-height: 1.45;
 }
 
+.otherFacultyBanner {
+  padding: 0.7rem 0.95rem;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 10px;
+  color: #0f766e;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .regForm,
 .cancelForm {
   display: flex;
@@ -720,6 +730,17 @@
   background: #fef3c7;
   color: #92400e;
   border: 1px solid #fde68a;
+}
+
+.badgeOtherFaculty {
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
 }
 
 .badgeAvailable {

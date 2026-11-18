@@ -38,6 +38,7 @@ export interface JobAnnouncement {
   scholarship_policy?: ScholarshipPolicy; // 'all' = รับทุกทุน, 'non_kys' = ไม่รับ กยศ., 'kys_only' = รับเฉพาะ กยศ.
   job_type?: 'internal' | 'external'; // 'internal' = ภายในคณะ, 'external' = ภายนอกคณะ
   shift_mode?: 'shifts' | 'roles';  // 'shifts' = แบ่งตามกะ/ช่วงเวลา, 'roles' = ไม่แบ่งกะ (เวลาเดียวทั้งงาน เลือกตามหน้าที่)
+  allow_other_faculty?: boolean;    // อนุญาตให้นักศึกษาคณะอื่นลงทะเบียนได้หรือไม่
   created_at: string;
   shifts: JobShift[];
 }
@@ -199,6 +200,13 @@ export const POPULAR_SCHOLARSHIPS = [
 ] as const;
 
 export const POPULAR_FACULTIES = DIT_MAJORS;
+
+export const DIT_FACULTY_LABEL = 'วิทยาลัยนวัตกรรมดิจิทัลเทคโนโลยี (DIT)';
+
+export function isDitMajor(majorOrFaculty: string): boolean {
+  const norm = normalizeMajorName(majorOrFaculty);
+  return (DIT_MAJORS as readonly string[]).includes(norm);
+}
 
 export function getTodayStr(): string {
   const now = new Date();

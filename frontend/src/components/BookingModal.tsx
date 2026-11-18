@@ -61,6 +61,7 @@ export default function BookingModal({
   const [requireScholarshipName, setRequireScholarshipName] = useState(true);
   const [scholarshipPolicy, setScholarshipPolicy] = useState<ScholarshipPolicy>('all');
   const [jobType, setJobType] = useState<'internal' | 'external'>('internal');
+  const [allowOtherFaculty, setAllowOtherFaculty] = useState(false);
   const [shiftMode, setShiftMode] = useState<'shifts' | 'roles'>('shifts');
   const [shiftGroups, setShiftGroups] = useState<ShiftGroupDraft[]>([
     {
@@ -85,6 +86,7 @@ export default function BookingModal({
       setRequireScholarshipName(editingJob.require_scholarship_name);
       setScholarshipPolicy(getJobScholarshipPolicy(editingJob));
       setJobType(editingJob.job_type === 'external' ? 'external' : 'internal');
+      setAllowOtherFaculty(Boolean(editingJob.allow_other_faculty));
       setShiftMode(editingJob.shift_mode === 'roles' ? 'roles' : 'shifts');
 
       const grouped = groupJobShifts(editingJob.shifts);
@@ -354,6 +356,7 @@ export default function BookingModal({
           scholarship_policy: scholarshipPolicy,
           job_type: jobType,
           shift_mode: shiftMode,
+          allow_other_faculty: allowOtherFaculty,
           shifts: flattenedShifts,
         }),
       });
@@ -439,7 +442,9 @@ export default function BookingModal({
 
                   <div className={styles.majorTriggerWrap}>
                     {isAllMajors ? (
-                      <span className={styles.majorSummaryBadgeAll}>ทุกสาขาใน DIT</span>
+                      <span className={styles.majorSummaryBadgeAll}>
+                        {allowOtherFaculty ? 'ทุกสาขา DIT + คณะอื่น' : 'ทุกสาขาใน DIT'}
+                      </span>
                     ) : (
                       <span
                         className={styles.majorSummaryBadgeRestricted}
@@ -481,7 +486,7 @@ export default function BookingModal({
                         }`}
                         onClick={() => handleToggleRoleAllowedMajor(gIdx, rIdx, 'ALL')}
                       >
-                        ทุกสาขาใน DIT
+                        {allowOtherFaculty ? 'ทุกสาขาใน DIT (และคณะอื่น)' : 'ทุกสาขาใน DIT'}
                       </button>
                       {DIT_MAJORS.map((major) => {
                         const selected = allowedMajors.includes(major);
@@ -628,6 +633,15 @@ export default function BookingModal({
                 <div className={styles.kysOptionSub}>งานกิจกรรมมหาวิทยาลัย คณะอื่น หรือหน่วยงานภายนอก</div>
               </button>
             </div>
+
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={allowOtherFaculty}
+                onChange={(e) => setAllowOtherFaculty(e.target.checked)}
+              />
+              <span>เปิดรับนักศึกษาคณะอื่นด้วย (คณะอื่นสามารถลงทะเบียนได้)</span>
+            </label>
           </div>
 
           {/* เงื่อนไขทุน */}
