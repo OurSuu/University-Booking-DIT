@@ -456,7 +456,7 @@ export default function DayDetailModal({
           </div>
 
           <div className={styles.headerActions}>
-            {daysUntil >= 0 && !activeShiftInfo && !cancellingReg && (
+            {daysUntil >= 0 && jobs.length > 0 && !activeShiftInfo && !cancellingReg && (
               <button
                 className={styles.createJobBtn}
                 onClick={() => onCreateJobForDate(dateStr)}
