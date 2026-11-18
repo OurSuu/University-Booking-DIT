@@ -38,6 +38,7 @@ interface Props {
   activeMetrics?: MetricConfig[];
   allMetrics?: MetricConfig[];
   onToggleMetric?: (key: string) => void;
+  onSelectAllMetrics?: () => void;
   // Optional single-metric fallback props
   metricName?: string;
   unit?: string;
@@ -51,6 +52,7 @@ export default function RechartsLineChart({
   activeMetrics: passedActiveMetrics,
   allMetrics: passedAllMetrics,
   onToggleMetric,
+  onSelectAllMetrics,
   metricName,
   unit,
   color = '#c81e24',
@@ -86,19 +88,18 @@ export default function RechartsLineChart({
     return activeMetrics;
   }, [passedAllMetrics, activeMetrics]);
 
-  // Summary statistics for every metric
+  // Summary statistics for every metric (exact integer totals/peaks, no averages)
   const metricSummaries = useMemo(() => {
-    const map: Record<string, { total: number; avg: number; peak: number }> = {};
+    const map: Record<string, { total: number; peak: number }> = {};
     for (const m of allMetrics) {
       if (data.length === 0) {
-        map[m.key] = { total: 0, avg: 0, peak: 0 };
+        map[m.key] = { total: 0, peak: 0 };
         continue;
       }
       const vals = data.map((d) => Number(d[m.key] ?? (m.key === 'value' ? d.value : 0) ?? 0));
       const sum = vals.reduce((a, b) => a + b, 0);
       const max = Math.max(...vals, 0);
-      const average = Math.round((sum / data.length) * 10) / 10;
-      map[m.key] = { total: sum, avg: average, peak: max };
+      map[m.key] = { total: sum, peak: max };
     }
     return map;
   }, [data, allMetrics]);
@@ -138,6 +139,7 @@ export default function RechartsLineChart({
   };
 
   const isMulti = activeMetrics.length > 1;
+  const isAllSelected = allMetrics.length > 1 && activeMetrics.length === allMetrics.length;
 
   return (
     <div className={styles.chartCard}>
@@ -182,7 +184,7 @@ export default function RechartsLineChart({
             unit: '',
             color: '#c81e24',
           };
-          const summary = (m && metricSummaries[m.key]) || { total: 0, avg: 0, peak: 0 };
+          const summary = (m && metricSummaries[m.key]) || { total: 0, peak: 0 };
           return (
             <div className={styles.kpiBar}>
               <div className={styles.kpiItem}>
@@ -192,13 +194,7 @@ export default function RechartsLineChart({
                 </strong>
               </div>
               <div className={styles.kpiItem}>
-                <span className={styles.kpiLabel}>ค่าเฉลี่ยต่อช่วง</span>
-                <strong className={styles.kpiValue}>
-                  {summary.avg.toLocaleString()} {m.unit}
-                </strong>
-              </div>
-              <div className={styles.kpiItem}>
-                <span className={styles.kpiLabel}>จุดสูงสุด (Peak)</span>
+                <span className={styles.kpiLabel}>จุดสูงสุดต่อช่วง</span>
                 <strong className={styles.kpiValue}>
                   {summary.peak.toLocaleString()} {m.unit}
                 </strong>
@@ -210,7 +206,7 @@ export default function RechartsLineChart({
         // Multi-Metric Comparison Cards
         <div className={styles.kpiBarMulti}>
           {activeMetrics.map((m) => {
-            const summary = metricSummaries[m.key] || { total: 0, avg: 0, peak: 0 };
+            const summary = metricSummaries[m.key] || { total: 0, peak: 0 };
             return (
               <div
                 key={m.key}
@@ -225,7 +221,7 @@ export default function RechartsLineChart({
                   {summary.total.toLocaleString()} <span style={{ fontSize: '0.85rem' }}>{m.unit}</span>
                 </div>
                 <span className={styles.kpiCardMultiSub}>
-                  เฉลี่ย {summary.avg} {m.unit}/ช่วง • สูงสุด {summary.peak} {m.unit}
+                  สูงสุดต่อช่วง {summary.peak.toLocaleString()} {m.unit}
                 </span>
               </div>
             );
@@ -236,11 +232,32 @@ export default function RechartsLineChart({
       {/* Interactive Legend Bar (Clickable to Toggle Lines) */}
       {allMetrics.length > 1 && (
         <div className={styles.legendBar}>
-          <span className={styles.legendTitle}>เส้นข้อมูลในกราฟ</span>
+          <span className={styles.legendTitle}>เลือกดูข้อมูลในกราฟ</span>
           <div className={styles.legendBadges}>
+            {onSelectAllMetrics && (
+              <button
+                type="button"
+                className={`${styles.legendBtn} ${
+                  isAllSelected ? styles.legendAllBtnActive : ''
+                }`}
+                onClick={onSelectAllMetrics}
+                title="ดูทุกข้อมูลพร้อมกัน"
+              >
+                <span className={styles.legendDotsTriplet}>
+                  {allMetrics.map((m) => (
+                    <span
+                      key={m.key}
+                      className={styles.legendDot}
+                      style={{ backgroundColor: isAllSelected ? '#ffffff' : m.color }}
+                    />
+                  ))}
+                </span>
+                <span>ดูทุกข้อมูลพร้อมกัน</span>
+              </button>
+            )}
             {allMetrics.map((m) => {
               const isActive = activeMetrics.some((am) => am.key === m.key);
-              const summary = metricSummaries[m.key] || { total: 0, avg: 0, peak: 0 };
+              const summary = metricSummaries[m.key] || { total: 0, peak: 0 };
               return (
                 <button
                   key={m.key}

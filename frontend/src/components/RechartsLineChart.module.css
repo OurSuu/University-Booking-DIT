@@ -205,6 +205,19 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
+.legendAllBtnActive {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(30, 41, 59, 0.2);
+}
+
+.legendDotsTriplet {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+}
+
 .legendBtnInactive {
   opacity: 0.5;
   background: var(--bg-subtle) !important;
@@ -328,7 +341,7 @@
   }
   .kpiBar {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.35rem;
     padding: 0.65rem 0.45rem;
   }

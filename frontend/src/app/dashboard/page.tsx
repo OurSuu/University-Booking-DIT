@@ -54,6 +54,27 @@ type ViewMode = 'day' | 'month' | 'year';
 type MetricType = 'announcedHours' | 'registrations' | 'jobs';
 type ScopeFilter = 'all' | 'internal' | 'external';
 
+function parseYearMonth(ym: string): { year: number; month: number } {
+  const [yStr, mStr] = (ym || '').split('-');
+  const y = Number(yStr);
+  const m = Number(mStr);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  }
+  return { year: y, month: m };
+}
+
+function formatYearMonth(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function shiftYearMonth(ym: string, deltaMonths: number): string {
+  const { year, month } = parseYearMonth(ym);
+  const d = new Date(year, month - 1 + deltaMonths, 1);
+  return formatYearMonth(d.getFullYear(), d.getMonth() + 1);
+}
+
 const DASHBOARD_METRICS: MetricConfig[] = [
   {
     key: 'announcedHours',
@@ -109,9 +130,11 @@ function DashboardInner() {
   const [activeDetailTab, setActiveDetailTab] = useState<'jobs' | 'students'>('jobs');
 
   const todayStr = getTodayStr();
-  const currentYear = new Date().getFullYear();
+  const nowDate = new Date();
+  const currentYear = nowDate.getFullYear();
+  const currentYm = formatYearMonth(currentYear, nowDate.getMonth() + 1);
 
-  // Day range states (default to current month: 1st of month to today/end of month)
+  // Day range states (default +/- 14 days around today)
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 14);
@@ -123,8 +146,13 @@ function DashboardInner() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 
-  // Selected year for month mode
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  // Month range for month mode (YYYY-MM)
+  const [startMonth, setStartMonth] = useState<string>(() => `${currentYear}-01`);
+  const [endMonth, setEndMonth] = useState<string>(() => `${currentYear}-12`);
+
+  // Year range for year mode
+  const [startYear, setStartYear] = useState<number>(() => currentYear - 2);
+  const [endYear, setEndYear] = useState<number>(() => currentYear + 1);
 
   // Search & Calendar Date Filter in table
   const [tableSearch, setTableSearch] = useState<string>('');
@@ -255,6 +283,75 @@ function DashboardInner() {
     setEndDate(end);
   };
 
+  // Extract available years dynamically from jobs + surrounding years
+  const availableYears = useMemo(() => {
+    const set = new Set<number>([currentYear - 2, currentYear - 1, currentYear, currentYear + 1]);
+    for (const j of jobs) {
+      const jy = Number((j.date || '').slice(0, 4));
+      if (Number.isFinite(jy) && jy > 1900 && jy < 3000) {
+        set.add(jy);
+      }
+    }
+    return Array.from(set).sort((a, b) => a - b);
+  }, [jobs, currentYear]);
+
+  const handleStartMonthChange = (nextYm: string) => {
+    setStartMonth(nextYm);
+    if (nextYm > endMonth) {
+      setEndMonth(nextYm);
+    }
+  };
+
+  const handleEndMonthChange = (nextYm: string) => {
+    setEndMonth(nextYm);
+    if (nextYm < startMonth) {
+      setStartMonth(nextYm);
+    }
+  };
+
+  const handleMonthPreset = (preset: 'thisMonth' | '3months' | '6months' | 'thisYear') => {
+    if (preset === 'thisMonth') {
+      setStartMonth(currentYm);
+      setEndMonth(currentYm);
+    } else if (preset === '3months') {
+      setStartMonth(shiftYearMonth(currentYm, -2));
+      setEndMonth(currentYm);
+    } else if (preset === '6months') {
+      setStartMonth(shiftYearMonth(currentYm, -5));
+      setEndMonth(currentYm);
+    } else {
+      setStartMonth(`${currentYear}-01`);
+      setEndMonth(`${currentYear}-12`);
+    }
+  };
+
+  const handleStartYearChange = (nextY: number) => {
+    setStartYear(nextY);
+    if (nextY > endYear) {
+      setEndYear(nextY);
+    }
+  };
+
+  const handleEndYearChange = (nextY: number) => {
+    setEndYear(nextY);
+    if (nextY < startYear) {
+      setStartYear(nextY);
+    }
+  };
+
+  const handleYearPreset = (preset: 'thisYear' | '3years' | 'all') => {
+    if (preset === 'thisYear') {
+      setStartYear(currentYear);
+      setEndYear(currentYear);
+    } else if (preset === '3years') {
+      setStartYear(currentYear - 2);
+      setEndYear(currentYear);
+    } else {
+      setStartYear(availableYears[0] ?? currentYear - 2);
+      setEndYear(availableYears[availableYears.length - 1] ?? currentYear + 1);
+    }
+  };
+
   // Extract unique teacher names
   const allTeacherNames = useMemo(() => {
     const set = new Set<string>();
@@ -286,7 +383,11 @@ function DashboardInner() {
       if (viewMode === 'day') {
         if (j.date < startDate || j.date > endDate) return false;
       } else if (viewMode === 'month') {
-        if (!j.date.startsWith(String(selectedYear))) return false;
+        const ym = j.date.slice(0, 7);
+        if (ym < startMonth || ym > endMonth) return false;
+      } else if (viewMode === 'year') {
+        const jy = Number(j.date.slice(0, 4));
+        if (!Number.isFinite(jy) || jy < startYear || jy > endYear) return false;
       }
 
       // Filter by Scope (Internal vs External)
@@ -359,7 +460,7 @@ function DashboardInner() {
       jobs: filteredJobs,
       registrations: registrationsList,
     };
-  }, [jobs, viewMode, startDate, endDate, selectedYear, selectedScope, selectedTeacher, selectedMajor]);
+  }, [jobs, viewMode, startDate, endDate, startMonth, endMonth, startYear, endYear, selectedScope, selectedTeacher, selectedMajor]);
 
   // Overall KPI metrics
   const kpis = useMemo(() => {
@@ -454,9 +555,19 @@ function DashboardInner() {
     }
 
     if (viewMode === 'month') {
+      if (!startMonth || !endMonth || startMonth > endMonth) return [];
+      const startParsed = parseYearMonth(startMonth);
+      const endParsed = parseYearMonth(endMonth);
+      const spansMultipleYears = startParsed.year !== endParsed.year;
+
       const points: ChartDataPoint[] = [];
-      for (let m = 0; m < 12; m++) {
-        const monthStr = `${selectedYear}-${String(m + 1).padStart(2, '0')}`;
+      let curY = startParsed.year;
+      let curM = startParsed.month;
+      let guard = 0;
+
+      while ((curY < endParsed.year || (curY === endParsed.year && curM <= endParsed.month)) && guard < 120) {
+        guard++;
+        const monthStr = formatYearMonth(curY, curM);
         const monthJobs = filteredData.jobs.filter((j) => j.date.startsWith(monthStr));
         const monthRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(monthStr));
 
@@ -465,54 +576,53 @@ function DashboardInner() {
           0
         );
 
+        const shortYearBE = String((curY + 543) % 100);
         points.push({
-          label: THAI_MONTH_SHORT[m],
-          fullDate: `เดือน${THAI_MONTH_FULL[m]} ${selectedYear + 543}`,
+          label: spansMultipleYears
+            ? `${THAI_MONTH_SHORT[curM - 1]} ${shortYearBE}`
+            : THAI_MONTH_SHORT[curM - 1],
+          fullDate: `เดือน${THAI_MONTH_FULL[curM - 1]} ${curY + 543}`,
           announcedHours: monthAnnouncedHours,
           registrations: monthRegs.length,
           jobs: monthJobs.length,
           value: monthAnnouncedHours,
         });
+
+        curM++;
+        if (curM > 12) {
+          curM = 1;
+          curY++;
+        }
       }
       return points;
     }
 
     if (viewMode === 'year') {
-      const yearMap = new Map<number, { jobs: number; announcedHours: number; regs: number }>();
-      const currentBE = currentYear;
-      for (let y = currentBE - 2; y <= currentBE + 1; y++) {
-        yearMap.set(y, { jobs: 0, announcedHours: 0, regs: 0 });
-      }
+      if (startYear > endYear) return [];
+      const points: ChartDataPoint[] = [];
+      for (let y = startYear; y <= endYear; y++) {
+        const yPrefix = String(y);
+        const yearJobs = filteredData.jobs.filter((j) => j.date.startsWith(yPrefix));
+        const yearRegs = filteredData.registrations.filter((r) => r.jobDate.startsWith(yPrefix));
+        const yearAnnouncedHours = yearJobs.reduce(
+          (acc, j) => acc + getJobAnnouncedHours(j),
+          0
+        );
 
-      for (const j of filteredData.jobs) {
-        const y = Number(j.date.slice(0, 4));
-        if (!yearMap.has(y)) {
-          yearMap.set(y, { jobs: 0, announcedHours: 0, regs: 0 });
-        }
-        const item = yearMap.get(y)!;
-        item.jobs++;
-        item.announcedHours += getJobAnnouncedHours(j);
-        for (const s of j.shifts) {
-          item.regs += s.registrations.length;
-        }
-      }
-
-      const sortedYears = Array.from(yearMap.keys()).sort((a, b) => a - b);
-      return sortedYears.map((y) => {
-        const item = yearMap.get(y)!;
-        return {
+        points.push({
           label: `ปี ${y + 543}`,
           fullDate: `ปี พ.ศ. ${y + 543} (${y})`,
-          announcedHours: item.announcedHours,
-          registrations: item.regs,
-          jobs: item.jobs,
-          value: item.announcedHours,
-        };
-      });
+          announcedHours: yearAnnouncedHours,
+          registrations: yearRegs.length,
+          jobs: yearJobs.length,
+          value: yearAnnouncedHours,
+        });
+      }
+      return points;
     }
 
     return [];
-  }, [viewMode, startDate, endDate, selectedYear, filteredData, currentYear]);
+  }, [viewMode, startDate, endDate, startMonth, endMonth, startYear, endYear, filteredData]);
 
   // Scope breakdown (งานภายในคณะ vs งานภายนอกคณะ)
   const scopeBreakdown = useMemo(() => {
@@ -661,8 +771,6 @@ function DashboardInner() {
     showToast(`คัดลอกรายชื่อ ${tableRows.length} รายการลงคลิปบอร์ดแล้ว`, 'success');
   };
 
-  const isAllMetricsSelected = selectedMetrics.length === DASHBOARD_METRICS.length;
-
   const activeMetricConfigs = useMemo(() => {
     return DASHBOARD_METRICS.filter((m) => selectedMetrics.includes(m.key as MetricType));
   }, [selectedMetrics]);
@@ -685,10 +793,6 @@ function DashboardInner() {
 
   const handleSelectAllMetrics = () => {
     setSelectedMetrics(['announcedHours', 'registrations', 'jobs']);
-  };
-
-  const handleSelectSingleMetric = (key: MetricType) => {
-    setSelectedMetrics([key]);
   };
 
   const handleToggleMetric = (key: string) => {
@@ -808,64 +912,6 @@ function DashboardInner() {
                 ดูกราฟรายปี
               </button>
             </div>
-
-            {/* Metric Selector Tabs */}
-            <div className={styles.metricTabs}>
-              <span className={styles.metricLabel}>ข้อมูลในกราฟ</span>
-              <div className={styles.metricBtnGroup}>
-                <button
-                  type="button"
-                  className={`${styles.metricBtn} ${isAllMetricsSelected ? styles.metricBtnAllActive : ''}`}
-                  onClick={handleSelectAllMetrics}
-                >
-                  <span className={styles.metricBtnDots}>
-                    <span style={{ backgroundColor: '#c81e24' }} />
-                    <span style={{ backgroundColor: '#2563eb' }} />
-                    <span style={{ backgroundColor: '#059669' }} />
-                  </span>
-                  ดูทุกข้อมูลพร้อมกัน
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.metricBtn} ${
-                    !isAllMetricsSelected && selectedMetrics.length === 1 && selectedMetrics[0] === 'announcedHours'
-                      ? styles.metricBtnHoursActive
-                      : ''
-                  }`}
-                  onClick={() => handleSelectSingleMetric('announcedHours')}
-                >
-                  <span className={styles.metricDotRed} />
-                  ชั่วโมงทุนที่อาจารย์ประกาศ
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.metricBtn} ${
-                    !isAllMetricsSelected && selectedMetrics.length === 1 && selectedMetrics[0] === 'registrations'
-                      ? styles.metricBtnRegsActive
-                      : ''
-                  }`}
-                  onClick={() => handleSelectSingleMetric('registrations')}
-                >
-                  <span className={styles.metricDotBlue} />
-                  จำนวนเด็กที่เข้าร่วม
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.metricBtn} ${
-                    !isAllMetricsSelected && selectedMetrics.length === 1 && selectedMetrics[0] === 'jobs'
-                      ? styles.metricBtnJobsActive
-                      : ''
-                  }`}
-                  onClick={() => handleSelectSingleMetric('jobs')}
-                >
-                  <span className={styles.metricDotGreen} />
-                  จำนวนงานที่ประกาศ
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Sub Filters Row */}
@@ -912,20 +958,146 @@ function DashboardInner() {
               </>
             )}
 
-            {viewMode === 'month' && (
-              <div className={styles.dateInputsRow}>
-                <label htmlFor="select-year">เลือกปี พ.ศ.</label>
-                <select
-                  id="select-year"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className={styles.filterSelect}
-                >
-                  <option value={currentYear}>{currentYear + 543} ({currentYear})</option>
-                  <option value={currentYear - 1}>{currentYear + 542} ({currentYear - 1})</option>
-                  <option value={currentYear + 1}>{currentYear + 544} ({currentYear + 1})</option>
-                </select>
-              </div>
+            {viewMode === 'month' && (() => {
+              const sParsed = parseYearMonth(startMonth);
+              const eParsed = parseYearMonth(endMonth);
+              return (
+                <>
+                  <div className={styles.dateInputsRow}>
+                    <div className={styles.dateInputsFlex}>
+                      <div className={styles.dateInputItem}>
+                        <label htmlFor="start-month-m">ตั้งแต่เดือน</label>
+                        <select
+                          id="start-month-m"
+                          value={sParsed.month}
+                          onChange={(e) =>
+                            handleStartMonthChange(formatYearMonth(sParsed.year, Number(e.target.value)))
+                          }
+                          className={styles.filterSelect}
+                        >
+                          {THAI_MONTH_FULL.map((name, idx) => (
+                            <option key={name} value={idx + 1}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          aria-label="ปีเริ่มต้น"
+                          value={sParsed.year}
+                          onChange={(e) =>
+                            handleStartMonthChange(formatYearMonth(Number(e.target.value), sParsed.month))
+                          }
+                          className={styles.filterSelect}
+                        >
+                          {availableYears.map((y) => (
+                            <option key={y} value={y}>
+                              พ.ศ. {y + 543}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className={styles.dateInputItem}>
+                        <label htmlFor="end-month-m">ถึงเดือน</label>
+                        <select
+                          id="end-month-m"
+                          value={eParsed.month}
+                          onChange={(e) =>
+                            handleEndMonthChange(formatYearMonth(eParsed.year, Number(e.target.value)))
+                          }
+                          className={styles.filterSelect}
+                        >
+                          {THAI_MONTH_FULL.map((name, idx) => (
+                            <option key={name} value={idx + 1}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          aria-label="ปีสิ้นสุด"
+                          value={eParsed.year}
+                          onChange={(e) =>
+                            handleEndMonthChange(formatYearMonth(Number(e.target.value), eParsed.month))
+                          }
+                          className={styles.filterSelect}
+                        >
+                          {availableYears.map((y) => (
+                            <option key={y} value={y}>
+                              พ.ศ. {y + 543}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.presetPills}>
+                    <button type="button" className={styles.presetBtn} onClick={() => handleMonthPreset('thisMonth')}>
+                      เดือนนี้
+                    </button>
+                    <button type="button" className={styles.presetBtn} onClick={() => handleMonthPreset('3months')}>
+                      3 เดือนล่าสุด
+                    </button>
+                    <button type="button" className={styles.presetBtn} onClick={() => handleMonthPreset('6months')}>
+                      6 เดือนล่าสุด
+                    </button>
+                    <button type="button" className={styles.presetBtn} onClick={() => handleMonthPreset('thisYear')}>
+                      ทั้งปี {currentYear + 543}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+
+            {viewMode === 'year' && (
+              <>
+                <div className={styles.dateInputsRow}>
+                  <div className={styles.dateInputsFlex}>
+                    <div className={styles.dateInputItem}>
+                      <label htmlFor="start-year">ตั้งแต่ปี พ.ศ.</label>
+                      <select
+                        id="start-year"
+                        value={startYear}
+                        onChange={(e) => handleStartYearChange(Number(e.target.value))}
+                        className={styles.filterSelect}
+                      >
+                        {availableYears.map((y) => (
+                          <option key={y} value={y}>
+                            {y + 543} ({y})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.dateInputItem}>
+                      <label htmlFor="end-year">ถึงปี พ.ศ.</label>
+                      <select
+                        id="end-year"
+                        value={endYear}
+                        onChange={(e) => handleEndYearChange(Number(e.target.value))}
+                        className={styles.filterSelect}
+                      >
+                        {availableYears.map((y) => (
+                          <option key={y} value={y}>
+                            {y + 543} ({y})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.presetPills}>
+                  <button type="button" className={styles.presetBtn} onClick={() => handleYearPreset('thisYear')}>
+                    ปี {currentYear + 543}
+                  </button>
+                  <button type="button" className={styles.presetBtn} onClick={() => handleYearPreset('3years')}>
+                    3 ปีล่าสุด
+                  </button>
+                  <button type="button" className={styles.presetBtn} onClick={() => handleYearPreset('all')}>
+                    ทุกปีที่มีข้อมูล
+                  </button>
+                </div>
+              </>
             )}
 
             {/* Filter by Scope (Internal vs External) */}
@@ -1044,6 +1216,7 @@ function DashboardInner() {
             activeMetrics={activeMetricConfigs}
             allMetrics={DASHBOARD_METRICS}
             onToggleMetric={handleToggleMetric}
+            onSelectAllMetrics={handleSelectAllMetrics}
             title={chartTitle}
             subtitle={
               selectedMajor
