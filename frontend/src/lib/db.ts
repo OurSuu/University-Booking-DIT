@@ -158,7 +158,7 @@ function getDbConnectionString(): string {
   ).trim();
 }
 
-const DB_SCHEMA_VERSION = 3;
+const DB_SCHEMA_VERSION = 4;
 
 const globalForDb = globalThis as unknown as {
   _pgPool?: Pool;
@@ -188,6 +188,7 @@ async function ensurePgTables() {
       title VARCHAR(200) NOT NULL,
       description TEXT DEFAULT '',
       teacher_name VARCHAR(150) NOT NULL,
+      teacher_contact VARCHAR(255) DEFAULT '',
       location VARCHAR(200) DEFAULT '',
       require_scholarship_name BOOLEAN DEFAULT TRUE,
       allow_kys BOOLEAN DEFAULT TRUE,
@@ -223,6 +224,7 @@ async function ensurePgTables() {
     ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
     ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS shift_mode VARCHAR(20) DEFAULT 'shifts';
+    ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS teacher_contact VARCHAR(255) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS duty_name VARCHAR(150) DEFAULT '';
     ALTER TABLE scholarship_shifts ADD COLUMN IF NOT EXISTS allowed_majors TEXT DEFAULT '[]';
 
@@ -640,6 +642,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       title: j.title,
       description: j.description || '',
       teacher_name: j.teacher_name,
+      teacher_contact: j.teacher_contact ? String(j.teacher_contact).trim() : '',
       location: j.location || '',
       require_scholarship_name: Boolean(j.require_scholarship_name),
       allow_kys: Boolean(j.allow_kys),
@@ -669,6 +672,7 @@ export async function getAllJobs(): Promise<JobAnnouncement[]> {
       }));
     return {
       ...j,
+      teacher_contact: j.teacher_contact ? String(j.teacher_contact).trim() : '',
       shift_mode: (j.shift_mode === 'roles' ? 'roles' : 'shifts') as 'shifts' | 'roles',
       shifts: jobShifts,
     };
@@ -685,6 +689,7 @@ export interface CreateJobPayload {
   title: string;
   description: string;
   teacher_name: string;
+  teacher_contact?: string;
   location: string;
   require_scholarship_name: boolean;
   allow_kys: boolean;
@@ -696,6 +701,7 @@ export interface CreateJobPayload {
 export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncement> {
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
+  const teacherContact = (payload.teacher_contact || '').trim();
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
     const pool = getPool();
@@ -704,14 +710,15 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
       await client.query('BEGIN');
       const jobRes = await client.query(
         `INSERT INTO scholarship_jobs
-          (date, title, description, teacher_name, location, require_scholarship_name, allow_kys, job_type, shift_mode)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          (date, title, description, teacher_name, teacher_contact, location, require_scholarship_name, allow_kys, job_type, shift_mode)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           payload.date,
           payload.title.trim(),
           payload.description.trim(),
           payload.teacher_name.trim(),
+          teacherContact,
           payload.location.trim(),
           payload.require_scholarship_name,
           payload.allow_kys,
@@ -763,6 +770,7 @@ export async function createJob(payload: CreateJobPayload): Promise<JobAnnouncem
     title: payload.title.trim(),
     description: payload.description.trim(),
     teacher_name: payload.teacher_name.trim(),
+    teacher_contact: teacherContact,
     location: payload.location.trim(),
     require_scholarship_name: payload.require_scholarship_name,
     allow_kys: payload.allow_kys,
@@ -799,6 +807,7 @@ export async function updateJob(
 
   const jobScope = payload.job_type === 'external' ? 'external' : 'internal';
   const shiftMode = payload.shift_mode === 'roles' ? 'roles' : 'shifts';
+  const teacherContact = (payload.teacher_contact || '').trim();
 
   if (getDbConnectionString().length > 0) {
     await ensurePgTables();
@@ -808,14 +817,15 @@ export async function updateJob(
       await client.query('BEGIN');
       await client.query(
         `UPDATE scholarship_jobs
-         SET date = $1, title = $2, description = $3, teacher_name = $4,
-             location = $5, require_scholarship_name = $6, allow_kys = $7, job_type = $8, shift_mode = $9
-         WHERE id = $10`,
+         SET date = $1, title = $2, description = $3, teacher_name = $4, teacher_contact = $5,
+             location = $6, require_scholarship_name = $7, allow_kys = $8, job_type = $9, shift_mode = $10
+         WHERE id = $11`,
         [
           payload.date,
           payload.title.trim(),
           payload.description.trim(),
           payload.teacher_name.trim(),
+          teacherContact,
           payload.location.trim(),
           payload.require_scholarship_name,
           payload.allow_kys,
@@ -897,6 +907,7 @@ export async function updateJob(
     title: payload.title.trim(),
     description: payload.description.trim(),
     teacher_name: payload.teacher_name.trim(),
+    teacher_contact: teacherContact,
     location: payload.location.trim(),
     require_scholarship_name: payload.require_scholarship_name,
     allow_kys: payload.allow_kys,

@@ -1283,7 +1283,14 @@ function DashboardInner() {
                                 {isExt ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
                               </span>
                             </td>
-                            <td>{job.teacher_name}</td>
+                            <td>
+                              <div>{job.teacher_name}</div>
+                              {job.teacher_contact && (
+                                <div style={{ fontSize: '0.76rem', color: '#1d4ed8', marginTop: '2px' }}>
+                                  ติดต่อ: {job.teacher_contact}
+                                </div>
+                              )}
+                            </td>
                             <td>{job.location || 'ไม่ระบุ'}</td>
                             <td style={{ whiteSpace: 'normal', minWidth: '185px' }}>
                               <div>
@@ -1374,7 +1381,9 @@ function DashboardInner() {
                         <div className={styles.mobileCardJob}>
                           <strong className={styles.mobileCardJobTitle}>{job.title}</strong>
                           <span className={styles.mobileCardJobShift}>
-                            อาจารย์: {job.teacher_name} • สถานที่: {job.location || 'ไม่ระบุ'}
+                            อาจารย์: {job.teacher_name}
+                            {job.teacher_contact ? ` (ติดต่อ: ${job.teacher_contact})` : ''} • สถานที่:{' '}
+                            {job.location || 'ไม่ระบุ'}
                           </span>
                         </div>
 

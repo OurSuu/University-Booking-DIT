@@ -129,6 +129,7 @@ export default function DayDetailModal({
     lines.push(`รายชื่อผู้ลงทะเบียนงาน: ${job.title}`);
     lines.push(`วันที่: ${formatThaiDate(job.date)}`);
     lines.push(`อาจารย์ผู้รับผิดชอบ: ${job.teacher_name}`);
+    if (job.teacher_contact) lines.push(`ช่องทางติดต่ออาจารย์: ${job.teacher_contact}`);
     if (job.location) lines.push(`สถานที่: ${job.location}`);
     lines.push('----------------------------------------');
 
@@ -722,6 +723,12 @@ export default function DayDetailModal({
 
                 <div className={styles.confirmNoticeBox}>
                   หากลงทะเบียนเเล้ว ไม่สามารถถอนได้ โปรดเเจ้งอาจารย์ที่รับผิดชอบเพื่อ ถอนชื่อ
+                  {activeShiftInfo.job.teacher_contact && (
+                    <div style={{ marginTop: '0.35rem', fontWeight: 700 }}>
+                      ช่องทางติดต่อ ({activeShiftInfo.job.teacher_name}):{' '}
+                      {activeShiftInfo.job.teacher_contact}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.confirmSummary}>
@@ -947,6 +954,11 @@ export default function DayDetailModal({
                       <span className={styles.teacherBadgeMeta}>
                         <strong>อาจารย์ผู้ประกาศ:</strong> {job.teacher_name}
                       </span>
+                      {job.teacher_contact && (
+                        <span className={styles.contactBadgeMeta}>
+                          <strong>ช่องทางติดต่ออาจารย์:</strong> {job.teacher_contact}
+                        </span>
+                      )}
                       {job.location && (
                         <span className={styles.locationBadgeMeta}>
                           <strong>สถานที่:</strong> {job.location}

@@ -803,6 +803,18 @@
   font-size: 0.86rem;
 }
 
+.contactBadgeMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1e40af;
+  font-size: 0.86rem;
+}
+
 .jobDesc {
   font-size: 0.9rem;
   color: var(--text-secondary);

@@ -29,6 +29,7 @@ export interface JobAnnouncement {
   title: string;                    // ชื่องาน
   description: string;              // รายละเอียดงาน
   teacher_name: string;             // ชื่ออาจารย์ผู้ประกาศ
+  teacher_contact?: string;         // ช่องทางติดต่ออาจารย์ผู้ประกาศ (เช่น เบอร์โทร / Line / อีเมล)
   location: string;                 // สถานที่นัดหมาย/ทำงาน
   require_scholarship_name: boolean;// บังคับระบุชื่อทุนหรือไม่
   allow_kys: boolean;               // อนุญาตทุน กยศ. หรือไม่ (false = กยศ. ทำไม่ได้)

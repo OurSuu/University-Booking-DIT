@@ -53,6 +53,7 @@ export default function BookingModal({
   const [date, setDate] = useState(selectedDate || getTodayStr());
   const [title, setTitle] = useState('');
   const [teacherName, setTeacherName] = useState('');
+  const [teacherContact, setTeacherContact] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [requireScholarshipName, setRequireScholarshipName] = useState(true);
@@ -76,6 +77,7 @@ export default function BookingModal({
       setDate(editingJob.date);
       setTitle(editingJob.title);
       setTeacherName(editingJob.teacher_name);
+      setTeacherContact(editingJob.teacher_contact || '');
       setLocation(editingJob.location);
       setDescription(editingJob.description);
       setRequireScholarshipName(editingJob.require_scholarship_name);
@@ -342,6 +344,7 @@ export default function BookingModal({
           date,
           title: title.trim(),
           teacher_name: teacherName.trim(),
+          teacher_contact: teacherContact.trim(),
           location: location.trim(),
           description: description.trim(),
           require_scholarship_name: requireScholarshipName,
@@ -553,19 +556,19 @@ export default function BookingModal({
             </div>
           </div>
 
-          <div className={styles.row2Col}>
-            <div className={styles.field}>
-              <label htmlFor="job-title">ชื่องาน / กิจกรรม *</label>
-              <input
-                id="job-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="เช่น ช่วยจัดเตรียมเอกสารภาควิชา / ดูแลบูธกิจกรรม"
-                required
-              />
-            </div>
+          <div className={styles.field}>
+            <label htmlFor="job-title">ชื่องาน / กิจกรรม *</label>
+            <input
+              id="job-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="เช่น ช่วยจัดเตรียมเอกสารภาควิชา / ดูแลบูธกิจกรรม"
+              required
+            />
+          </div>
 
+          <div className={styles.row2Col}>
             <div className={styles.field}>
               <label htmlFor="job-location">สถานที่นัดหมาย / ปฏิบัติงาน</label>
               <input
@@ -574,6 +577,17 @@ export default function BookingModal({
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="เช่น ห้องธุรการ ชั้น 4 อาคาร 1"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="teacher-contact">ช่องทางติดต่ออาจารย์ผู้สร้างงาน</label>
+              <input
+                id="teacher-contact"
+                type="text"
+                value={teacherContact}
+                onChange={(e) => setTeacherContact(e.target.value)}
+                placeholder="เช่น โทร 08x-xxx-xxxx / Line ID / อีเมล / ห้องพัก"
               />
             </div>
           </div>
