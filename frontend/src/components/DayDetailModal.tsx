@@ -126,11 +126,11 @@ export default function DayDetailModal({
 
   const handleCopyParticipants = (job: JobAnnouncement) => {
     const lines: string[] = [];
-    lines.push(`รายชื่อผู้ลงทะเบียนงาน: ${job.title}`);
-    lines.push(`วันที่: ${formatThaiDate(job.date)}`);
-    lines.push(`อาจารย์ผู้รับผิดชอบ: ${job.teacher_name}`);
-    if (job.teacher_contact) lines.push(`ช่องทางติดต่ออาจารย์: ${job.teacher_contact}`);
-    if (job.location) lines.push(`สถานที่: ${job.location}`);
+    lines.push(`รายชื่อผู้ลงทะเบียนงาน ${job.title}`);
+    lines.push(`วันที่ ${formatThaiDate(job.date)}`);
+    lines.push(`อาจารย์ผู้รับผิดชอบ ${job.teacher_name}`);
+    if (job.teacher_contact) lines.push(`ช่องทางติดต่ออาจารย์ ${job.teacher_contact}`);
+    if (job.location) lines.push(`สถานที่ ${job.location}`);
     lines.push('----------------------------------------');
 
     const isRolesOnly = job.shift_mode === 'roles';
@@ -138,16 +138,16 @@ export default function DayDetailModal({
 
     for (const group of groups) {
       if (isRolesOnly || group.label === 'ตลอดงาน') {
-        lines.push(`\nช่วงเวลาทั้งงาน: ${group.time_range} | ${group.hours} ชม.ทุน`);
+        lines.push(`\nช่วงเวลาทั้งงาน ${group.time_range} | ${group.hours} ชม.ทุน`);
       } else {
         lines.push(`\n${group.label} (${group.time_range}) | ${group.hours} ชม.ทุน`);
       }
 
       for (const s of group.roles) {
         const allowed = sanitizeAllowedMajors(s.allowed_majors);
-        const majorPart = allowed.length > 0 ? ` [เฉพาะสาขา: ${allowed.join(', ')}]` : '';
+        const majorPart = allowed.length > 0 ? ` [เฉพาะสาขา ${allowed.join(', ')}]` : '';
         const roleHeading = s.duty_name
-          ? `  - หน้าที่: ${s.duty_name} (${s.registrations.length}/${s.capacity} คน)${majorPart}`
+          ? `  - หน้าที่ ${s.duty_name} (${s.registrations.length}/${s.capacity} คน)${majorPart}`
           : `  - ลงทะเบียน ${s.registrations.length}/${s.capacity} คน${majorPart}`;
         lines.push(roleHeading);
 
@@ -156,9 +156,9 @@ export default function DayDetailModal({
         } else {
           s.registrations.forEach((r, i) => {
             lines.push(
-              `     ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา: ${r.faculty}${
-                r.phone ? ` • โทร: ${r.phone}` : ''
-              })${r.scholarship_name ? ` [ทุน: ${r.scholarship_name}]` : ''}`
+              `     ${i + 1}. ${r.student_id} - ${r.student_name} (สาขา ${r.faculty}${
+                r.phone ? ` • โทร ${r.phone}` : ''
+              })${r.scholarship_name ? ` [ทุน ${r.scholarship_name}]` : ''}`
             );
           });
         }
@@ -211,7 +211,7 @@ export default function DayDetailModal({
 
     if (isMajorBlockedInForm) {
       setRegError(
-        `ขออภัย ตำแหน่งนี้รับเฉพาะสาขา: ${liveShiftAllowedMajors.join(', ')}`
+        `ขออภัย ตำแหน่งนี้รับเฉพาะสาขา ${liveShiftAllowedMajors.join(', ')}`
       );
       return;
     }
@@ -359,20 +359,20 @@ export default function DayDetailModal({
               <div className={styles.participantInfo}>
                 <span className={styles.participantIndex}>#{index + 1}</span>
                 <span className={styles.participantName}>{reg.student_name}</span>
-                <span className={styles.participantCode}>รหัส: {reg.student_id}</span>
-                <span className={styles.participantFaculty}>สาขา: {reg.faculty}</span>
+                <span className={styles.participantCode}>รหัส {reg.student_id}</span>
+                <span className={styles.participantFaculty}>สาขา {reg.faculty}</span>
                 {reg.phone && (
                   <a
                     href={`tel:${reg.phone}`}
                     className={styles.participantPhone}
                     title="โทรติดต่อนักศึกษา"
                   >
-                    โทร: {reg.phone}
+                    โทร {reg.phone}
                   </a>
                 )}
                 {reg.scholarship_name && (
                   <span className={styles.participantScholarship}>
-                    ทุน: {reg.scholarship_name}
+                    ทุน {reg.scholarship_name}
                   </span>
                 )}
               </div>
@@ -380,7 +380,7 @@ export default function DayDetailModal({
               <div className={styles.participantInfo}>
                 <span className={styles.participantIndex}>#{index + 1}</span>
                 <span className={styles.participantCode}>
-                  รหัสนักศึกษา: <strong>{reg.student_id}</strong>
+                  รหัสนักศึกษา <strong>{reg.student_id}</strong>
                 </span>
                 <span
                   className={styles.pdpaProtectedBadge}
@@ -484,11 +484,11 @@ export default function DayDetailModal({
                     {activeShiftInfo.job.shift_mode === 'roles' ||
                     activeShiftInfo.shift.label === 'ตลอดงาน' ? (
                       <>
-                        เวลา: <strong>{activeShiftInfo.shift.time_range}</strong>
+                        เวลา <strong>{activeShiftInfo.shift.time_range}</strong>
                       </>
                     ) : (
                       <>
-                        ช่วงเวลา:{' '}
+                        ช่วงเวลา{' '}
                         <strong>
                           {activeShiftInfo.shift.label} ({activeShiftInfo.shift.time_range})
                         </strong>
@@ -496,14 +496,14 @@ export default function DayDetailModal({
                     )}
                     {activeShiftInfo.shift.duty_name && (
                       <>
-                        {' '}• หน้าที่: <strong>{activeShiftInfo.shift.duty_name}</strong>
+                        {' '}• หน้าที่ <strong>{activeShiftInfo.shift.duty_name}</strong>
                       </>
                     )}
                     {' '}• ได้รับ{' '}
                     <strong>{activeShiftInfo.shift.hours} ชั่วโมงทุน</strong>
                     {liveShift && (
                       <>
-                        {' '}• สถานะล่าสุด:{' '}
+                        {' '}• สถานะล่าสุด{' '}
                         <strong>
                           {isLiveShiftFull
                             ? `เต็มแล้ว (${liveShift.registrations.length}/${liveShift.capacity} คน)`
@@ -524,13 +524,13 @@ export default function DayDetailModal({
 
               {!activeShiftInfo.job.allow_kys && (
                 <div className={styles.kysWarningBanner}>
-                  <strong>ข้อกำหนดสำคัญ:</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
+                  <strong>ข้อกำหนดสำคัญ</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
                 </div>
               )}
 
               {liveShiftAllowedMajors.length > 0 && (
                 <div className={styles.majorWarningBanner}>
-                  <strong>จำกัดสาขาวิชา:</strong>{' '}
+                  <strong>จำกัดสาขาวิชา</strong>{' '}
                   {activeShiftInfo.shift.duty_name
                     ? activeShiftInfo.job.shift_mode === 'roles' ||
                       activeShiftInfo.shift.label === 'ตลอดงาน'
@@ -632,7 +632,7 @@ export default function DayDetailModal({
 
                 {isMajorBlockedInForm && (
                   <div className={styles.errorBox}>
-                    ขออภัย ตำแหน่งนี้รับเฉพาะสาขา: {liveShiftAllowedMajors.join(', ')}
+                    ขออภัย ตำแหน่งนี้รับเฉพาะสาขา {liveShiftAllowedMajors.join(', ')}
                   </div>
                 )}
 
@@ -659,7 +659,7 @@ export default function DayDetailModal({
                 )}
 
                 <div className={styles.policyNote}>
-                  <strong>ข้อกำหนดสำคัญ:</strong> เมื่อลงทะเบียนแล้ว <u>นักศึกษาจะไม่สามารถถอนชื่อได้ด้วยตนเอง</u> หากมีเหตุจำเป็นต้องถอนชื่อ โปรดแจ้งอาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ
+                  <strong>ข้อกำหนดสำคัญ</strong> เมื่อลงทะเบียนแล้ว <u>นักศึกษาจะไม่สามารถถอนชื่อได้ด้วยตนเอง</u> หากมีเหตุจำเป็นต้องถอนชื่อ โปรดแจ้งอาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ
                 </div>
 
                 <div className={styles.regFormActions}>
@@ -725,7 +725,7 @@ export default function DayDetailModal({
                   หากลงทะเบียนเเล้ว ไม่สามารถถอนได้ โปรดเเจ้งอาจารย์ที่รับผิดชอบเพื่อ ถอนชื่อ
                   {activeShiftInfo.job.teacher_contact && (
                     <div style={{ marginTop: '0.35rem', fontWeight: 700 }}>
-                      ช่องทางติดต่อ ({activeShiftInfo.job.teacher_name}):{' '}
+                      ช่องทางติดต่อ ({activeShiftInfo.job.teacher_name}){' '}
                       {activeShiftInfo.job.teacher_contact}
                     </div>
                   )}
@@ -733,15 +733,15 @@ export default function DayDetailModal({
 
                 <div className={styles.confirmSummary}>
                   <p>
-                    <strong>ชื่องาน:</strong> {activeShiftInfo.job.title}
+                    <strong>ชื่องาน</strong> {activeShiftInfo.job.title}
                   </p>
                   {activeShiftInfo.shift.duty_name && (
                     <p>
-                      <strong>หน้าที่ / ตำแหน่ง:</strong> {activeShiftInfo.shift.duty_name}
+                      <strong>หน้าที่ / ตำแหน่ง</strong> {activeShiftInfo.shift.duty_name}
                     </p>
                   )}
                   <p>
-                    <strong>ช่วงเวลา:</strong>{' '}
+                    <strong>ช่วงเวลา</strong>{' '}
                     {activeShiftInfo.job.shift_mode === 'roles' ||
                     activeShiftInfo.shift.label === 'ตลอดงาน'
                       ? `${activeShiftInfo.shift.time_range} (ทั้งงาน)`
@@ -749,17 +749,17 @@ export default function DayDetailModal({
                     • {activeShiftInfo.shift.hours} ชม.ทุน
                   </p>
                   <p>
-                    <strong>ผู้ลงทะเบียน:</strong> {studentName} (รหัส: {studentId})
+                    <strong>ผู้ลงทะเบียน</strong> {studentName} (รหัส {studentId})
                   </p>
                   <p>
-                    <strong>สาขาวิชา:</strong> {faculty}
+                    <strong>สาขาวิชา</strong> {faculty}
                   </p>
                   <p>
-                    <strong>เบอร์โทรศัพท์:</strong> {phone}
+                    <strong>เบอร์โทรศัพท์</strong> {phone}
                   </p>
                   {scholarshipName && (
                     <p>
-                      <strong>ทุนการศึกษา:</strong> {scholarshipName}
+                      <strong>ทุนการศึกษา</strong> {scholarshipName}
                     </p>
                   )}
                 </div>
@@ -805,12 +805,12 @@ export default function DayDetailModal({
 
               <div className={styles.cancelDetails}>
                 <p>
-                  <strong>งาน:</strong> {cancellingReg.job.title} (
+                  <strong>งาน</strong> {cancellingReg.job.title} (
                   {cancellingReg.job.shift_mode === 'roles' ||
                   cancellingReg.shift.label === 'ตลอดงาน'
                     ? cancellingReg.shift.time_range
                     : cancellingReg.shift.label}
-                  {cancellingReg.shift.duty_name ? ` — หน้าที่: ${cancellingReg.shift.duty_name}` : ''}
+                  {cancellingReg.shift.duty_name ? ` — หน้าที่ ${cancellingReg.shift.duty_name}` : ''}
                   {cancellingReg.job.shift_mode === 'roles' ||
                   cancellingReg.shift.label === 'ตลอดงาน'
                     ? ''
@@ -818,11 +818,11 @@ export default function DayDetailModal({
                   )
                 </p>
                 <p>
-                  <strong>นักศึกษา:</strong> {cancellingReg.reg.student_name} (รหัส:{' '}
+                  <strong>นักศึกษา</strong> {cancellingReg.reg.student_name} (รหัส{' '}
                   {cancellingReg.reg.student_id})
                 </p>
                 <p>
-                  <strong>สาขาวิชา:</strong> {cancellingReg.reg.faculty}
+                  <strong>สาขาวิชา</strong> {cancellingReg.reg.faculty}
                 </p>
               </div>
 
@@ -952,16 +952,16 @@ export default function DayDetailModal({
 
                     <div className={styles.jobMeta}>
                       <span className={styles.teacherBadgeMeta}>
-                        <strong>อาจารย์ผู้ประกาศ:</strong> {job.teacher_name}
+                        <strong>อาจารย์ผู้ประกาศ</strong> {job.teacher_name}
                       </span>
                       {job.teacher_contact && (
                         <span className={styles.contactBadgeMeta}>
-                          <strong>ช่องทางติดต่ออาจารย์:</strong> {job.teacher_contact}
+                          <strong>ช่องทางติดต่ออาจารย์</strong> {job.teacher_contact}
                         </span>
                       )}
                       {job.location && (
                         <span className={styles.locationBadgeMeta}>
-                          <strong>สถานที่:</strong> {job.location}
+                          <strong>สถานที่</strong> {job.location}
                         </span>
                       )}
                       {job.shift_mode === 'roles' && job.shifts[0] && (
@@ -1007,9 +1007,9 @@ export default function DayDetailModal({
                                   {shiftAllowedMajors.length > 0 ? (
                                     <span
                                       className={styles.shiftMajorBadge}
-                                      title={`รับเฉพาะสาขา: ${shiftAllowedMajors.join(', ')}`}
+                                      title={`รับเฉพาะสาขา ${shiftAllowedMajors.join(', ')}`}
                                     >
-                                      เฉพาะ: {shiftAllowedMajors.join(', ')}
+                                      เฉพาะ {shiftAllowedMajors.join(', ')}
                                     </span>
                                   ) : (
                                     <span className={styles.shiftMajorAllBadge}>
@@ -1126,9 +1126,9 @@ export default function DayDetailModal({
                                         {shiftAllowedMajors.length > 0 ? (
                                           <span
                                             className={styles.shiftMajorBadge}
-                                            title={`รับเฉพาะสาขา: ${shiftAllowedMajors.join(', ')}`}
+                                            title={`รับเฉพาะสาขา ${shiftAllowedMajors.join(', ')}`}
                                           >
-                                            เฉพาะ: {shiftAllowedMajors.join(', ')}
+                                            เฉพาะ {shiftAllowedMajors.join(', ')}
                                           </span>
                                         ) : (
                                           <span className={styles.shiftMajorAllBadge}>

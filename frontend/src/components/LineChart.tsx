@@ -123,19 +123,19 @@ export default function LineChart({
 
         <div className={styles.chartStatsSummary}>
           <div className={styles.summaryPill}>
-            <span>รวมทั้งหมด:</span>
+            <span>รวมทั้งหมด</span>
             <strong>
               {sumVal.toLocaleString()} {unit}
             </strong>
           </div>
           <div className={styles.summaryPill}>
-            <span>เฉลี่ย:</span>
+            <span>เฉลี่ย</span>
             <strong>
               {avgVal.toLocaleString()} {unit}
             </strong>
           </div>
           <div className={styles.summaryPill}>
-            <span>สูงสุด:</span>
+            <span>สูงสุด</span>
             <strong>
               {Math.max(...data.map((d) => d.value), 0).toLocaleString()} {unit}
             </strong>
@@ -258,11 +258,11 @@ export default function LineChart({
                 {activePoint.point.fullDate || activePoint.point.label}
               </div>
               <div className={styles.tooltipValue}>
-                {metricName}: {activePoint.point.value.toLocaleString()} {unit}
+                {metricName} {activePoint.point.value.toLocaleString()} {unit}
               </div>
               {typeof activePoint.point.secondaryValue === 'number' && (
                 <div className={styles.tooltipSecondary}>
-                  {activePoint.point.secondaryLabel || 'ชั่วโมงทุน'}:{' '}
+                  {activePoint.point.secondaryLabel || 'ชั่วโมงทุน'}{' '}
                   {activePoint.point.secondaryValue.toLocaleString()} ชม.
                 </div>
               )}

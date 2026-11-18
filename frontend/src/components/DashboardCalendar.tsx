@@ -136,7 +136,7 @@ export default function DashboardCalendar({
                   border: '1px solid var(--primary-border)',
                 }}
               >
-                กรองสาขา: {selectedMajor}
+                กรองสาขา {selectedMajor}
               </span>
             )}
           </h3>
@@ -181,7 +181,7 @@ export default function DashboardCalendar({
       {selectedDate && (
         <div className={styles.activeFilterBanner}>
           <div className={styles.filterBannerLeft}>
-            <span>กำลังกรองตารางเฉพาะวันที่:</span>
+            <span>กำลังกรองตารางเฉพาะวันที่</span>
             <span className={styles.filterDateBadge}>
               {formatThaiDate(selectedDate)}
             </span>

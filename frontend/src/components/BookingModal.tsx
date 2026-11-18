@@ -440,9 +440,9 @@ export default function BookingModal({
                     ) : (
                       <span
                         className={styles.majorSummaryBadgeRestricted}
-                        title={`รับเฉพาะ: ${allowedMajors.join(', ')}`}
+                        title={`รับเฉพาะ ${allowedMajors.join(', ')}`}
                       >
-                        เฉพาะ: {allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                        เฉพาะ {allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
                       </span>
                     )}
                     <button
@@ -468,7 +468,7 @@ export default function BookingModal({
                 {role.showMajorPicker && (
                   <div className={styles.majorPickerBox}>
                     <span className={styles.majorPickerLabel}>
-                      เจาะจงสาขาที่เปิดรับสำหรับตำแหน่งนี้:
+                      เจาะจงสาขาที่เปิดรับสำหรับตำแหน่งนี้
                     </span>
                     <div className={styles.majorPickerPills}>
                       <button
@@ -698,7 +698,7 @@ export default function BookingModal({
             {shiftMode === 'roles' && shiftGroups[0] && (
               <div className={styles.singleScheduleBox}>
                 <div className={styles.presetRow}>
-                  <span className={styles.presetLabel}>ตั้งค่าเวลาด่วน:</span>
+                  <span className={styles.presetLabel}>ตั้งค่าเวลาด่วน</span>
                   {PRESET_SHIFTS.map((preset) => (
                     <button
                       key={preset.label}
@@ -746,7 +746,7 @@ export default function BookingModal({
             {shiftMode === 'shifts' && (
               <>
                 <div className={styles.presetRow}>
-                  <span className={styles.presetLabel}>เพิ่มกะ/ช่วงด่วน:</span>
+                  <span className={styles.presetLabel}>เพิ่มกะ/ช่วงด่วน</span>
                   {PRESET_SHIFTS.map((preset) => (
                     <button
                       key={preset.label}

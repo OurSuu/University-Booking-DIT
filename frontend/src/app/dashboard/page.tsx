@@ -200,7 +200,7 @@ function DashboardInner() {
 
       if (data.role !== 'admin') {
         setPinError(
-          'สิทธิ์ไม่เพียงพอ: หน้านี้สงวนไว้สำหรับอาจารย์ผู้ดูแลระบบที่มี Master Password เท่านั้น รหัสผ่านอาจารย์ทั่วไปสามารถใช้สร้างประกาศงานและถอนชื่อนักศึกษาได้ที่หน้าปฏิทินหลัก'
+          'สิทธิ์ไม่เพียงพอ — หน้านี้สงวนไว้สำหรับอาจารย์ผู้ดูแลระบบที่มี Master Password เท่านั้น รหัสผ่านอาจารย์ทั่วไปสามารถใช้สร้างประกาศงานและถอนชื่อนักศึกษาได้ที่หน้าปฏิทินหลัก'
         );
         setPinLoading(false);
         return;
@@ -650,9 +650,9 @@ function DashboardInner() {
         r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
           ? `ทั้งงาน (${r.timeRange})`
           : `${r.shiftLabel} (${r.timeRange})`;
-      const dutyPart = r.dutyName ? ` [หน้าที่: ${r.dutyName}]` : '';
-      const phonePart = r.phone ? ` • โทร: ${r.phone}` : '';
-      const scholPart = r.scholarshipName ? ` [ทุน: ${r.scholarshipName}]` : '';
+      const dutyPart = r.dutyName ? ` [หน้าที่ ${r.dutyName}]` : '';
+      const phonePart = r.phone ? ` • โทร ${r.phone}` : '';
+      const scholPart = r.scholarshipName ? ` [ทุน ${r.scholarshipName}]` : '';
       lines.push(
         `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${shiftText}${dutyPart} | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart} | ${r.hours} ชม.`
       );
@@ -811,7 +811,7 @@ function DashboardInner() {
 
             {/* Metric Selector Tabs */}
             <div className={styles.metricTabs}>
-              <span className={styles.metricLabel}>ข้อมูลในกราฟ:</span>
+              <span className={styles.metricLabel}>ข้อมูลในกราฟ</span>
               <div className={styles.metricBtnGroup}>
                 <button
                   type="button"
@@ -875,7 +875,7 @@ function DashboardInner() {
                 <div className={styles.dateInputsRow}>
                   <div className={styles.dateInputsFlex}>
                     <div className={styles.dateInputItem}>
-                      <label htmlFor="start-date">ตั้งแต่วันที่:</label>
+                      <label htmlFor="start-date">ตั้งแต่วันที่</label>
                       <input
                         id="start-date"
                         type="date"
@@ -884,7 +884,7 @@ function DashboardInner() {
                       />
                     </div>
                     <div className={styles.dateInputItem}>
-                      <label htmlFor="end-date">ถึงวันที่:</label>
+                      <label htmlFor="end-date">ถึงวันที่</label>
                       <input
                         id="end-date"
                         type="date"
@@ -914,7 +914,7 @@ function DashboardInner() {
 
             {viewMode === 'month' && (
               <div className={styles.dateInputsRow}>
-                <label htmlFor="select-year">เลือกปี พ.ศ.:</label>
+                <label htmlFor="select-year">เลือกปี พ.ศ.</label>
                 <select
                   id="select-year"
                   value={selectedYear}
@@ -930,7 +930,7 @@ function DashboardInner() {
 
             {/* Filter by Scope (Internal vs External) */}
             <div className={styles.majorFilterGroup}>
-              <label htmlFor="scope-filter">ขอบเขตงาน:</label>
+              <label htmlFor="scope-filter">ขอบเขตงาน</label>
               <select
                 id="scope-filter"
                 value={selectedScope}
@@ -945,7 +945,7 @@ function DashboardInner() {
 
             {/* Filter by Major */}
             <div className={styles.majorFilterGroup}>
-              <label htmlFor="major-filter">กรองคณะ/สาขาวิชา:</label>
+              <label htmlFor="major-filter">กรองคณะ/สาขาวิชา</label>
               <select
                 id="major-filter"
                 value={selectedMajor}
@@ -975,7 +975,7 @@ function DashboardInner() {
             {/* Filter by Teacher */}
             {allTeacherNames.length > 0 && (
               <div className={styles.majorFilterGroup}>
-                <label htmlFor="teacher-filter">อาจารย์ผู้ประกาศ:</label>
+                <label htmlFor="teacher-filter">อาจารย์ผู้ประกาศ</label>
                 <select
                   id="teacher-filter"
                   value={selectedTeacher}
@@ -1002,7 +1002,7 @@ function DashboardInner() {
               {kpis.totalAnnouncedHours.toLocaleString()} <span style={{ fontSize: '1rem' }}>ชม.</span>
             </strong>
             <span className={styles.kpiSub}>
-              ภายในคณะ: {kpis.internalAnnouncedHours} ชม. • ภายนอก: {kpis.externalAnnouncedHours} ชม.
+              ภายในคณะ {kpis.internalAnnouncedHours} ชม. • ภายนอก {kpis.externalAnnouncedHours} ชม.
             </span>
           </div>
 
@@ -1012,7 +1012,7 @@ function DashboardInner() {
               {kpis.totalJobs.toLocaleString()} <span style={{ fontSize: '1rem' }}>งาน</span>
             </strong>
             <span className={styles.kpiSub}>
-              ภายในคณะ: {kpis.internalJobsCount} งาน • ภายนอก: {kpis.externalJobsCount} งาน
+              ภายในคณะ {kpis.internalJobsCount} งาน • ภายนอก {kpis.externalJobsCount} งาน
             </span>
           </div>
 
@@ -1022,7 +1022,7 @@ function DashboardInner() {
               {kpis.totalRegs.toLocaleString()} <span style={{ fontSize: '1rem' }}>คน</span>
             </strong>
             <span className={styles.kpiSub}>
-              ไม่ซ้ำคน: {kpis.uniqueStudents} คน (รวมทำไป {kpis.totalStudentHours} ชม.)
+              ไม่ซ้ำคน {kpis.uniqueStudents} คน (รวมทำไป {kpis.totalStudentHours} ชม.)
             </span>
           </div>
 
@@ -1047,7 +1047,7 @@ function DashboardInner() {
             title={chartTitle}
             subtitle={
               selectedMajor
-                ? `แสดงเฉพาะคณะ/สาขาวิชา: ${selectedMajor}`
+                ? `แสดงเฉพาะคณะ/สาขาวิชา ${selectedMajor}`
                 : selectedScope === 'internal'
                 ? 'แสดงเฉพาะงานภายในคณะ (DIT)'
                 : selectedScope === 'external'
@@ -1062,7 +1062,7 @@ function DashboardInner() {
           {/* Internal vs External Jobs Breakdown */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>สถิติขอบเขตงาน: งานภายในคณะ vs งานภายนอกคณะ</h3>
+              <h3>สถิติขอบเขตงาน — งานภายในคณะ vs งานภายนอกคณะ</h3>
               <span>{filteredData.jobs.length} งานรวม</span>
             </div>
 
@@ -1287,7 +1287,7 @@ function DashboardInner() {
                               <div>{job.teacher_name}</div>
                               {job.teacher_contact && (
                                 <div style={{ fontSize: '0.76rem', color: '#1d4ed8', marginTop: '2px' }}>
-                                  ติดต่อ: {job.teacher_contact}
+                                  ติดต่อ {job.teacher_contact}
                                 </div>
                               )}
                             </td>
@@ -1325,9 +1325,9 @@ function DashboardInner() {
                                   {jobRestrictedMajors.length > 0 && (
                                     <span
                                       className={styles.majorConstraintTag}
-                                      title={`จำกัดสาขา: ${jobRestrictedMajors.join(', ')}`}
+                                      title={`จำกัดสาขา ${jobRestrictedMajors.join(', ')}`}
                                     >
-                                      เฉพาะ: {jobRestrictedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                                      เฉพาะ {jobRestrictedMajors.map((m) => getMajorShortCode(m)).join(', ')}
                                     </span>
                                   )}
                                 </div>
@@ -1381,8 +1381,8 @@ function DashboardInner() {
                         <div className={styles.mobileCardJob}>
                           <strong className={styles.mobileCardJobTitle}>{job.title}</strong>
                           <span className={styles.mobileCardJobShift}>
-                            อาจารย์: {job.teacher_name}
-                            {job.teacher_contact ? ` (ติดต่อ: ${job.teacher_contact})` : ''} • สถานที่:{' '}
+                            อาจารย์ {job.teacher_name}
+                            {job.teacher_contact ? ` (ติดต่อ ${job.teacher_contact})` : ''} • สถานที่{' '}
                             {job.location || 'ไม่ระบุ'}
                           </span>
                         </div>
@@ -1392,11 +1392,11 @@ function DashboardInner() {
                             <span>
                               {isRolesMode ? (
                                 <>
-                                  รูปแบบ: <strong>ไม่แบ่งกะ ({job.shifts.length} หน้าที่)</strong>
+                                  รูปแบบ <strong>ไม่แบ่งกะ ({job.shifts.length} หน้าที่)</strong>
                                 </>
                               ) : (
                                 <>
-                                  จำนวนกะ:{' '}
+                                  จำนวนกะ{' '}
                                   <strong>
                                     {shiftGroups.length} ช่วงเวลา
                                     {job.shifts.length > shiftGroups.length
@@ -1407,7 +1407,7 @@ function DashboardInner() {
                               )}
                             </span>
                             <span>
-                              ผู้ลงทะเบียน:{' '}
+                              ผู้ลงทะเบียน{' '}
                               <strong style={{ color: totalReg >= totalCap ? '#dc2626' : '#16a34a' }}>
                                 {totalReg}/{totalCap} คน
                               </strong>
@@ -1417,12 +1417,12 @@ function DashboardInner() {
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
                               {jobDuties.map((d) => (
                                 <span key={d} className={styles.dutyTag}>
-                                  หน้าที่: {d}
+                                  หน้าที่ {d}
                                 </span>
                               ))}
                               {jobRestrictedMajors.length > 0 && (
                                 <span className={styles.majorConstraintTag}>
-                                  เฉพาะ: {jobRestrictedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                                  เฉพาะ {jobRestrictedMajors.map((m) => getMajorShortCode(m)).join(', ')}
                                 </span>
                               )}
                             </div>
@@ -1479,7 +1479,7 @@ function DashboardInner() {
                             </div>
                             {r.allowedMajors.length > 0 && (
                               <div style={{ fontSize: '0.72rem', color: '#1d4ed8', marginTop: '2px' }}>
-                                เฉพาะ: {r.allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                                เฉพาะ {r.allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
                               </div>
                             )}
                           </td>
@@ -1497,7 +1497,7 @@ function DashboardInner() {
                             <strong>{r.studentName}</strong>
                             {r.phone && (
                               <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '2px' }}>
-                                โทร:{' '}
+                                โทร{' '}
                                 <a href={`tel:${r.phone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>
                                   {r.phone}
                                 </a>
@@ -1557,7 +1557,7 @@ function DashboardInner() {
                         </span>
                         {r.dutyName && (
                           <div style={{ marginTop: '4px' }}>
-                            <span className={styles.dutyTag}>หน้าที่: {r.dutyName}</span>
+                            <span className={styles.dutyTag}>หน้าที่ {r.dutyName}</span>
                           </div>
                         )}
                       </div>
@@ -1565,7 +1565,7 @@ function DashboardInner() {
                       <div className={styles.mobileCardStudent}>
                         <div className={styles.mobileStudentName}>{r.studentName}</div>
                         <div className={styles.mobileStudentMeta}>
-                          <span className={styles.mobileStudentId}>รหัส: {r.studentId}</span>
+                          <span className={styles.mobileStudentId}>รหัส {r.studentId}</span>
                           <span className={styles.mobileStudentMajor}>• {r.faculty}</span>
                         </div>
                       </div>

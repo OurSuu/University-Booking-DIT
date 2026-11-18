@@ -101,7 +101,7 @@ function assertShiftRegistrationAllowed(
     const positionLabel = targetShift.duty_name
       ? `ตำแหน่ง "${targetShift.duty_name}" (${shiftCtx})`
       : shiftCtx;
-    throw new Error(`ขออภัย ${positionLabel} รับเฉพาะสาขา: ${allowedMajors.join(', ')}`);
+    throw new Error(`ขออภัย ${positionLabel} รับเฉพาะสาขา ${allowedMajors.join(', ')}`);
   }
 
   if (targetShift.registrations.length >= targetShift.capacity) {
@@ -423,7 +423,7 @@ export async function getAllTeacherPins(
 ): Promise<TeacherPinRecord[]> {
   const isAdmin = await verifyAdminPin(adminPin);
   if (!isAdmin) {
-    throw new Error('ไม่มีสิทธิ์เข้าถึง: เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น');
+    throw new Error('ไม่มีสิทธิ์เข้าถึง (เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น)');
   }
 
   if (getDbConnectionString().length > 0) {
@@ -445,7 +445,7 @@ export async function createTeacherPin(
 ): Promise<TeacherPinRecord> {
   const isAdmin = await verifyAdminPin(adminPin);
   if (!isAdmin) {
-    throw new Error('ไม่มีสิทธิ์เข้าถึง: เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น');
+    throw new Error('ไม่มีสิทธิ์เข้าถึง (เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น)');
   }
 
   const cleanPin = (payload.pin || '').trim();
@@ -537,7 +537,7 @@ export async function deleteTeacherPin(
 ): Promise<void> {
   const isAdmin = await verifyAdminPin(adminPin);
   if (!isAdmin) {
-    throw new Error('ไม่มีสิทธิ์เข้าถึง: เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น');
+    throw new Error('ไม่มีสิทธิ์เข้าถึง (เฉพาะอาจารย์ผู้ดูแลระบบเท่านั้น)');
   }
 
   if (getDbConnectionString().length > 0) {

@@ -29,7 +29,7 @@ function summarizeJobRolesAndMajors(job: JobAnnouncement) {
   );
   const majorRestrictionText =
     restrictedMajors.length > 0
-      ? `${hasUnrestrictedShift ? 'มีตำแหน่งเฉพาะ' : 'เฉพาะ'}: ${restrictedMajors
+      ? `${hasUnrestrictedShift ? 'มีตำแหน่งเฉพาะ' : 'เฉพาะ'} ${restrictedMajors
           .map((m) => getMajorShortCode(m))
           .join(', ')}`
       : '';
@@ -208,7 +208,7 @@ export default function Calendar() {
       setShowPinModal(false);
       setPinVerifying(false);
       showToast(
-        `เปิดโหมดอาจารย์เรียบร้อย: ${name} (${
+        `เปิดโหมดอาจารย์เรียบร้อย - ${name} (${
           role === 'admin' ? 'ผู้ดูแลระบบ' : 'อาจารย์'
         })`,
         'success'
@@ -499,7 +499,7 @@ export default function Calendar() {
                 <span className={styles.teacherActivePill}>
                   {teacherRole === 'admin'
                     ? 'โหมดผู้ดูแล (Admin)'
-                    : `อาจารย์: ${teacherName || 'ผู้สอน'}`}
+                    : `อาจารย์ ${teacherName || 'ผู้สอน'}`}
                 </span>
                 <button
                   className={styles.primaryActionBtn}
@@ -703,16 +703,16 @@ export default function Calendar() {
                       </span>
                       <strong>{item.job.title}</strong> —{' '}
                       {item.job.shift_mode === 'roles' || item.shiftLabel === 'ตลอดงาน'
-                        ? `${item.dutyName ? `หน้าที่: ${item.dutyName}` : 'ร่วมงาน'} (${item.timeRange})`
-                        : `${item.shiftLabel}${item.dutyName ? ` [หน้าที่: ${item.dutyName}]` : ''} (${item.timeRange})`}{' '}
+                        ? `${item.dutyName ? `หน้าที่ ${item.dutyName}` : 'ร่วมงาน'} (${item.timeRange})`
+                        : `${item.shiftLabel}${item.dutyName ? ` [หน้าที่ ${item.dutyName}]` : ''} (${item.timeRange})`}{' '}
                       • {item.hours} ชม.ทุน •{' '}
                       {isTeacherMode ? (
                         <>
-                          ผู้ลง: <strong>{item.studentName}</strong> (รหัส: {item.studentId}) — {item.faculty}
+                          ผู้ลง <strong>{item.studentName}</strong> (รหัส {item.studentId}) — {item.faculty}
                         </>
                       ) : (
                         <>
-                          รหัสนักศึกษา: <strong>{item.studentId}</strong>
+                          รหัสนักศึกษา <strong>{item.studentId}</strong>
                         </>
                       )}
                     </div>
@@ -877,16 +877,16 @@ export default function Calendar() {
                             {duties.length > 0 && (
                               <div
                                 className={styles.chipDutyBadge}
-                                title={`หน้าที่: ${duties.join(', ')}`}
+                                title={`หน้าที่ ${duties.join(', ')}`}
                               >
-                                หน้าที่: {duties.slice(0, 2).join(', ')}
+                                หน้าที่ {duties.slice(0, 2).join(', ')}
                                 {duties.length > 2 ? ` +${duties.length - 2}` : ''}
                               </div>
                             )}
                             {majorRestrictionText && (
                               <div
                                 className={styles.chipMajorBadge}
-                                title={`เจาะจงสาขา: ${restrictedMajors.join(', ')}`}
+                                title={`เจาะจงสาขา ${restrictedMajors.join(', ')}`}
                               >
                                 {majorRestrictionText}
                               </div>
@@ -1002,7 +1002,7 @@ export default function Calendar() {
                                       duties.length > 3
                                         ? ` +อีก ${duties.length - 3} หน้าที่`
                                         : '';
-                                    return `เวลา ${group.time_range} • หน้าที่: ${shown}${extra}`;
+                                    return `เวลา ${group.time_range} • หน้าที่ ${shown}${extra}`;
                                   }
                                   return `เวลา ${group.time_range} (${group.roles.length} ตำแหน่ง)`;
                                 }
@@ -1011,7 +1011,7 @@ export default function Calendar() {
                                     const shown = duties.slice(0, 2).join(', ');
                                     const extra =
                                       duties.length > 2 ? ` +อีก ${duties.length - 2}` : '';
-                                    return `${group.label} (${group.time_range}) [${group.roles.length} หน้าที่: ${shown}${extra}]`;
+                                    return `${group.label} (${group.time_range}) [${group.roles.length} หน้าที่ - ${shown}${extra}]`;
                                   }
                                   return `${group.label} (${group.time_range}) [${group.roles.length} ตำแหน่ง]`;
                                 }

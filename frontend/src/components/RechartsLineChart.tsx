@@ -119,7 +119,7 @@ export default function RechartsLineChart({
             <div key={m.key} className={styles.tooltipRow}>
               <span className={styles.tooltipMetricLabel}>
                 <span className={styles.dot} style={{ backgroundColor: m.color }} />
-                {m.label}:
+                {m.label}
               </span>
               <strong className={styles.tooltipValue} style={{ color: m.color }}>
                 {val.toLocaleString()} {m.unit}
@@ -129,7 +129,7 @@ export default function RechartsLineChart({
         })}
         {activeMetrics.length === 1 && typeof current.secondaryValue === 'number' && (
           <div className={styles.tooltipSubRow}>
-            {current.secondaryLabel || 'ข้อมูลเพิ่มเติม'}:{' '}
+            {current.secondaryLabel || 'ข้อมูลเพิ่มเติม'}{' '}
             <strong>{current.secondaryValue.toLocaleString()}</strong>
           </div>
         )}
@@ -236,7 +236,7 @@ export default function RechartsLineChart({
       {/* Interactive Legend Bar (Clickable to Toggle Lines) */}
       {allMetrics.length > 1 && (
         <div className={styles.legendBar}>
-          <span className={styles.legendTitle}>เส้นข้อมูลในกราฟ:</span>
+          <span className={styles.legendTitle}>เส้นข้อมูลในกราฟ</span>
           <div className={styles.legendBadges}>
             {allMetrics.map((m) => {
               const isActive = activeMetrics.some((am) => am.key === m.key);
