@@ -289,7 +289,7 @@ export default function BookingModal({
     }
 
     if (!title.trim() || !teacherName.trim() || !date) {
-      setError('กรุณากรอกวันที่ ชื่องาน และชื่ออาจารย์ผู้ประกาศให้ครบถ้วน');
+      setError('กรุณากรอกวันที่ ชื่องาน และอาจารย์ผู้ประกาศ / ผู้รับผิดชอบ / ชื่อหน่วยงาน ให้ครบถ้วน');
       return;
     }
 
@@ -552,13 +552,13 @@ export default function BookingModal({
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="teacher-name">ชื่ออาจารย์ผู้ประกาศ / ผู้รับผิดชอบ *</label>
+              <label htmlFor="teacher-name">อาจารย์ผู้ประกาศ / ผู้รับผิดชอบ / ชื่อหน่วยงาน *</label>
               <input
                 id="teacher-name"
                 type="text"
                 value={teacherName}
                 onChange={(e) => setTeacherName(e.target.value)}
-                placeholder="เช่น อ.ดร.สมชาย ใจดี"
+                placeholder="เช่น อ.ดร.สมชาย ใจดี / สโมสรนักศึกษา"
                 required
               />
             </div>

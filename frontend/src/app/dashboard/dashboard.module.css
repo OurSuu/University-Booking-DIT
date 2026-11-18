@@ -973,6 +973,76 @@
   font-size: 0.88rem;
 }
 
+.tableScopeNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.mobileListFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.mobileListCountNote {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.mobileListBtnRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.mobileShowMoreBtn,
+.mobileShowAllBtn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 9px;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mobileShowMoreBtn {
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+
+.mobileShowMoreBtn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.mobileShowAllBtn {
+  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.mobileShowAllBtn:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
 /* Mobile Registration Cards */
 .mobileCardList {
   display: none;

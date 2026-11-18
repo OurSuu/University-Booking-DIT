@@ -53,6 +53,21 @@ const THAI_MONTH_NAMES = [
   'ธันวาคม',
 ];
 
+const THAI_MONTH_SHORT = [
+  'ม.ค.',
+  'ก.พ.',
+  'มี.ค.',
+  'เม.ย.',
+  'พ.ค.',
+  'มิ.ย.',
+  'ก.ค.',
+  'ส.ค.',
+  'ก.ย.',
+  'ต.ค.',
+  'พ.ย.',
+  'ธ.ค.',
+];
+
 export default function Calendar() {
   const today = new Date();
   const { showToast } = useToast();
@@ -977,7 +992,7 @@ export default function Calendar() {
                         >
                           <span className={styles.mobileDateDay}>{dayNum}</span>
                           <span className={styles.mobileDateMonth}>
-                            {THAI_MONTH_NAMES[currentMonth].slice(0, 4)}
+                            {THAI_MONTH_SHORT[currentMonth]}
                           </span>
                         </div>
 

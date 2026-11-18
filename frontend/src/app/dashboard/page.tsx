@@ -210,6 +210,10 @@ function DashboardInner() {
   const [showTeacherBackupModal, setShowTeacherBackupModal] = useState<boolean>(false);
   const [showAllLocationsModal, setShowAllLocationsModal] = useState<boolean>(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'jobs' | 'students'>('jobs');
+  const [mobileLimitState, setMobileLimitState] = useState<{ sig: string; limit: number }>({
+    sig: '',
+    limit: 10,
+  });
 
   const todayStr = getTodayStr();
   const nowDate = new Date();
@@ -969,6 +973,87 @@ function DashboardInner() {
     showToast(`คัดลอกรายชื่อ ${tableRows.length} รายการลงคลิปบอร์ดแล้ว`, 'success');
   };
 
+  const activeTablePeriodLabel = useMemo(() => {
+    if (calendarSelectedDate) {
+      return `เฉพาะวันที่ ${formatThaiDate(calendarSelectedDate)}`;
+    }
+    if (viewMode === 'day') {
+      const formatShort = (ds: string) => {
+        const [y, m, d] = ds.split('-').map(Number);
+        if (!y || !m || !d) return ds;
+        return `${d} ${THAI_MONTH_SHORT[m - 1] || ''} ${y + 543}`;
+      };
+      return `ช่วงวันที่ ${formatShort(startDate)} - ${formatShort(endDate)}`;
+    }
+    if (viewMode === 'month') {
+      const s = parseYearMonth(startMonth);
+      const e = parseYearMonth(endMonth);
+      return `ช่วงเดือน ${THAI_MONTH_SHORT[s.month - 1]} ${s.year + 543} - ${THAI_MONTH_SHORT[e.month - 1]} ${e.year + 543}`;
+    }
+    return `ช่วงปี พ.ศ. ${startYear + 543} - พ.ศ. ${endYear + 543}`;
+  }, [calendarSelectedDate, viewMode, startDate, endDate, startMonth, endMonth, startYear, endYear]);
+
+  const mobileFilterSignature = `${activeDetailTab}|${viewMode}|${startDate}|${endDate}|${startMonth}|${endMonth}|${startYear}|${endYear}|${selectedScope}|${selectedTeacher}|${selectedMajor}|${calendarSelectedDate || ''}|${tableSearch}`;
+  const mobileLimit = mobileLimitState.sig === mobileFilterSignature ? mobileLimitState.limit : 10;
+  const visibleMobileJobs = jobRows.slice(0, mobileLimit);
+  const visibleMobileStudents = tableRows.slice(0, mobileLimit);
+
+  const renderMobilePaginationFooter = (shownCount: number, totalCount: number) => {
+    if (totalCount <= 10 && shownCount <= 10) return null;
+    const remaining = Math.max(0, totalCount - shownCount);
+    return (
+      <div className={styles.mobileListFooter}>
+        <span className={styles.mobileListCountNote}>
+          กำลังแสดง {shownCount} จาก {totalCount} รายการ
+        </span>
+        <div className={styles.mobileListBtnRow}>
+          {remaining > 0 && (
+            <>
+              <button
+                type="button"
+                className={styles.mobileShowMoreBtn}
+                onClick={() =>
+                  setMobileLimitState({
+                    sig: mobileFilterSignature,
+                    limit: mobileLimit + 10,
+                  })
+                }
+              >
+                ดูเพิ่มอีก {Math.min(10, remaining)} รายการ
+              </button>
+              <button
+                type="button"
+                className={styles.mobileShowAllBtn}
+                onClick={() =>
+                  setMobileLimitState({
+                    sig: mobileFilterSignature,
+                    limit: totalCount,
+                  })
+                }
+              >
+                แสดงทั้งหมด ({totalCount})
+              </button>
+            </>
+          )}
+          {mobileLimit > 10 && (
+            <button
+              type="button"
+              className={styles.mobileShowAllBtn}
+              onClick={() =>
+                setMobileLimitState({
+                  sig: mobileFilterSignature,
+                  limit: 10,
+                })
+              }
+            >
+              ย่อเหลือ 10 รายการ
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const activeMetricConfigs = useMemo(() => {
     return DASHBOARD_METRICS.filter((m) => selectedMetrics.includes(m.key as MetricType));
   }, [selectedMetrics]);
@@ -1644,6 +1729,12 @@ function DashboardInner() {
             </div>
           </div>
 
+          <div className={styles.tableScopeNotice}>
+            <span>
+              ข้อมูลแสดงผลตามช่วงเวลาและตัวกรองที่เลือก (<strong>{activeTablePeriodLabel}</strong>)
+            </span>
+          </div>
+
           {/* TAB 1: JOBS TABLE & MOBILE CARDS */}
           {activeDetailTab === 'jobs' && (
             <>
@@ -1658,7 +1749,7 @@ function DashboardInner() {
                         <th>วันที่จัดงาน</th>
                         <th>ชื่องาน / กิจกรรม</th>
                         <th>ประเภทงาน</th>
-                        <th>อาจารย์ผู้ประกาศ</th>
+                        <th>ผู้ประกาศ / หน่วยงาน</th>
                         <th>สถานที่นัดหมาย</th>
                         <th>กะ / หน้าที่ / ชั่วโมงทุน</th>
                         <th>ที่นั่งรับ (ลงแล้ว / รับได้)</th>
@@ -1759,7 +1850,8 @@ function DashboardInner() {
                 {jobRows.length === 0 ? (
                   <div className={styles.emptyTable}>ไม่พบประกาศงานในช่วงเวลาหรือตัวกรองนี้</div>
                 ) : (
-                  jobRows.map((job) => {
+                  <>
+                    {visibleMobileJobs.map((job) => {
                     const totalCap = job.shifts.reduce((s, sh) => s + sh.capacity, 0);
                     const totalReg = job.shifts.reduce((s, sh) => s + sh.registrations.length, 0);
                     const totalJobHours = getJobAnnouncedHours(job);
@@ -1788,7 +1880,7 @@ function DashboardInner() {
                         <div className={styles.mobileCardJob}>
                           <strong className={styles.mobileCardJobTitle}>{job.title}</strong>
                           <span className={styles.mobileCardJobShift}>
-                            อาจารย์ {job.teacher_name}
+                            ผู้ประกาศ {job.teacher_name}
                             {job.teacher_contact ? ` (ติดต่อ ${job.teacher_contact})` : ''} • สถานที่{' '}
                             {job.location || 'ไม่ระบุ'}
                           </span>
@@ -1837,7 +1929,9 @@ function DashboardInner() {
                         </div>
                       </div>
                     );
-                  })
+                  })}
+                    {renderMobilePaginationFooter(visibleMobileJobs.length, jobRows.length)}
+                  </>
                 )}
               </div>
             </>
@@ -1936,7 +2030,8 @@ function DashboardInner() {
                 {tableRows.length === 0 ? (
                   <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
                 ) : (
-                  tableRows.map((r, i) => (
+                  <>
+                    {visibleMobileStudents.map((r, i) => (
                     <div key={`m-${r.regId}-${i}`} className={styles.mobileRegCard}>
                       <div className={styles.mobileCardTopRow}>
                         <span className={styles.mobileCardDateBadge}>{formatThaiDate(r.jobDate)}</span>
@@ -1997,7 +2092,9 @@ function DashboardInner() {
                         </div>
                       )}
                     </div>
-                  ))
+                  ))}
+                    {renderMobilePaginationFooter(visibleMobileStudents.length, tableRows.length)}
+                  </>
                 )}
               </div>
             </>

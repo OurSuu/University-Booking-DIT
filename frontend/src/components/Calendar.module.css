@@ -76,6 +76,9 @@
 .teacherToolbar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
 .teacherActiveGroup {
@@ -99,11 +102,15 @@
 .teacherModeBtn,
 .lockBtn,
 .primaryActionBtn {
-  padding: 0.6rem 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.58rem 1.05rem;
   border-radius: 10px;
   font-family: var(--font-heading);
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -193,16 +200,18 @@
 .dashboardLinkBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.55rem 0.95rem;
+  padding: 0.58rem 1rem;
   border-radius: 10px;
   background: var(--bg-surface);
   border: 1.5px solid var(--primary-border);
   color: var(--primary);
   font-family: var(--font-heading);
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
@@ -897,17 +906,34 @@
     font-size: 0.84rem;
   }
 
-  .teacherToolbar,
+  .teacherToolbar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .dashboardLinkBtn {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+  }
+
   .teacherActiveGroup {
     width: 100%;
+    gap: 0.5rem;
+  }
+
+  .teacherActivePill {
+    width: 100%;
+    text-align: center;
   }
 
   .teacherModeBtn,
   .primaryActionBtn,
   .lockBtn {
-    flex: 1;
-    text-align: center;
-    justify-content: center;
+    flex: 1 1 0;
+    min-width: 135px;
     padding: 0.6rem 0.75rem;
     font-size: 0.82rem;
   }
