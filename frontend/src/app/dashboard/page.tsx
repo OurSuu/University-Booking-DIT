@@ -210,6 +210,8 @@ function DashboardInner() {
   const [showTeacherBackupModal, setShowTeacherBackupModal] = useState<boolean>(false);
   const [showAllLocationsModal, setShowAllLocationsModal] = useState<boolean>(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'jobs' | 'students'>('jobs');
+  const [expandedFolderIds, setExpandedFolderIds] = useState<number[]>([]);
+  const [collapsedSearchFolderIds, setCollapsedSearchFolderIds] = useState<number[]>([]);
   const [mobileLimitState, setMobileLimitState] = useState<{ sig: string; limit: number }>({
     sig: '',
     limit: 10,
@@ -944,6 +946,7 @@ function DashboardInner() {
         r.studentName.toLowerCase().includes(q) ||
         r.faculty.toLowerCase().includes(q) ||
         r.jobTitle.toLowerCase().includes(q) ||
+        r.teacherName.toLowerCase().includes(q) ||
         (r.shiftMode === 'roles' ? 'ทั้งงาน ไม่แบ่งกะ' : r.shiftLabel)
           .toLowerCase()
           .includes(q) ||
@@ -952,12 +955,41 @@ function DashboardInner() {
     );
   }, [filteredData.registrations, tableSearch, calendarSelectedDate]);
 
-  const handleCopyFilteredStudents = () => {
-    if (tableRows.length === 0) return;
-    const lines: string[] = [];
-    lines.push(`รายชื่อนักศึกษาที่ลงทะเบียนตามตัวกรอง (${tableRows.length} รายการ)`);
-    lines.push('----------------------------------------');
-    tableRows.forEach((r, idx) => {
+  const groupedRegistrationFolders = useMemo(() => {
+    const map = new Map<
+      number,
+      {
+        jobId: number;
+        jobTitle: string;
+        jobDate: string;
+        jobScope: 'internal' | 'external';
+        teacherName: string;
+        location: string;
+        rows: typeof tableRows;
+      }
+    >();
+    for (const r of tableRows) {
+      const existing = map.get(r.jobId);
+      if (existing) {
+        existing.rows.push(r);
+      } else {
+        map.set(r.jobId, {
+          jobId: r.jobId,
+          jobTitle: r.jobTitle,
+          jobDate: r.jobDate,
+          jobScope: r.jobScope,
+          teacherName: r.teacherName,
+          location: r.location,
+          rows: [r],
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [tableRows]);
+
+  const formatStudentCopyLines = (rows: typeof tableRows, heading: string) => {
+    const lines: string[] = [heading, '----------------------------------------'];
+    rows.forEach((r, idx) => {
       const shiftText =
         r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
           ? `ทั้งงาน (${r.timeRange})`
@@ -969,8 +1001,62 @@ function DashboardInner() {
         `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${shiftText}${dutyPart} | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart} | ${r.hours} ชม.`
       );
     });
-    navigator.clipboard.writeText(lines.join('\n'));
+    return lines.join('\n');
+  };
+
+  const handleCopyFilteredStudents = () => {
+    if (tableRows.length === 0) return;
+    const text = formatStudentCopyLines(
+      tableRows,
+      `รายชื่อนักศึกษาที่ลงทะเบียนตามตัวกรอง (${tableRows.length} รายการ)`
+    );
+    navigator.clipboard.writeText(text);
     showToast(`คัดลอกรายชื่อ ${tableRows.length} รายการลงคลิปบอร์ดแล้ว`, 'success');
+  };
+
+  const handleCopyFolderStudents = (folder: (typeof groupedRegistrationFolders)[number]) => {
+    if (folder.rows.length === 0) return;
+    const text = formatStudentCopyLines(
+      folder.rows,
+      `รายชื่อผู้ลงทะเบียนงาน ${folder.jobTitle} (${formatThaiDate(folder.jobDate)}) (${folder.rows.length} คน)`
+    );
+    navigator.clipboard.writeText(text);
+    showToast(`คัดลอกรายชื่อจากโฟลเดอร์ "${folder.jobTitle}" (${folder.rows.length} คน) แล้ว`, 'success');
+  };
+
+  const hasStudentSearchQuery = tableSearch.trim().length > 0;
+
+  const isFolderExpanded = (jobId: number) =>
+    hasStudentSearchQuery
+      ? !collapsedSearchFolderIds.includes(jobId)
+      : expandedFolderIds.includes(jobId);
+
+  const handleToggleFolder = (jobId: number) => {
+    if (hasStudentSearchQuery) {
+      setCollapsedSearchFolderIds((prev) =>
+        prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
+      );
+    } else {
+      setExpandedFolderIds((prev) =>
+        prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
+      );
+    }
+  };
+
+  const handleExpandAllFolders = () => {
+    if (hasStudentSearchQuery) {
+      setCollapsedSearchFolderIds([]);
+    } else {
+      setExpandedFolderIds(groupedRegistrationFolders.map((f) => f.jobId));
+    }
+  };
+
+  const handleCollapseAllFolders = () => {
+    if (hasStudentSearchQuery) {
+      setCollapsedSearchFolderIds(groupedRegistrationFolders.map((f) => f.jobId));
+    } else {
+      setExpandedFolderIds([]);
+    }
   };
 
   const activeTablePeriodLabel = useMemo(() => {
@@ -996,7 +1082,6 @@ function DashboardInner() {
   const mobileFilterSignature = `${activeDetailTab}|${viewMode}|${startDate}|${endDate}|${startMonth}|${endMonth}|${startYear}|${endYear}|${selectedScope}|${selectedTeacher}|${selectedMajor}|${calendarSelectedDate || ''}|${tableSearch}`;
   const mobileLimit = mobileLimitState.sig === mobileFilterSignature ? mobileLimitState.limit : 10;
   const visibleMobileJobs = jobRows.slice(0, mobileLimit);
-  const visibleMobileStudents = tableRows.slice(0, mobileLimit);
 
   const renderMobilePaginationFooter = (shownCount: number, totalCount: number) => {
     if (totalCount <= 10 && shownCount <= 10) return null;
@@ -1937,167 +2022,249 @@ function DashboardInner() {
             </>
           )}
 
-          {/* TAB 2: STUDENTS REGISTRATIONS TABLE & MOBILE CARDS */}
+          {/* TAB 2: STUDENTS REGISTRATIONS FOLDER ACCORDION BY JOB */}
           {activeDetailTab === 'students' && (
-            <>
-              {/* Desktop/Tablet Table View */}
-              <div className={styles.tableWrapper}>
-                {tableRows.length === 0 ? (
-                  <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
-                ) : (
-                  <table className={styles.dataTable}>
-                    <thead>
-                      <tr>
-                        <th>วันที่จัดงาน</th>
-                        <th>ชื่องาน / กิจกรรม</th>
-                        <th>ประเภทงาน</th>
-                        <th>กะ / ช่วงเวลา</th>
-                        <th>หน้าที่ / ตำแหน่ง</th>
-                        <th>รหัสนักศึกษา</th>
-                        <th>ชื่อ - นามสกุล</th>
-                        <th>คณะ / สาขาวิชา</th>
-                        <th>ทุนการศึกษา</th>
-                        <th>ชม.ทุน</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tableRows.map((r, i) => (
-                        <tr key={`${r.regId}-${i}`}>
-                          <td>{r.jobDate}</td>
-                          <td>
-                            <strong>{r.jobTitle}</strong>
-                          </td>
-                          <td>
-                            <span className={r.jobScope === 'external' ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
-                              {r.jobScope === 'external' ? 'ภายนอก' : 'ภายใน'}
+            groupedRegistrationFolders.length === 0 ? (
+              <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
+            ) : (
+              <div className={styles.folderSectionWrap}>
+                <div className={styles.folderToolbarRow}>
+                  <span className={styles.folderSummaryCount}>
+                    โฟลเดอร์รายชื่องานทั้งหมด {groupedRegistrationFolders.length} งาน ({tableRows.length} คน) — กดที่ชื่องานเพื่อเปิดดูรายชื่อ
+                  </span>
+                  <div className={styles.folderToolbarActions}>
+                    <button
+                      type="button"
+                      className={styles.folderActionBtn}
+                      onClick={handleExpandAllFolders}
+                    >
+                      เปิดทุกโฟลเดอร์
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.folderActionBtn}
+                      onClick={handleCollapseAllFolders}
+                    >
+                      พับเก็บทั้งหมด
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.folderList}>
+                  {groupedRegistrationFolders.map((folder) => {
+                    const isOpen = isFolderExpanded(folder.jobId);
+                    return (
+                      <div
+                        key={folder.jobId}
+                        className={`${styles.folderCard} ${isOpen ? styles.folderCardOpen : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className={styles.folderHeaderBtn}
+                          onClick={() => handleToggleFolder(folder.jobId)}
+                          aria-expanded={isOpen}
+                        >
+                          <div className={styles.folderHeaderLeft}>
+                            <span className={styles.folderIconBox} aria-hidden="true">
+                              {isOpen ? (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M5 19a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4l2 3h9a2 2 0 0 1 2 2v1" />
+                                  <path d="M2 10h20l-2 9H4l-2-9z" />
+                                </svg>
+                              ) : (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                </svg>
+                              )}
                             </span>
-                          </td>
-                          <td>
-                            <div>
-                              {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
-                                ? `ทั้งงาน (${r.timeRange})`
-                                : `${r.shiftLabel} (${r.timeRange})`}
+
+                            <div className={styles.folderTitleBlock}>
+                              <div className={styles.folderTitleTop}>
+                                <strong className={styles.folderJobTitle}>{folder.jobTitle}</strong>
+                                <span className={styles.folderDateBadge}>{formatThaiDate(folder.jobDate)}</span>
+                                <span
+                                  className={
+                                    folder.jobScope === 'external'
+                                      ? styles.badgeScopeExternal
+                                      : styles.badgeScopeInternal
+                                  }
+                                >
+                                  {folder.jobScope === 'external' ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                                </span>
+                              </div>
+                              <div className={styles.folderSubMeta}>
+                                ผู้ประกาศ {folder.teacherName} • สถานที่ {folder.location || 'ไม่ระบุ'}
+                              </div>
                             </div>
-                            {r.allowedMajors.length > 0 && (
-                              <div style={{ fontSize: '0.72rem', color: '#1d4ed8', marginTop: '2px' }}>
-                                เฉพาะ {r.allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            {r.dutyName ? (
-                              <span className={styles.dutyTag}>{r.dutyName}</span>
-                            ) : (
-                              <span style={{ color: '#94a3b8' }}>-</span>
-                            )}
-                          </td>
-                          <td>
-                            <code>{r.studentId}</code>
-                          </td>
-                          <td>
-                            <strong>{r.studentName}</strong>
-                            {r.phone && (
-                              <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '2px' }}>
-                                โทร{' '}
-                                <a href={`tel:${r.phone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>
-                                  {r.phone}
-                                </a>
-                              </div>
-                            )}
-                          </td>
-                          <td>{r.faculty}</td>
-                          <td>
-                            <span
-                              className={`${styles.tableTag} ${
-                                isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
-                              }`}
-                            >
-                              {r.scholarshipName || 'ไม่ระบุ'}
+                          </div>
+
+                          <div className={styles.folderHeaderRight}>
+                            <span className={styles.folderCountBadge}>
+                              {folder.rows.length} คนลงทะเบียน
                             </span>
-                          </td>
-                          <td>
-                            <strong>{r.hours}</strong>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+                            <span className={styles.folderChevron} aria-hidden="true">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </span>
+                          </div>
+                        </button>
 
-              {/* Mobile Card List View */}
-              <div className={styles.mobileCardList}>
-                {tableRows.length === 0 ? (
-                  <div className={styles.emptyTable}>ไม่พบรายการลงทะเบียนในช่วงเวลานี้</div>
-                ) : (
-                  <>
-                    {visibleMobileStudents.map((r, i) => (
-                    <div key={`m-${r.regId}-${i}`} className={styles.mobileRegCard}>
-                      <div className={styles.mobileCardTopRow}>
-                        <span className={styles.mobileCardDateBadge}>{formatThaiDate(r.jobDate)}</span>
-                        <div className={styles.mobileCardBadges}>
-                          <span className={r.jobScope === 'external' ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
-                            {r.jobScope === 'external' ? 'ภายนอก' : 'ภายใน'}
-                          </span>
-                          <span className={styles.mobileHoursBadge}>{r.hours} ชม.ทุน</span>
-                          <span
-                            className={`${styles.tableTag} ${
-                              isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
-                            }`}
-                          >
-                            {r.scholarshipName || 'ไม่ระบุ'}
-                          </span>
-                        </div>
-                      </div>
+                        {isOpen && (
+                          <div className={styles.folderBody}>
+                            <div className={styles.folderBodyTop}>
+                              <span className={styles.folderBodyLabel}>
+                                รายชื่อผู้ลงทะเบียน ({folder.rows.length} คน)
+                              </span>
+                              <button
+                                type="button"
+                                className={styles.folderCopyBtn}
+                                onClick={() => handleCopyFolderStudents(folder)}
+                              >
+                                คัดลอกรายชื่อ ({folder.rows.length})
+                              </button>
+                            </div>
 
-                      <div className={styles.mobileCardJob}>
-                        <strong className={styles.mobileCardJobTitle}>{r.jobTitle}</strong>
-                        <span className={styles.mobileCardJobShift}>
-                          {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
-                            ? `เวลา ${r.timeRange} (ทั้งงาน)`
-                            : `${r.shiftLabel} (${r.timeRange})`}
-                        </span>
-                        {r.dutyName && (
-                          <div style={{ marginTop: '4px' }}>
-                            <span className={styles.dutyTag}>หน้าที่ {r.dutyName}</span>
+                            {/* Desktop/Tablet Table View inside Folder */}
+                            <div className={styles.tableWrapper}>
+                              <table className={styles.dataTable}>
+                                <thead>
+                                  <tr>
+                                    <th>#</th>
+                                    <th>กะ / ช่วงเวลา</th>
+                                    <th>หน้าที่ / ตำแหน่ง</th>
+                                    <th>รหัสนักศึกษา</th>
+                                    <th>ชื่อ - นามสกุล</th>
+                                    <th>คณะ / สาขาวิชา</th>
+                                    <th>ทุนการศึกษา</th>
+                                    <th>ชม.ทุน</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {folder.rows.map((r, i) => (
+                                    <tr key={`${r.regId}-${i}`}>
+                                      <td>{i + 1}</td>
+                                      <td>
+                                        <div>
+                                          {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
+                                            ? `ทั้งงาน (${r.timeRange})`
+                                            : `${r.shiftLabel} (${r.timeRange})`}
+                                        </div>
+                                        {r.allowedMajors.length > 0 && (
+                                          <div style={{ fontSize: '0.72rem', color: '#1d4ed8', marginTop: '2px' }}>
+                                            เฉพาะ {r.allowedMajors.map((m) => getMajorShortCode(m)).join(', ')}
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td>
+                                        {r.dutyName ? (
+                                          <span className={styles.dutyTag}>{r.dutyName}</span>
+                                        ) : (
+                                          <span style={{ color: '#94a3b8' }}>-</span>
+                                        )}
+                                      </td>
+                                      <td>
+                                        <code>{r.studentId}</code>
+                                      </td>
+                                      <td>
+                                        <strong>{r.studentName}</strong>
+                                        {r.phone && (
+                                          <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '2px' }}>
+                                            โทร{' '}
+                                            <a href={`tel:${r.phone}`} style={{ color: '#0284c7', textDecoration: 'none' }}>
+                                              {r.phone}
+                                            </a>
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td>{r.faculty}</td>
+                                      <td>
+                                        <span
+                                          className={`${styles.tableTag} ${
+                                            isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
+                                          }`}
+                                        >
+                                          {r.scholarshipName || 'ไม่ระบุ'}
+                                        </span>
+                                      </td>
+                                      <td>
+                                        <strong>{r.hours}</strong>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Mobile Student Cards inside Folder */}
+                            <div className={styles.mobileCardList}>
+                              {folder.rows.map((r, i) => (
+                                <div key={`fm-${r.regId}-${i}`} className={styles.folderMobileStudentCard}>
+                                  <div className={styles.folderMobileTopRow}>
+                                    <span className={styles.folderMobileIdx}>#{i + 1}</span>
+                                    <div className={styles.mobileCardBadges}>
+                                      <span className={styles.mobileHoursBadge}>{r.hours} ชม.ทุน</span>
+                                      <span
+                                        className={`${styles.tableTag} ${
+                                          isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
+                                        }`}
+                                      >
+                                        {r.scholarshipName || 'ไม่ระบุ'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className={styles.mobileCardStudent}>
+                                    <div className={styles.mobileStudentName}>{r.studentName}</div>
+                                    <div className={styles.mobileStudentMeta}>
+                                      <span className={styles.mobileStudentId}>รหัส {r.studentId}</span>
+                                      <span className={styles.mobileStudentMajor}>• {r.faculty}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className={styles.mobileCardJob}>
+                                    <span className={styles.mobileCardJobShift}>
+                                      {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
+                                        ? `เวลา ${r.timeRange} (ทั้งงาน)`
+                                        : `${r.shiftLabel} (${r.timeRange})`}
+                                    </span>
+                                    {r.dutyName && (
+                                      <div style={{ marginTop: '4px' }}>
+                                        <span className={styles.dutyTag}>หน้าที่ {r.dutyName}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {r.phone && (
+                                    <div className={styles.mobileCardActionRow}>
+                                      <a href={`tel:${r.phone}`} className={styles.mobileCallBtn}>
+                                        <svg
+                                          width="14"
+                                          height="14"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
+                                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                        </svg>
+                                        โทร {r.phone}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-
-                      <div className={styles.mobileCardStudent}>
-                        <div className={styles.mobileStudentName}>{r.studentName}</div>
-                        <div className={styles.mobileStudentMeta}>
-                          <span className={styles.mobileStudentId}>รหัส {r.studentId}</span>
-                          <span className={styles.mobileStudentMajor}>• {r.faculty}</span>
-                        </div>
-                      </div>
-
-                      {r.phone && (
-                        <div className={styles.mobileCardActionRow}>
-                          <a href={`tel:${r.phone}`} className={styles.mobileCallBtn}>
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                            </svg>
-                            โทร {r.phone}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                    {renderMobilePaginationFooter(visibleMobileStudents.length, tableRows.length)}
-                  </>
-                )}
+                    );
+                  })}
+                </div>
               </div>
-            </>
+            )
           )}
         </section>
       </div>

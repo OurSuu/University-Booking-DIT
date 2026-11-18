@@ -1043,6 +1043,266 @@
   color: var(--text-main);
 }
 
+/* Registration Job Folders Accordion */
+.folderSectionWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.folderToolbarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.folderSummaryCount {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.folderToolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.folderActionBtn {
+  padding: 0.36rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.folderActionBtn:hover {
+  background: var(--bg-subtle);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.folderList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.folderCard {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.folderCardOpen {
+  border-color: var(--primary-border);
+  box-shadow: 0 2px 10px rgba(200, 30, 36, 0.06);
+}
+
+.folderHeaderBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.folderHeaderBtn:hover {
+  background: #f8fafc;
+}
+
+.folderCardOpen .folderHeaderBtn {
+  background: #fffafa;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.folderHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.folderIconBox {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.folderCardOpen .folderIconBox {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.folderTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.folderTitleTop {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.folderJobTitle {
+  font-family: var(--font-heading);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+.folderDateBadge {
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.folderSubMeta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folderHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.folderCountBadge {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.folderChevron {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s ease, color 0.15s ease;
+}
+
+.folderCardOpen .folderChevron {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+.folderBody {
+  padding: 0.85rem 1rem 1rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.folderBodyTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.folderBodyLabel {
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.folderCopyBtn {
+  padding: 0.34rem 0.72rem;
+  border-radius: 8px;
+  border: 1px solid var(--primary-border);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.folderCopyBtn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.folderMobileStudentCard {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.folderMobileTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.folderMobileIdx {
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+}
+
 /* Mobile Registration Cards */
 .mobileCardList {
   display: none;
@@ -1467,6 +1727,23 @@
   }
   .tableCard {
     padding: 0.85rem;
+  }
+  .folderHeaderBtn {
+    padding: 0.75rem 0.8rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+  .folderHeaderRight {
+    justify-content: space-between;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--border-color);
+  }
+  .folderSubMeta {
+    white-space: normal;
+  }
+  .folderBody {
+    padding: 0.75rem;
   }
   .tableHeaderRow {
     flex-direction: column;
