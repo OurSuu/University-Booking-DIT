@@ -769,6 +769,31 @@
   color: var(--primary);
 }
 
+.locationHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.viewAllLocationsBtn {
+  padding: 0.28rem 0.68rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--primary-border);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.viewAllLocationsBtn:hover {
+  background: #fee2e2;
+}
+
 /* View Switch Bar */
 .viewSwitchBar {
   display: flex;

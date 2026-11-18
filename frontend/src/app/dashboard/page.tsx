@@ -26,6 +26,7 @@ import PinManagementModal from '@/components/PinManagementModal';
 import TeacherFilterBackupModal, {
   TeacherFilterItem,
 } from '@/components/TeacherFilterBackupModal';
+import LocationsModal, { LocationStatItem } from '@/components/LocationsModal';
 import DashboardCalendar from '@/components/DashboardCalendar';
 import DayDetailModal, { formatThaiDate } from '@/components/DayDetailModal';
 import styles from './dashboard.module.css';
@@ -207,6 +208,7 @@ function DashboardInner() {
   const [hiddenTeachers, setHiddenTeachers] = useState<string[]>([]);
   const [teacherFilterSaving, setTeacherFilterSaving] = useState<boolean>(false);
   const [showTeacherBackupModal, setShowTeacherBackupModal] = useState<boolean>(false);
+  const [showAllLocationsModal, setShowAllLocationsModal] = useState<boolean>(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'jobs' | 'students'>('jobs');
 
   const todayStr = getTodayStr();
@@ -879,8 +881,8 @@ function DashboardInner() {
       .sort((a, b) => b.regs - a.regs);
   }, [filteredData]);
 
-  // Location Breakdown (Top Places)
-  const locationBreakdown = useMemo(() => {
+  // All Location Breakdown (sorted from highest job count) + Top 5 preview
+  const allLocationBreakdown: LocationStatItem[] = useMemo(() => {
     const map = new Map<string, { jobs: number; hours: number; regs: number }>();
     for (const j of filteredData.jobs) {
       const loc = j.location?.trim() || 'ไม่ระบุสถานที่';
@@ -894,9 +896,13 @@ function DashboardInner() {
     }
     return Array.from(map.entries())
       .map(([location, stat]) => ({ location, ...stat }))
-      .sort((a, b) => b.jobs - a.jobs)
-      .slice(0, 5);
+      .sort((a, b) => b.jobs - a.jobs || b.hours - a.hours || b.regs - a.regs);
   }, [filteredData]);
+
+  const locationBreakdown = useMemo(
+    () => allLocationBreakdown.slice(0, 5),
+    [allLocationBreakdown]
+  );
 
   // Filtered Jobs rows for Detailed Table/Cards
   const jobRows = useMemo(() => {
@@ -1513,11 +1519,22 @@ function DashboardInner() {
             </div>
           </div>
 
-          {/* Top Places / Sources */}
+          {/* Top Places / Locations */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>แหล่งที่มาของงาน (มาจากที่ไหนบ้าง)</h3>
-              <span>5 อันดับสถานที่จัดงาน</span>
+              <h3>สถานที่ของงาน</h3>
+              <div className={styles.locationHeaderRight}>
+                <span>5 อันดับสถานที่จัดงาน</span>
+                {allLocationBreakdown.length > 0 && (
+                  <button
+                    type="button"
+                    className={styles.viewAllLocationsBtn}
+                    onClick={() => setShowAllLocationsModal(true)}
+                  >
+                    ดูทั้งหมด ({allLocationBreakdown.length})
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className={styles.locationList}>
@@ -1987,6 +2004,13 @@ function DashboardInner() {
           )}
         </section>
       </div>
+
+      {/* All Locations Table Modal */}
+      <LocationsModal
+        isOpen={showAllLocationsModal}
+        locations={allLocationBreakdown}
+        onClose={() => setShowAllLocationsModal(false)}
+      />
 
       {/* Teacher Filter Backup & Restore Modal */}
       <TeacherFilterBackupModal
