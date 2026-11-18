@@ -1300,7 +1300,7 @@ function DashboardInner() {
 
             {/* Filter by Scope (Internal vs External) */}
             <div className={styles.majorFilterGroup}>
-              <label htmlFor="scope-filter">ขอบเขตงาน</label>
+              <label htmlFor="scope-filter">ประเภทงาน</label>
               <select
                 id="scope-filter"
                 value={selectedScope}
@@ -1458,7 +1458,7 @@ function DashboardInner() {
           {/* Internal vs External Jobs Breakdown */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>สถิติขอบเขตงาน — งานภายในคณะ vs งานภายนอกคณะ</h3>
+              <h3>สถิติประเภทงาน — งานภายในคณะ vs งานภายนอกคณะ</h3>
               <span>{filteredData.jobs.length} งานรวม</span>
             </div>
 
@@ -1856,7 +1856,7 @@ function DashboardInner() {
                       <tr>
                         <th>วันที่จัดงาน</th>
                         <th>ชื่องาน / กิจกรรม</th>
-                        <th>ขอบเขต</th>
+                        <th>ประเภทงาน</th>
                         <th>กะ / ช่วงเวลา</th>
                         <th>หน้าที่ / ตำแหน่ง</th>
                         <th>รหัสนักศึกษา</th>

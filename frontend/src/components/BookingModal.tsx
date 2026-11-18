@@ -611,9 +611,9 @@ export default function BookingModal({
             />
           </div>
 
-          {/* ขอบเขตประเภทงาน: ภายในคณะ vs ภายนอกคณะ */}
+          {/* ประเภทงาน ภายในคณะ vs ภายนอกคณะ */}
           <div className={styles.sectionBox}>
-            <div className={styles.sectionTitle}>ขอบเขตและประเภทงาน *</div>
+            <div className={styles.sectionTitle}>ประเภทงาน *</div>
             <div className={styles.kysToggleRow}>
               <button
                 type="button"
