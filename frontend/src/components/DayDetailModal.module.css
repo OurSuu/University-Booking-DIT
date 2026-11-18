@@ -254,6 +254,13 @@
   line-height: 1.45;
 }
 
+.otherFacultyFieldsBox {
+  padding: 0.8rem 0.9rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+}
+
 .regForm,
 .cancelForm {
   display: flex;
