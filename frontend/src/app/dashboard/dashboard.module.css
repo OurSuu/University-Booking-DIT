@@ -369,6 +369,249 @@
   flex-wrap: wrap;
 }
 
+.teacherDropdownWrap {
+  position: relative;
+}
+
+.teacherMultiTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 190px;
+  max-width: 280px;
+  padding: 0.44rem 0.72rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-strong);
+  background: #ffffff;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.teacherMultiTrigger:hover {
+  border-color: var(--primary);
+}
+
+.teacherMultiTriggerActive {
+  border-color: var(--primary);
+  background: #fffafa;
+  box-shadow: 0 0 0 2px rgba(200, 30, 36, 0.1);
+}
+
+.teacherTriggerText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacherTriggerCaret {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.teacherTriggerCaretOpen {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+.teacherDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  min-width: 290px;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 2rem));
+  background: #ffffff;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.teacherSearchInput {
+  width: 100%;
+  padding: 0.42rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  font-size: 0.82rem;
+  color: var(--text-main);
+  outline: none;
+}
+
+.teacherSearchInput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(200, 30, 36, 0.12);
+}
+
+.teacherMenuActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.teacherMenuActionBtn {
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.teacherMenuActionBtn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.teacherMenuList {
+  max-height: 230px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-right: 2px;
+}
+
+.teacherMenuEmpty {
+  padding: 0.9rem 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.teacherMenuItemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  padding: 0.36rem 0.48rem;
+  border-radius: 8px;
+  transition: background-color 0.12s ease;
+}
+
+.teacherMenuItemRow:hover {
+  background: #f8fafc;
+}
+
+.teacherMenuCheckLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  font-size: 0.84rem;
+  color: var(--text-main);
+}
+
+.teacherMenuCheckLabel input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.teacherMenuName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacherMenuMetaRight {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.teacherMenuCount {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg-muted);
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+}
+
+.teacherMenuHideBtn {
+  padding: 0.16rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.teacherMenuHideBtn:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.teacherMenuFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.teacherMenuDoneBtn {
+  padding: 0.28rem 0.75rem;
+  border-radius: 7px;
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.teacherSelectedChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  margin-top: 0.25rem;
+}
+
+.teacherSelectedChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-border);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.teacherSelectedChip:hover {
+  background: #fee2e2;
+}
+
 .teacherHideBtn {
   padding: 0.42rem 0.68rem;
   border-radius: 8px;
@@ -1698,8 +1941,12 @@
     gap: 0.35rem;
     width: 100%;
   }
-  .teacherFilterControls select {
+  .teacherFilterControls select,
+  .teacherDropdownWrap,
+  .teacherMultiTrigger {
     grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
   }
   .teacherHideBtn,
   .teacherBackupBtn {

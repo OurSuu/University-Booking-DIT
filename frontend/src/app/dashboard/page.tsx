@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   JobAnnouncement,
@@ -204,7 +204,10 @@ function DashboardInner() {
   ]);
   const [selectedScope, setSelectedScope] = useState<ScopeFilter>('all');
   const [selectedMajor, setSelectedMajor] = useState<string>('');
-  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+  const [teacherDropdownOpen, setTeacherDropdownOpen] = useState<boolean>(false);
+  const [teacherSearch, setTeacherSearch] = useState<string>('');
+  const teacherDropdownRef = useRef<HTMLDivElement | null>(null);
   const [hiddenTeachers, setHiddenTeachers] = useState<string[]>([]);
   const [teacherFilterSaving, setTeacherFilterSaving] = useState<boolean>(false);
   const [showTeacherBackupModal, setShowTeacherBackupModal] = useState<boolean>(false);
@@ -355,7 +358,8 @@ function DashboardInner() {
 
   const handleLogout = () => {
     setTeacherPin('');
-    setSelectedTeacher('');
+    setSelectedTeachers([]);
+    setTeacherDropdownOpen(false);
     setHiddenTeachers([]);
     sessionStorage.removeItem('dit_teacher_pin');
     sessionStorage.removeItem('dit_teacher_role');
@@ -483,6 +487,43 @@ function DashboardInner() {
     return allTeacherNames.filter((t) => !hiddenTeacherSet.has(t));
   }, [allTeacherNames, hiddenTeacherSet]);
 
+  const filteredVisibleTeachers = useMemo(() => {
+    const q = teacherSearch.trim().toLowerCase();
+    if (!q) return visibleTeacherNames;
+    return visibleTeacherNames.filter((t) => t.toLowerCase().includes(q));
+  }, [visibleTeacherNames, teacherSearch]);
+
+  const selectedTeacherSet = useMemo(() => new Set(selectedTeachers), [selectedTeachers]);
+
+  useEffect(() => {
+    if (!teacherDropdownOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (
+        teacherDropdownRef.current &&
+        !teacherDropdownRef.current.contains(e.target as Node)
+      ) {
+        setTeacherDropdownOpen(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setTeacherDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [teacherDropdownOpen]);
+
+  const handleToggleSelectedTeacher = (teacherName: string) => {
+    setSelectedTeachers((prev) =>
+      prev.includes(teacherName)
+        ? prev.filter((t) => t !== teacherName)
+        : [...prev, teacherName]
+    );
+  };
+
   const teacherBackupItems: TeacherFilterItem[] = useMemo(() => {
     const combined = Array.from(new Set([...allTeacherNames, ...hiddenTeachers])).sort();
     return combined.map((name) => ({
@@ -517,9 +558,7 @@ function DashboardInner() {
       setHiddenTeachers(nextHidden);
 
       if (action === 'hide' && teacherName) {
-        if (selectedTeacher === teacherName) {
-          setSelectedTeacher('');
-        }
+        setSelectedTeachers((prev) => prev.filter((t) => t !== teacherName));
         showToast(`ซ่อน "${teacherName}" จากตัวกรองแล้ว (เก็บไว้ใน Backup)`, 'info');
       } else if (action === 'restore' && teacherName) {
         showToast(`ดึงชื่อ "${teacherName}" กลับมาแสดงในตัวกรองแล้ว`, 'success');
@@ -567,8 +606,8 @@ function DashboardInner() {
       const jScope = j.job_type === 'external' ? 'external' : 'internal';
       if (selectedScope !== 'all' && jScope !== selectedScope) continue;
 
-      // Filter by Teacher
-      if (selectedTeacher && j.teacher_name.trim() !== selectedTeacher) continue;
+      // Filter by Teacher (supports multi-select)
+      if (selectedTeacherSet.size > 0 && !selectedTeacherSet.has(j.teacher_name.trim())) continue;
 
       // Filter by Major (keeps only jobs & shift periods where major participated or was targeted)
       const scopedJob = filterJobByMajor(j, selectedMajor);
@@ -640,7 +679,7 @@ function DashboardInner() {
       jobs: filteredJobs,
       registrations: registrationsList,
     };
-  }, [jobs, viewMode, startDate, endDate, startMonth, endMonth, startYear, endYear, selectedScope, selectedTeacher, selectedMajor]);
+  }, [jobs, viewMode, startDate, endDate, startMonth, endMonth, startYear, endYear, selectedScope, selectedTeacherSet, selectedMajor]);
 
   // Overall KPI metrics
   const kpis = useMemo(() => {
@@ -1079,7 +1118,7 @@ function DashboardInner() {
     return `ช่วงปี พ.ศ. ${startYear + 543} - พ.ศ. ${endYear + 543}`;
   }, [calendarSelectedDate, viewMode, startDate, endDate, startMonth, endMonth, startYear, endYear]);
 
-  const mobileFilterSignature = `${activeDetailTab}|${viewMode}|${startDate}|${endDate}|${startMonth}|${endMonth}|${startYear}|${endYear}|${selectedScope}|${selectedTeacher}|${selectedMajor}|${calendarSelectedDate || ''}|${tableSearch}`;
+  const mobileFilterSignature = `${activeDetailTab}|${viewMode}|${startDate}|${endDate}|${startMonth}|${endMonth}|${startYear}|${endYear}|${selectedScope}|${selectedTeachers.join(',')}|${selectedMajor}|${calendarSelectedDate || ''}|${tableSearch}`;
   const mobileLimit = mobileLimitState.sig === mobileFilterSignature ? mobileLimitState.limit : 10;
   const visibleMobileJobs = jobRows.slice(0, mobileLimit);
 
@@ -1512,33 +1551,140 @@ function DashboardInner() {
               </select>
             </div>
 
-            {/* Filter by Teacher + Remove & Backup Management */}
+            {/* Filter by Teacher (Multi-select) + Remove & Backup Management */}
             {(allTeacherNames.length > 0 || hiddenTeachers.length > 0) && (
               <div className={styles.majorFilterGroup}>
-                <label htmlFor="teacher-filter">อาจารย์ผู้ประกาศ</label>
-                <div className={styles.teacherFilterControls}>
-                  <select
-                    id="teacher-filter"
-                    value={selectedTeacher}
-                    onChange={(e) => setSelectedTeacher(e.target.value)}
-                    className={styles.filterSelect}
-                  >
-                    <option value="">อาจารย์ทุกคน</option>
-                    {visibleTeacherNames.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedTeacher && (
+                <label htmlFor="teacher-filter-trigger">อาจารย์ผู้ประกาศ</label>
+                <div className={styles.teacherFilterControls} ref={teacherDropdownRef}>
+                  <div className={styles.teacherDropdownWrap}>
+                    <button
+                      id="teacher-filter-trigger"
+                      type="button"
+                      className={`${styles.teacherMultiTrigger} ${
+                        selectedTeachers.length > 0 ? styles.teacherMultiTriggerActive : ''
+                      }`}
+                      onClick={() => setTeacherDropdownOpen((prev) => !prev)}
+                      aria-expanded={teacherDropdownOpen}
+                    >
+                      <span className={styles.teacherTriggerText}>
+                        {selectedTeachers.length === 0
+                          ? 'อาจารย์ทุกคน'
+                          : selectedTeachers.length === 1
+                          ? selectedTeachers[0]
+                          : `เลือกแล้ว ${selectedTeachers.length} คน`}
+                      </span>
+                      <span
+                        className={`${styles.teacherTriggerCaret} ${
+                          teacherDropdownOpen ? styles.teacherTriggerCaretOpen : ''
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </span>
+                    </button>
+
+                    {teacherDropdownOpen && (
+                      <div className={styles.teacherDropdownMenu}>
+                        <input
+                          type="text"
+                          value={teacherSearch}
+                          onChange={(e) => setTeacherSearch(e.target.value)}
+                          placeholder="ค้นหาชื่ออาจารย์..."
+                          className={styles.teacherSearchInput}
+                          autoFocus
+                        />
+
+                        <div className={styles.teacherMenuActions}>
+                          <button
+                            type="button"
+                            className={styles.teacherMenuActionBtn}
+                            onClick={() => setSelectedTeachers([])}
+                          >
+                            อาจารย์ทุกคน (ล้าง)
+                          </button>
+                          {filteredVisibleTeachers.length > 0 && (
+                            <button
+                              type="button"
+                              className={styles.teacherMenuActionBtn}
+                              onClick={() =>
+                                setSelectedTeachers((prev) =>
+                                  Array.from(new Set([...prev, ...filteredVisibleTeachers]))
+                                )
+                              }
+                            >
+                              เลือกทั้งหมดที่เห็น
+                            </button>
+                          )}
+                        </div>
+
+                        <div className={styles.teacherMenuList}>
+                          {filteredVisibleTeachers.length === 0 ? (
+                            <div className={styles.teacherMenuEmpty}>
+                              {visibleTeacherNames.length === 0
+                                ? 'ไม่มีรายชื่ออาจารย์ที่เปิดใช้งาน'
+                                : 'ไม่พบชื่ออาจารย์ที่ค้นหา'}
+                            </div>
+                          ) : (
+                            filteredVisibleTeachers.map((t) => {
+                              const checked = selectedTeacherSet.has(t);
+                              return (
+                                <div key={t} className={styles.teacherMenuItemRow}>
+                                  <label className={styles.teacherMenuCheckLabel}>
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => handleToggleSelectedTeacher(t)}
+                                    />
+                                    <span className={styles.teacherMenuName}>{t}</span>
+                                  </label>
+                                  <div className={styles.teacherMenuMetaRight}>
+                                    <span className={styles.teacherMenuCount}>
+                                      {teacherJobCountMap.get(t) || 0}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className={styles.teacherMenuHideBtn}
+                                      onClick={() => handleTeacherFilterAction('hide', t)}
+                                      disabled={teacherFilterSaving}
+                                      title={`ซ่อน "${t}" ออกจากตัวกรอง (เก็บไว้ใน Backup)`}
+                                    >
+                                      ลบ
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        <div className={styles.teacherMenuFooter}>
+                          <span>
+                            {selectedTeachers.length === 0
+                              ? 'แสดงอาจารย์ทุกคน'
+                              : `เลือกอยู่ ${selectedTeachers.length} คน`}
+                          </span>
+                          <button
+                            type="button"
+                            className={styles.teacherMenuDoneBtn}
+                            onClick={() => setTeacherDropdownOpen(false)}
+                          >
+                            ตกลง
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedTeachers.length > 0 && (
                     <button
                       type="button"
                       className={styles.teacherHideBtn}
-                      onClick={() => handleTeacherFilterAction('hide', selectedTeacher)}
-                      disabled={teacherFilterSaving}
-                      title="ลบชื่ออาจารย์นี้ออกจากรายการตัวกรอง (ข้อมูลในตารางยังคงอยู่)"
+                      onClick={() => setSelectedTeachers([])}
+                      title="ล้างการเลือกอาจารย์เพื่อกลับไปดูทุกคน"
                     >
-                      ลบชื่อนี้
+                      ล้างที่เลือก
                     </button>
                   )}
                   <button
@@ -1553,6 +1699,23 @@ function DashboardInner() {
                     )}
                   </button>
                 </div>
+
+                {selectedTeachers.length > 0 && (
+                  <div className={styles.teacherSelectedChips}>
+                    {selectedTeachers.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        className={styles.teacherSelectedChip}
+                        onClick={() => handleToggleSelectedTeacher(t)}
+                        title={`นำ "${t}" ออกจากตัวกรอง`}
+                      >
+                        <span>{t}</span>
+                        <span>✕</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
