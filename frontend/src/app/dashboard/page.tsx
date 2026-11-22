@@ -1596,21 +1596,35 @@ function DashboardInner() {
                           autoFocus
                         />
 
-                        {filteredVisibleTeachers.length > 0 && (
-                          <div className={styles.teacherMenuActions}>
-                            <button
-                              type="button"
-                              className={styles.teacherMenuActionBtn}
-                              onClick={() =>
-                                setSelectedTeachers((prev) =>
-                                  Array.from(new Set([...prev, ...filteredVisibleTeachers]))
-                                )
-                              }
-                            >
-                              เลือกทั้งหมดที่เห็น
-                            </button>
-                          </div>
-                        )}
+                        {filteredVisibleTeachers.length > 0 && (() => {
+                          const allVisibleSelected = filteredVisibleTeachers.every((t) =>
+                            selectedTeacherSet.has(t)
+                          );
+                          return (
+                            <div className={styles.teacherMenuActions}>
+                              <button
+                                type="button"
+                                className={styles.teacherMenuActionBtn}
+                                onClick={() => {
+                                  if (allVisibleSelected) {
+                                    const visibleSet = new Set(filteredVisibleTeachers);
+                                    setSelectedTeachers((prev) =>
+                                      prev.filter((t) => !visibleSet.has(t))
+                                    );
+                                  } else {
+                                    setSelectedTeachers((prev) =>
+                                      Array.from(new Set([...prev, ...filteredVisibleTeachers]))
+                                    );
+                                  }
+                                }}
+                              >
+                                {allVisibleSelected
+                                  ? 'ล้างที่เลือกทั้งหมด'
+                                  : 'เลือกทั้งหมดที่เห็น'}
+                              </button>
+                            </div>
+                          );
+                        })()}
 
                         <div className={styles.teacherMenuList}>
                           {filteredVisibleTeachers.length === 0 ? (
