@@ -1684,16 +1684,6 @@ function DashboardInner() {
                     )}
                   </div>
 
-                  {selectedTeachers.length > 0 && (
-                    <button
-                      type="button"
-                      className={styles.teacherHideBtn}
-                      onClick={() => setSelectedTeachers([])}
-                      title="ล้างการเลือกอาจารย์เพื่อกลับไปดูทุกคน"
-                    >
-                      ล้างที่เลือก
-                    </button>
-                  )}
                   <button
                     type="button"
                     className={styles.teacherBackupBtn}
