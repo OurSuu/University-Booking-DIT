@@ -1596,15 +1596,8 @@ function DashboardInner() {
                           autoFocus
                         />
 
-                        <div className={styles.teacherMenuActions}>
-                          <button
-                            type="button"
-                            className={styles.teacherMenuActionBtn}
-                            onClick={() => setSelectedTeachers([])}
-                          >
-                            อาจารย์ทุกคน (ล้าง)
-                          </button>
-                          {filteredVisibleTeachers.length > 0 && (
+                        {filteredVisibleTeachers.length > 0 && (
+                          <div className={styles.teacherMenuActions}>
                             <button
                               type="button"
                               className={styles.teacherMenuActionBtn}
@@ -1616,8 +1609,8 @@ function DashboardInner() {
                             >
                               เลือกทั้งหมดที่เห็น
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
                         <div className={styles.teacherMenuList}>
                           {filteredVisibleTeachers.length === 0 ? (
