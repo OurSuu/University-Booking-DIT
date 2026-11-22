@@ -461,7 +461,8 @@
 }
 
 .searchInput {
-  width: 280px;
+  width: 355px;
+  max-width: 100%;
   padding: 0.5rem 2rem 0.5rem 0.85rem;
   border: 1.5px solid var(--border-color);
   border-radius: 10px;

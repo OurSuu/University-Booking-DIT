@@ -699,7 +699,7 @@ export default function Calendar() {
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="ค้นหากิจกรรมที่ฉันลงไว้ (พิมพ์รหัสนักศึกษา เช่น 6901234)..."
+                placeholder="ค้นหากิจกรรมที่ฉันลงไว้ (รหัส เช่น 6901234)"
                 className={styles.searchInput}
               />
               {studentSearch && (
