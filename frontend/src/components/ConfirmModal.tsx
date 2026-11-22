@@ -45,7 +45,7 @@ export default function ConfirmModal({
           <div className={styles.loadingOverlay}>
             <div className={styles.spinnerLarge} />
             <p className={styles.loadingTitle}>
-              {mode === 'pin' ? 'กำลังตรวจสอบรหัสผ่าน...' : 'กำลังลบประกาศงาน...'}
+              {mode === 'pin' ? 'กำลังตรวจสอบรหัสผ่าน...' : 'กำลังลบประกาศกิจกรรม...'}
             </p>
             <span className={styles.loadingSub}>กรุณารอสักครู่</span>
           </div>

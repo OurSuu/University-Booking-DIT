@@ -63,8 +63,8 @@ export default function LocationsModal({ isOpen, locations, onClose }: Props) {
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <div>
-            <span className={styles.badgeTag}>สถิติสถานที่จัดงานทั้งหมด</span>
-            <h2>สถานที่ของงาน ({locations.length} แห่ง)</h2>
+            <span className={styles.badgeTag}>สถิติสถานที่จัดกิจกรรมทั้งหมด</span>
+            <h2>สถานที่ของกิจกรรม ({locations.length} แห่ง)</h2>
           </div>
           <button
             type="button"
@@ -92,7 +92,7 @@ export default function LocationsModal({ isOpen, locations, onClose }: Props) {
                 className={`${styles.sortBtn} ${sortBy === 'jobs' ? styles.sortBtnActive : ''}`}
                 onClick={() => setSortBy('jobs')}
               >
-                จำนวนงาน
+                จำนวนกิจกรรม
               </button>
               <button
                 type="button"
@@ -106,7 +106,7 @@ export default function LocationsModal({ isOpen, locations, onClose }: Props) {
                 className={`${styles.sortBtn} ${sortBy === 'regs' ? styles.sortBtnActive : ''}`}
                 onClick={() => setSortBy('regs')}
               >
-                เด็กเข้าร่วม
+                ผู้เข้าร่วม
               </button>
             </div>
           </div>
@@ -119,8 +119,8 @@ export default function LocationsModal({ isOpen, locations, onClose }: Props) {
                 <thead>
                   <tr>
                     <th className={styles.rankCol}>อันดับ</th>
-                    <th>สถานที่ของงาน</th>
-                    <th className={styles.numCol}>จำนวนงาน</th>
+                    <th>สถานที่ของกิจกรรม</th>
+                    <th className={styles.numCol}>จำนวนกิจกรรม</th>
                     <th className={styles.numCol}>ชั่วโมงทุน</th>
                     <th className={styles.numCol}>ผู้เข้าร่วม</th>
                   </tr>
@@ -139,10 +139,10 @@ export default function LocationsModal({ isOpen, locations, onClose }: Props) {
                       </td>
                       <td className={styles.locNameCell}>{loc.location}</td>
                       <td className={`${styles.numCol} ${styles.countPrimary}`}>
-                        {loc.jobs.toLocaleString()} งาน
+                        {loc.jobs.toLocaleString()} กิจกรรม
                       </td>
                       <td className={`${styles.numCol} ${styles.countHours}`}>
-                        {loc.hours.toLocaleString()} ชม.ทุน
+                        {loc.hours.toLocaleString()} ชม.
                       </td>
                       <td className={`${styles.numCol} ${styles.countRegs}`}>
                         {loc.regs.toLocaleString()} คน
@@ -159,7 +159,7 @@ export default function LocationsModal({ isOpen, locations, onClose }: Props) {
               แสดง <strong>{sortedFiltered.length}</strong> สถานที่
             </span>
             <span className={styles.summaryItem}>
-              รวมงาน <strong>{totals.jobs.toLocaleString()} งาน</strong>
+              รวมกิจกรรม <strong>{totals.jobs.toLocaleString()} กิจกรรม</strong>
             </span>
             <span className={styles.summaryItem}>
               รวมชั่วโมงทุน <strong>{totals.hours.toLocaleString()} ชม.</strong>

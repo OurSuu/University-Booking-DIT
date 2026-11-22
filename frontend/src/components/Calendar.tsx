@@ -433,14 +433,14 @@ export default function Calendar() {
       });
       if (res.status === 404) {
         setJobs((prev) => prev.filter((j) => j.id !== deletingJob.id));
-        showToast('ลบประกาศงานเรียบร้อยแล้ว', 'success');
+        showToast('ลบประกาศกิจกรรมเรียบร้อยแล้ว', 'success');
         fetchJobs();
       } else if (!res.ok) {
         const data = await res.json();
-        showToast(data.error || 'ไม่สามารถลบประกาศงานได้', 'error');
+        showToast(data.error || 'ไม่สามารถลบประกาศกิจกรรมได้', 'error');
       } else {
         setJobs((prev) => prev.filter((j) => j.id !== deletingJob.id));
-        showToast('ลบประกาศงานเรียบร้อยแล้ว', 'success');
+        showToast('ลบประกาศกิจกรรมเรียบร้อยแล้ว', 'success');
         fetchJobs();
       }
     } catch {
@@ -469,8 +469,8 @@ export default function Calendar() {
     fetchJobs();
     showToast(
       action === 'created'
-        ? 'สร้างประกาศงานใหม่ขึ้นปฏิทินเรียบร้อยแล้ว!'
-        : 'อัปเดตข้อมูลประกาศงานเรียบร้อยแล้ว!',
+        ? 'สร้างประกาศกิจกรรมใหม่ขึ้นปฏิทินเรียบร้อยแล้ว!'
+        : 'อัปเดตข้อมูลประกาศกิจกรรมเรียบร้อยแล้ว!',
       'success'
     );
   };
@@ -492,12 +492,12 @@ export default function Calendar() {
                   วิทยาลัยนวัตกรรมดิจิทัลเทคโนโลยี • มหาวิทยาลัยรังสิต (DIT RSU)
                 </div>
                 <h1 className={styles.mainTitle}>
-                  ระบบปฏิทินประกาศงานและลงทะเบียนชั่วโมงทุน
+                  ระบบปฏิทินประกาศกิจกรรมและลงทะเบียนชั่วโมงทุน
                 </h1>
               </div>
             </div>
             <p className={styles.subTitle}>
-              นักศึกษาสามารถเลือกดูงาน ชั่วโมงทุน และลงทะเบียนได้ทันที • เมื่อลงทะเบียนแล้วจะไม่สามารถถอนชื่อได้ด้วยตนเอง หากมีเหตุจำเป็นโปรดติดต่ออาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ
+              นักศึกษาสามารถเลือกดูกิจกรรม ชั่วโมงทุน และลงทะเบียนได้ทันที • เมื่อลงทะเบียนแล้วจะไม่สามารถถอนชื่อได้ด้วยตนเอง หากมีเหตุจำเป็นโปรดติดต่ออาจารย์ผู้รับผิดชอบกิจกรรมเพื่อถอนชื่อ
             </p>
           </div>
 
@@ -524,7 +524,7 @@ export default function Calendar() {
                   className={styles.primaryActionBtn}
                   onClick={() => handleOpenCreateJob(todayStr)}
                 >
-                  + ประกาศงานใหม่
+                  + ประกาศกิจกรรมใหม่
                 </button>
                 <button
                   className={styles.lockBtn}
@@ -557,7 +557,7 @@ export default function Calendar() {
                   className={styles.primaryActionBtn}
                   onClick={() => handleOpenCreateJob(todayStr)}
                 >
-                  + สร้างประกาศงาน
+                  + สร้างประกาศกิจกรรม
                 </button>
               </div>
             )}
@@ -567,8 +567,8 @@ export default function Calendar() {
         {/* Monthly Stats Cards */}
         <section className={styles.statsGrid}>
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>งานที่ประกาศในเดือนนี้</span>
-            <strong className={styles.statValue}>{monthStats.totalJobs} งาน</strong>
+            <span className={styles.statLabel}>กิจกรรมที่ประกาศในเดือนนี้</span>
+            <strong className={styles.statValue}>{monthStats.totalJobs} กิจกรรม</strong>
           </div>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>จำนวนที่นั่งว่างคงเหลือ</span>
@@ -581,9 +581,9 @@ export default function Calendar() {
             <strong className={styles.statValue}>{monthStats.totalRegistered} คน</strong>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>งานที่รองรับทุน กยศ.</span>
+            <span className={styles.statLabel}>กิจกรรมที่รองรับทุน กยศ.</span>
             <strong className={`${styles.statValue} ${styles.statPrimary}`}>
-              {monthStats.kysEligibleCount} งาน
+              {monthStats.kysEligibleCount} กิจกรรม
             </strong>
           </div>
           <div
@@ -594,11 +594,11 @@ export default function Calendar() {
               setFilterKysStrictOnly(false);
               setFilterAvailableOnly(false);
             }}
-            title="คลิกเพื่อกรองเฉพาะงานที่ไม่รับ กยศ."
+            title="คลิกเพื่อกรองเฉพาะกิจกรรมที่ไม่รับ กยศ."
           >
-            <span className={styles.statLabel}>งานที่ไม่รับ กยศ. (เฉพาะทุน)</span>
+            <span className={styles.statLabel}>กิจกรรมที่ไม่รับ กยศ. (เฉพาะทุน)</span>
             <strong className={`${styles.statValue} ${styles.statDanger}`}>
-              {monthStats.nonKysCount} งาน
+              {monthStats.nonKysCount} กิจกรรม
             </strong>
           </div>
         </section>
@@ -699,7 +699,7 @@ export default function Calendar() {
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="ค้นหางานที่ฉันลงไว้ (พิมพ์รหัสนักศึกษา เช่น 66010001)..."
+                placeholder="ค้นหากิจกรรมที่ฉันลงไว้ (พิมพ์รหัสนักศึกษา เช่น 6901234)..."
                 className={styles.searchInput}
               />
               {studentSearch && (
@@ -737,9 +737,9 @@ export default function Calendar() {
                       </span>
                       <strong>{item.job.title}</strong> —{' '}
                       {item.job.shift_mode === 'roles' || item.shiftLabel === 'ตลอดงาน'
-                        ? `${item.dutyName ? `หน้าที่ ${item.dutyName}` : 'ร่วมงาน'} (${item.timeRange})`
+                        ? `${item.dutyName ? `หน้าที่ ${item.dutyName}` : 'ร่วมกิจกรรม'} (${item.timeRange})`
                         : `${item.shiftLabel}${item.dutyName ? ` [หน้าที่ ${item.dutyName}]` : ''} (${item.timeRange})`}{' '}
-                      • {item.hours} ชม.ทุน •{' '}
+                      • {item.hours} ชม. •{' '}
                       {isTeacherMode ? (
                         <>
                           ผู้ลง <strong>{item.studentName}</strong> (รหัส {item.studentId}) — {item.faculty}
@@ -772,7 +772,7 @@ export default function Calendar() {
 
         {/* Calendar Grid */}
         {loading ? (
-          <div className={styles.loadingBox}>กำลังโหลดข้อมูลปฏิทินงานชั่วโมงทุน...</div>
+          <div className={styles.loadingBox}>กำลังโหลดข้อมูลปฏิทินกิจกรรมชั่วโมงทุน...</div>
         ) : (
           <div className={styles.calendarCard}>
             <div className={styles.weekHeader}>
@@ -852,7 +852,7 @@ export default function Calendar() {
                               : styles.mobileCountPillAvail
                           }
                         >
-                          {dayJobs.length} งาน
+                          {dayJobs.length} กิจกรรม
                         </span>
                         <span
                           className={
@@ -946,8 +946,8 @@ export default function Calendar() {
         {!loading && (
           <section className={styles.mobileAgendaSection}>
             <div className={styles.mobileAgendaHeader}>
-              <h3>รายการงานในเดือน{THAI_MONTH_NAMES[currentMonth]}</h3>
-              <span>แตะที่งานเพื่อดูรายละเอียดและลงทะเบียน</span>
+              <h3>รายการกิจกรรมในเดือน{THAI_MONTH_NAMES[currentMonth]}</h3>
+              <span>แตะที่กิจกรรมเพื่อดูรายละเอียดและลงทะเบียน</span>
             </div>
 
             {(() => {
@@ -957,7 +957,7 @@ export default function Calendar() {
               if (monthJobsList.length === 0) {
                 return (
                   <div className={styles.mobileAgendaEmpty}>
-                    ยังไม่มีประกาศงานในเดือนนี้
+                    ยังไม่มีประกาศกิจกรรมในเดือนนี้
                   </div>
                 );
               }
@@ -974,7 +974,7 @@ export default function Calendar() {
                     const minH = Math.min(...hoursArr);
                     const maxH = Math.max(...hoursArr);
                     const hoursLabel =
-                      minH === maxH ? `${minH} ชม.ทุน` : `${minH}-${maxH} ชม.ทุน`;
+                      minH === maxH ? `${minH} ชม.` : `${minH}-${maxH} ชม.`;
                     const dayNum = Number(job.date.split('-')[2]);
 
                     const { majorRestrictionText } = summarizeJobRolesAndMajors(job);
@@ -1077,13 +1077,13 @@ export default function Calendar() {
         {/* Legend / Quick Help */}
         <footer className={styles.footerLegend}>
           <div className={styles.legendItem}>
-            <span className={styles.dotAvail} /> งานที่ยังมีที่นั่งว่าง (คลิกที่วันเพื่อดูรายละเอียดและลงทะเบียน)
+            <span className={styles.dotAvail} /> กิจกรรมที่ยังมีที่นั่งว่าง (คลิกที่วันเพื่อดูรายละเอียดและลงทะเบียน)
           </div>
           <div className={styles.legendItem}>
-            <span className={styles.dotFull} /> งานที่ลงทะเบียนครบจำนวนแล้ว
+            <span className={styles.dotFull} /> กิจกรรมที่ลงทะเบียนครบจำนวนแล้ว
           </div>
           <div className={styles.legendItem}>
-            <span className={styles.dotNoKys} /> งานที่ระบุว่าไม่รับนักศึกษาทุน กยศ.
+            <span className={styles.dotNoKys} /> กิจกรรมที่ระบุว่าไม่รับนักศึกษาทุน กยศ.
           </div>
         </footer>
       </div>
@@ -1123,8 +1123,8 @@ export default function Calendar() {
       {showPinModal && (
         <ConfirmModal
           mode="pin"
-          title="เข้าสู่โหมดอาจารย์ผู้สร้างงาน"
-          message="กรุณากรอกรหัสผ่านสำหรับอาจารย์ (ความยาว 16 ตัวอักษร) เพื่อสร้าง แก้ไข หรือลบประกาศงานชั่วโมงทุน"
+          title="เข้าสู่โหมดอาจารย์ผู้สร้างกิจกรรม"
+          message="กรุณากรอกรหัสผ่านสำหรับอาจารย์ (ความยาว 16 ตัวอักษร) เพื่อสร้าง แก้ไข หรือลบประกาศกิจกรรมชั่วโมงทุน"
           confirmText="ยืนยันรหัสผ่าน"
           onConfirm={handleVerifyPin}
           onCancel={() => {
@@ -1141,11 +1141,11 @@ export default function Calendar() {
       {deletingJob && (
         <ConfirmModal
           mode="confirm"
-          title="ยืนยันการลบประกาศงาน"
-          message={`คุณต้องการลบประกาศงาน "${deletingJob.title}" (${formatThaiDate(
+          title="ยืนยันการลบประกาศกิจกรรม"
+          message={`คุณต้องการลบประกาศกิจกรรม "${deletingJob.title}" (${formatThaiDate(
             deletingJob.date
-          )}) ใช่หรือไม่?\nข้อมูลรายชื่อนักศึกษาที่ลงทะเบียนในงานนี้จะถูกลบทั้งหมด`}
-          confirmText="ลบประกาศงาน"
+          )}) ใช่หรือไม่?\nข้อมูลรายชื่อนักศึกษาที่ลงทะเบียนในกิจกรรมนี้จะถูกลบทั้งหมด`}
+          confirmText="ลบประกาศกิจกรรม"
           onConfirm={handleDeleteJobConfirm}
           onCancel={() => setDeletingJob(null)}
           loading={deleteLoading}

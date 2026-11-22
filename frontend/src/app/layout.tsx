@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ระบบปฏิทินงานชั่วโมงทุน — สำหรับอาจารย์และนักศึกษา",
-  description: "ระบบประกาศงานและลงทะเบียนเก็บชั่วโมงทุนสำหรับนักศึกษาและอาจารย์",
+  title: "ระบบปฏิทินกิจกรรมชั่วโมงทุน — สำหรับอาจารย์และนักศึกษา",
+  description: "ระบบประกาศกิจกรรมและลงทะเบียนเก็บชั่วโมงทุนสำหรับนักศึกษาและอาจารย์",
 };
 
 export default function RootLayout({

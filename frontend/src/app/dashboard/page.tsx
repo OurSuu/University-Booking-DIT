@@ -156,20 +156,20 @@ function buildChartPointData(
 const DASHBOARD_METRICS: MetricConfig[] = [
   {
     key: 'announcedHours',
-    label: 'ชั่วโมงทุนที่อาจารย์ประกาศ',
+    label: 'จำนวนชั่วโมงทุนทั้งหมด',
     unit: 'ชม.',
     color: '#c81e24', // Crimson Red
   },
   {
     key: 'registrations',
-    label: 'จำนวนเด็กที่เข้าร่วม',
+    label: 'จำนวนนักศึกษาเข้าร่วมทั้งหมด',
     unit: 'คน',
     color: '#2563eb', // Royal Blue
   },
   {
     key: 'jobs',
-    label: 'จำนวนงานที่ประกาศ',
-    unit: 'งาน',
+    label: 'จำนวนกิจกรรมทั้งหมด',
+    unit: 'กิจกรรม',
     color: '#059669', // Emerald Green
   },
 ];
@@ -721,9 +721,9 @@ function DashboardInner() {
         { label: 'เฉพาะ กยศ.', value: regsCount.kys_only, unit: 'คน', color: '#2563eb' },
       ],
       jobs: [
-        { label: 'รับทั้งหมด', value: jobsCount.all, unit: 'งาน', color: '#16a34a' },
-        { label: 'เฉพาะทุน', value: jobsCount.non_kys, unit: 'งาน', color: '#dc2626' },
-        { label: 'เฉพาะ กยศ.', value: jobsCount.kys_only, unit: 'งาน', color: '#2563eb' },
+        { label: 'รับทั้งหมด', value: jobsCount.all, unit: 'กิจกรรม', color: '#16a34a' },
+        { label: 'เฉพาะทุน', value: jobsCount.non_kys, unit: 'กิจกรรม', color: '#dc2626' },
+        { label: 'เฉพาะ กยศ.', value: jobsCount.kys_only, unit: 'กิจกรรม', color: '#2563eb' },
       ],
     };
   }, [filteredData]);
@@ -992,7 +992,7 @@ function DashboardInner() {
     rows.forEach((r, idx) => {
       const shiftText =
         r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
-          ? `ทั้งงาน (${r.timeRange})`
+          ? `ทั้งกิจกรรม (${r.timeRange})`
           : `${r.shiftLabel} (${r.timeRange})`;
       const dutyPart = r.dutyName ? ` [หน้าที่ ${r.dutyName}]` : '';
       const phonePart = r.phone ? ` • โทร ${r.phone}` : '';
@@ -1018,7 +1018,7 @@ function DashboardInner() {
     if (folder.rows.length === 0) return;
     const text = formatStudentCopyLines(
       folder.rows,
-      `รายชื่อผู้ลงทะเบียนงาน ${folder.jobTitle} (${formatThaiDate(folder.jobDate)}) (${folder.rows.length} คน)`
+      `รายชื่อผู้ลงทะเบียนกิจกรรม ${folder.jobTitle} (${formatThaiDate(folder.jobDate)}) (${folder.rows.length} คน)`
     );
     navigator.clipboard.writeText(text);
     showToast(`คัดลอกรายชื่อจากโฟลเดอร์ "${folder.jobTitle}" (${folder.rows.length} คน) แล้ว`, 'success');
@@ -1216,7 +1216,7 @@ function DashboardInner() {
           </form>
 
           <Link href="/" className={styles.backBtn} style={{ justifyContent: 'center' }}>
-            ← กลับสู่หน้าปฏิทินงาน
+            ← กลับสู่หน้าปฏิทินกิจกรรม
           </Link>
         </div>
       </div>
@@ -1248,7 +1248,7 @@ function DashboardInner() {
               ซิงค์ข้อมูลล่าสุด
             </button>
             <Link href="/" className={styles.backBtn}>
-              ← กลับสู่หน้าปฏิทินงาน
+              ← กลับสู่หน้าปฏิทินกิจกรรม
             </Link>
             <button className={styles.logoutBtn} onClick={handleLogout} title="ออกจากโหมดอาจารย์">
               ออกจากโหมดอาจารย์
@@ -1470,16 +1470,16 @@ function DashboardInner() {
 
             {/* Filter by Scope (Internal vs External) */}
             <div className={styles.majorFilterGroup}>
-              <label htmlFor="scope-filter">ประเภทงาน</label>
+              <label htmlFor="scope-filter">ประเภทกิจกรรม</label>
               <select
                 id="scope-filter"
                 value={selectedScope}
                 onChange={(e) => setSelectedScope(e.target.value as ScopeFilter)}
                 className={styles.filterSelect}
               >
-                <option value="all">ทุกประเภทงาน (ทั้งหมด)</option>
-                <option value="internal">เฉพาะงานภายในคณะ (DIT)</option>
-                <option value="external">เฉพาะงานภายนอกคณะ</option>
+                <option value="all">ทุกประเภทกิจกรรม (ทั้งหมด)</option>
+                <option value="internal">เฉพาะกิจกรรมภายในคณะ (DIT)</option>
+                <option value="external">เฉพาะกิจกรรมภายนอกคณะ</option>
               </select>
             </div>
 
@@ -1571,12 +1571,12 @@ function DashboardInner() {
           </div>
 
           <div className={styles.kpiCard}>
-            <span className={styles.kpiLabel}>จำนวนงานที่ประกาศทั้งหมด</span>
+            <span className={styles.kpiLabel}>จำนวนกิจกรรมที่ประกาศทั้งหมด</span>
             <strong className={`${styles.kpiValue} ${styles.kpiPrimary}`}>
-              {kpis.totalJobs.toLocaleString()} <span style={{ fontSize: '1rem' }}>งาน</span>
+              {kpis.totalJobs.toLocaleString()} <span style={{ fontSize: '1rem' }}>กิจกรรม</span>
             </strong>
             <span className={styles.kpiSub}>
-              ภายในคณะ {kpis.internalJobsCount} งาน • ภายนอก {kpis.externalJobsCount} งาน
+              ภายในคณะ {kpis.internalJobsCount} กิจกรรม • ภายนอก {kpis.externalJobsCount} กิจกรรม
             </span>
           </div>
 
@@ -1615,10 +1615,10 @@ function DashboardInner() {
               selectedMajor
                 ? `แสดงเฉพาะคณะ/สาขาวิชา ${selectedMajor}`
                 : selectedScope === 'internal'
-                ? 'แสดงเฉพาะงานภายในคณะ (DIT)'
+                ? 'แสดงเฉพาะกิจกรรมภายในคณะ (DIT)'
                 : selectedScope === 'external'
-                ? 'แสดงเฉพาะงานภายนอกคณะ'
-                : 'แสดงข้อมูลงานและนักศึกษาทุกประเภทในระบบ'
+                ? 'แสดงเฉพาะกิจกรรมภายนอกคณะ'
+                : 'แสดงข้อมูลกิจกรรมและนักศึกษาทุกประเภทในระบบ'
             }
           />
         </section>
@@ -1628,22 +1628,22 @@ function DashboardInner() {
           {/* Internal vs External Jobs Breakdown */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>สถิติประเภทงาน — งานภายในคณะ vs งานภายนอกคณะ</h3>
-              <span>{filteredData.jobs.length} งานรวม</span>
+              <h3>สถิติประเภทกิจกรรม — กิจกรรมภายในคณะ vs กิจกรรมภายนอกคณะ</h3>
+              <span>{filteredData.jobs.length} กิจกรรมรวม</span>
             </div>
 
             <div className={styles.scopeCardGrid}>
               <div className={styles.scopeCard}>
                 <div className={styles.scopeCardTop}>
                   <div className={styles.scopeCardTitle}>
-                    <span>งานภายในคณะ (DIT)</span>
+                    <span>กิจกรรมภายในคณะ (DIT)</span>
                     <span className={styles.badgeScopeInternal}>ภายในวิทยาลัย</span>
                   </div>
                 </div>
                 <div className={styles.scopeMetricsRow}>
                   <div className={styles.scopeMetricCol}>
-                    <span className={styles.scopeMetricColLabel}>งานที่ประกาศ</span>
-                    <strong className={styles.scopeMetricColVal}>{scopeBreakdown.internalJobs} งาน</strong>
+                    <span className={styles.scopeMetricColLabel}>กิจกรรมที่ประกาศ</span>
+                    <strong className={styles.scopeMetricColVal}>{scopeBreakdown.internalJobs} กิจกรรม</strong>
                   </div>
                   <div className={styles.scopeMetricCol}>
                     <span className={styles.scopeMetricColLabel}>ชม.ทุนประกาศ</span>
@@ -1652,7 +1652,7 @@ function DashboardInner() {
                     </strong>
                   </div>
                   <div className={styles.scopeMetricCol}>
-                    <span className={styles.scopeMetricColLabel}>เด็กเข้าร่วม</span>
+                    <span className={styles.scopeMetricColLabel}>นักศึกษาเข้าร่วม</span>
                     <strong className={`${styles.scopeMetricColVal} ${styles.kpiPrimary}`}>
                       {scopeBreakdown.internalRegs} คน
                     </strong>
@@ -1663,14 +1663,14 @@ function DashboardInner() {
               <div className={styles.scopeCard}>
                 <div className={styles.scopeCardTop}>
                   <div className={styles.scopeCardTitle}>
-                    <span>งานภายนอกคณะ</span>
+                    <span>กิจกรรมภายนอกคณะ</span>
                     <span className={styles.badgeScopeExternal}>ภายนอกวิทยาลัย</span>
                   </div>
                 </div>
                 <div className={styles.scopeMetricsRow}>
                   <div className={styles.scopeMetricCol}>
-                    <span className={styles.scopeMetricColLabel}>งานที่ประกาศ</span>
-                    <strong className={styles.scopeMetricColVal}>{scopeBreakdown.externalJobs} งาน</strong>
+                    <span className={styles.scopeMetricColLabel}>กิจกรรมที่ประกาศ</span>
+                    <strong className={styles.scopeMetricColVal}>{scopeBreakdown.externalJobs} กิจกรรม</strong>
                   </div>
                   <div className={styles.scopeMetricCol}>
                     <span className={styles.scopeMetricColLabel}>ชม.ทุนประกาศ</span>
@@ -1679,7 +1679,7 @@ function DashboardInner() {
                     </strong>
                   </div>
                   <div className={styles.scopeMetricCol}>
-                    <span className={styles.scopeMetricColLabel}>เด็กเข้าร่วม</span>
+                    <span className={styles.scopeMetricColLabel}>นักศึกษาเข้าร่วม</span>
                     <strong className={`${styles.scopeMetricColVal} ${styles.kpiPrimary}`}>
                       {scopeBreakdown.externalRegs} คน
                     </strong>
@@ -1692,9 +1692,9 @@ function DashboardInner() {
           {/* Top Places / Locations */}
           <div className={styles.cardSection}>
             <div className={styles.sectionHeader}>
-              <h3>สถานที่ของงาน</h3>
+              <h3>สถานที่ของกิจกรรม</h3>
               <div className={styles.locationHeaderRight}>
-                <span>5 อันดับสถานที่จัดงาน</span>
+                <span>5 อันดับสถานที่จัดกิจกรรม</span>
                 {allLocationBreakdown.length > 0 && (
                   <button
                     type="button"
@@ -1710,14 +1710,14 @@ function DashboardInner() {
             <div className={styles.locationList}>
               {locationBreakdown.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>
-                  ยังไม่มีข้อมูลสถานที่จัดงาน
+                  ยังไม่มีข้อมูลสถานที่จัดกิจกรรม
                 </div>
               ) : (
                 locationBreakdown.map((loc) => (
                   <div key={loc.location} className={styles.locationItem}>
                     <span className={styles.locationName}>{loc.location}</span>
                     <span className={styles.locationStat}>
-                      <strong>{loc.jobs} งาน</strong> ({loc.hours} ชม.ทุน • {loc.regs} คน)
+                      <strong>{loc.jobs} กิจกรรม</strong> ({loc.hours} ชม. • {loc.regs} คน)
                     </span>
                   </div>
                 ))
@@ -1768,7 +1768,7 @@ function DashboardInner() {
                 className={`${styles.viewSwitchBtn} ${activeDetailTab === 'jobs' ? styles.viewSwitchBtnActive : ''}`}
                 onClick={() => setActiveDetailTab('jobs')}
               >
-                รายการงานที่ประกาศ ({jobRows.length} งาน)
+                รายการกิจกรรมที่ประกาศ ({jobRows.length} กิจกรรม)
               </button>
               <button
                 type="button"
@@ -1804,8 +1804,8 @@ function DashboardInner() {
                 type="text"
                 placeholder={
                   activeDetailTab === 'jobs'
-                    ? 'ค้นหาชื่องาน, หน้าที่, อาจารย์, สถานที่...'
-                    : 'ค้นหาชื่อ, รหัส, หน้าที่, สาขา, ชื่องาน...'
+                    ? 'ค้นหาชื่อกิจกรรม, หน้าที่, อาจารย์, สถานที่...'
+                    : 'ค้นหาชื่อ, รหัส, หน้าที่, สาขา, ชื่อกิจกรรม...'
                 }
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
@@ -1826,14 +1826,14 @@ function DashboardInner() {
               {/* Desktop/Tablet Table View for Jobs */}
               <div className={styles.tableWrapper}>
                 {jobRows.length === 0 ? (
-                  <div className={styles.emptyTable}>ไม่พบประกาศงานในช่วงเวลาหรือตัวกรองนี้</div>
+                  <div className={styles.emptyTable}>ไม่พบประกาศกิจกรรมในช่วงเวลาหรือตัวกรองนี้</div>
                 ) : (
                   <table className={styles.dataTable}>
                     <thead>
                       <tr>
-                        <th>วันที่จัดงาน</th>
-                        <th>ชื่องาน / กิจกรรม</th>
-                        <th>ประเภทงาน</th>
+                        <th>วันที่จัดกิจกรรม</th>
+                        <th>ชื่อกิจกรรม</th>
+                        <th>ประเภทกิจกรรม</th>
                         <th>ผู้ประกาศ / หน่วยงาน</th>
                         <th>สถานที่นัดหมาย</th>
                         <th>กะ / หน้าที่ / ชั่วโมงทุน</th>
@@ -1863,7 +1863,7 @@ function DashboardInner() {
                             </td>
                             <td>
                               <span className={isExt ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
-                                {isExt ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                                {isExt ? 'กิจกรรมภายนอกคณะ' : 'กิจกรรมภายในคณะ'}
                               </span>
                             </td>
                             <td>
@@ -1879,7 +1879,7 @@ function DashboardInner() {
                               <div>
                                 {isRolesMode ? (
                                   <>
-                                    <strong>ไม่แบ่งกะ (ทั้งงาน)</strong> • รวม {totalJobHours} ชม.
+                                    <strong>ไม่แบ่งกะ (ทั้งกิจกรรม)</strong> • รวม {totalJobHours} ชม.
                                     {job.shifts.length > 0 && (
                                       <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
                                         {' '}({job.shifts.length} หน้าที่)
@@ -1933,7 +1933,7 @@ function DashboardInner() {
               {/* Mobile Card List View for Jobs */}
               <div className={styles.mobileCardList}>
                 {jobRows.length === 0 ? (
-                  <div className={styles.emptyTable}>ไม่พบประกาศงานในช่วงเวลาหรือตัวกรองนี้</div>
+                  <div className={styles.emptyTable}>ไม่พบประกาศกิจกรรมในช่วงเวลาหรือตัวกรองนี้</div>
                 ) : (
                   <>
                     {visibleMobileJobs.map((job) => {
@@ -1956,7 +1956,7 @@ function DashboardInner() {
                           <span className={styles.mobileCardDateBadge}>{formatThaiDate(job.date)}</span>
                           <div className={styles.mobileCardBadges}>
                             <span className={isExt ? styles.badgeScopeExternal : styles.badgeScopeInternal}>
-                              {isExt ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                              {isExt ? 'กิจกรรมภายนอกคณะ' : 'กิจกรรมภายในคณะ'}
                             </span>
                             <span className={styles.mobileHoursBadge}>{totalJobHours} ชม.</span>
                           </div>
@@ -2030,7 +2030,7 @@ function DashboardInner() {
               <div className={styles.folderSectionWrap}>
                 <div className={styles.folderToolbarRow}>
                   <span className={styles.folderSummaryCount}>
-                    โฟลเดอร์รายชื่องานทั้งหมด {groupedRegistrationFolders.length} งาน ({tableRows.length} คน) — กดที่ชื่องานเพื่อเปิดดูรายชื่อ
+                    โฟลเดอร์รายชื่อกิจกรรมทั้งหมด {groupedRegistrationFolders.length} กิจกรรม ({tableRows.length} คน) — กดที่ชื่อกิจกรรมเพื่อเปิดดูรายชื่อ
                   </span>
                   <div className={styles.folderToolbarActions}>
                     <button
@@ -2089,7 +2089,7 @@ function DashboardInner() {
                                       : styles.badgeScopeInternal
                                   }
                                 >
-                                  {folder.jobScope === 'external' ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                                  {folder.jobScope === 'external' ? 'กิจกรรมภายนอกคณะ' : 'กิจกรรมภายในคณะ'}
                                 </span>
                               </div>
                               <div className={styles.folderSubMeta}>
@@ -2147,7 +2147,7 @@ function DashboardInner() {
                                       <td>
                                         <div>
                                           {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
-                                            ? `ทั้งงาน (${r.timeRange})`
+                                            ? `ทั้งกิจกรรม (${r.timeRange})`
                                             : `${r.shiftLabel} (${r.timeRange})`}
                                         </div>
                                         {r.allowedMajors.length > 0 && (
@@ -2203,7 +2203,7 @@ function DashboardInner() {
                                   <div className={styles.folderMobileTopRow}>
                                     <span className={styles.folderMobileIdx}>#{i + 1}</span>
                                     <div className={styles.mobileCardBadges}>
-                                      <span className={styles.mobileHoursBadge}>{r.hours} ชม.ทุน</span>
+                                      <span className={styles.mobileHoursBadge}>{r.hours} ชม.</span>
                                       <span
                                         className={`${styles.tableTag} ${
                                           isKysScholarship(r.scholarshipName) ? styles.tagKys : styles.tagOther
@@ -2225,7 +2225,7 @@ function DashboardInner() {
                                   <div className={styles.mobileCardJob}>
                                     <span className={styles.mobileCardJobShift}>
                                       {r.shiftMode === 'roles' || r.shiftLabel === 'ตลอดงาน'
-                                        ? `เวลา ${r.timeRange} (ทั้งงาน)`
+                                        ? `เวลา ${r.timeRange} (ทั้งกิจกรรม)`
                                         : `${r.shiftLabel} (${r.timeRange})`}
                                     </span>
                                     {r.dutyName && (

@@ -123,7 +123,7 @@ export default function DashboardCalendar({
       <div className={styles.calendarHeader}>
         <div className={styles.headerTitleGroup}>
           <h3 className={styles.title}>
-            ปฏิทินงานชั่วโมงทุนประจำเดือน
+            ปฏิทินกิจกรรมชั่วโมงทุนประจำเดือน
             {selectedMajor && (
               <span
                 style={{
@@ -142,7 +142,7 @@ export default function DashboardCalendar({
           </h3>
           <span className={styles.subtitle}>
             คลิกที่ช่องวันที่เพื่อกรองตารางรายชื่อนักศึกษาด้านล่างให้ตรงกับวันนั้น
-            หรือกดดูรายละเอียดงาน
+            หรือกดดูรายละเอียดกิจกรรม
           </span>
         </div>
 
@@ -190,7 +190,7 @@ export default function DashboardCalendar({
               className={styles.openModalBtn}
               onClick={() => onOpenDayDetail(selectedDate)}
             >
-              เปิดดูรายละเอียดงาน / รายชื่อนักศึกษาของวันนี้
+              เปิดดูรายละเอียดกิจกรรม / รายชื่อนักศึกษาของวันนี้
             </button>
           </div>
           <button
@@ -248,7 +248,7 @@ export default function DashboardCalendar({
                 }}
                 title={
                   dayJobs.length > 0
-                    ? `คลิกเพื่อกรองตารางเฉพาะวัน ${formatThaiDate(cell.dateStr)} (มี ${dayJobs.length} งาน)`
+                    ? `คลิกเพื่อกรองตารางเฉพาะวัน ${formatThaiDate(cell.dateStr)} (มี ${dayJobs.length} กิจกรรม)`
                     : `คลิกเพื่อกรองตารางเฉพาะวัน ${formatThaiDate(cell.dateStr)}`
                 }
               >
@@ -276,7 +276,7 @@ export default function DashboardCalendar({
                 {dayJobs.length > 0 && (
                   <div className={styles.mobileJobIndicator}>
                     <span className={cellFull ? styles.mobileIndicatorFull : styles.mobileIndicatorAvail}>
-                      {dayJobs.length} งาน
+                      {dayJobs.length} กิจกรรม
                     </span>
                   </div>
                 )}
@@ -327,10 +327,10 @@ export default function DashboardCalendar({
       {/* Legend */}
       <div className={styles.footerLegend}>
         <div className={styles.legendItem}>
-          <span className={styles.dotAvail} /> งานที่ยังมีที่นั่งว่าง
+          <span className={styles.dotAvail} /> กิจกรรมที่ยังมีที่นั่งว่าง
         </div>
         <div className={styles.legendItem}>
-          <span className={styles.dotFull} /> งานที่ผู้ลงทะเบียนเต็มแล้ว
+          <span className={styles.dotFull} /> กิจกรรมที่ผู้ลงทะเบียนเต็มแล้ว
         </div>
         <div className={styles.legendItem}>
           <span className={styles.dotSelected} /> วันที่เลือกเพื่อกรองตารางด้านล่าง (คลิกซ้ำเพื่อยกเลิก)

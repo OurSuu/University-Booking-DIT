@@ -289,12 +289,12 @@ export default function BookingModal({
     }
 
     if (!title.trim() || !teacherName.trim() || !date) {
-      setError('กรุณากรอกวันที่ ชื่องาน และอาจารย์ผู้ประกาศ / ผู้รับผิดชอบ / ชื่อหน่วยงาน ให้ครบถ้วน');
+      setError('กรุณากรอกวันที่ ชื่อกิจกรรม และอาจารย์ผู้ประกาศ / ผู้รับผิดชอบ / ชื่อหน่วยงาน ให้ครบถ้วน');
       return;
     }
 
     if (!isEditMode && getDaysUntilJob(date) < 0) {
-      setError('ไม่สามารถสร้างประกาศงานในวันที่ผ่านมาแล้วได้');
+      setError('ไม่สามารถสร้างประกาศกิจกรรมในวันที่ผ่านมาแล้วได้');
       return;
     }
 
@@ -521,7 +521,7 @@ export default function BookingModal({
           <div className={styles.loadingOverlay}>
             <div className={styles.spinnerLarge} />
             <p className={styles.loadingTitle}>
-              {isEditMode ? 'กำลังบันทึกการแก้ไขประกาศงาน...' : 'กำลังสร้างประกาศงานขึ้นปฏิทิน...'}
+              {isEditMode ? 'กำลังบันทึกการแก้ไขประกาศกิจกรรม...' : 'กำลังสร้างประกาศกิจกรรมขึ้นปฏิทิน...'}
             </p>
             <span className={styles.loadingSub}>กรุณารอสักครู่ ระบบกำลังอัปเดตข้อมูล</span>
           </div>
@@ -529,8 +529,8 @@ export default function BookingModal({
 
         <div className={styles.modalHeader}>
           <div>
-            <span className={styles.badgeRole}>สำหรับอาจารย์ผู้สร้างงาน</span>
-            <h2>{isEditMode ? 'แก้ไขประกาศงานชั่วโมงทุน' : 'สร้างประกาศงานชั่วโมงทุนใหม่'}</h2>
+            <span className={styles.badgeRole}>สำหรับอาจารย์ผู้สร้างกิจกรรม</span>
+            <h2>{isEditMode ? 'แก้ไขประกาศกิจกรรมชั่วโมงทุน' : 'สร้างประกาศกิจกรรมชั่วโมงทุนใหม่'}</h2>
           </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="ปิดหน้าต่าง">
             ✕
@@ -540,7 +540,7 @@ export default function BookingModal({
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.row2Col}>
             <div className={styles.field}>
-              <label htmlFor="job-date">วันที่จัดงาน *</label>
+              <label htmlFor="job-date">วันที่จัดกิจกรรม *</label>
               <input
                 id="job-date"
                 type="date"
@@ -565,7 +565,7 @@ export default function BookingModal({
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="job-title">ชื่องาน / กิจกรรม *</label>
+            <label htmlFor="job-title">ชื่อกิจกรรม *</label>
             <input
               id="job-title"
               type="text"
@@ -578,7 +578,7 @@ export default function BookingModal({
 
           <div className={styles.row2Col}>
             <div className={styles.field}>
-              <label htmlFor="job-location">สถานที่นัดหมาย / ปฏิบัติงาน</label>
+              <label htmlFor="job-location">สถานที่นัดหมาย / ปฏิบัติกิจกรรม</label>
               <input
                 id="job-location"
                 type="text"
@@ -589,7 +589,7 @@ export default function BookingModal({
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="teacher-contact">ช่องทางติดต่ออาจารย์ผู้สร้างงาน</label>
+              <label htmlFor="teacher-contact">ช่องทางติดต่ออาจารย์ผู้สร้างกิจกรรม</label>
               <input
                 id="teacher-contact"
                 type="text"
@@ -601,27 +601,27 @@ export default function BookingModal({
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="job-desc">รายละเอียดงานเพิ่มเติม</label>
+            <label htmlFor="job-desc">รายละเอียดกิจกรรมเพิ่มเติม</label>
             <textarea
               id="job-desc"
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="ระบุลักษณะงาน การแต่งกาย หรือสิ่งที่นักศึกษาต้องเตรียมตัว..."
+              placeholder="ระบุลักษณะกิจกรรม การแต่งกาย หรือสิ่งที่นักศึกษาต้องเตรียมตัว..."
             />
           </div>
 
-          {/* ประเภทงาน ภายในคณะ vs ภายนอกคณะ */}
+          {/* ประเภทกิจกรรม ภายในคณะ vs ภายนอกคณะ */}
           <div className={styles.sectionBox}>
-            <div className={styles.sectionTitle}>ประเภทงาน *</div>
+            <div className={styles.sectionTitle}>ประเภทกิจกรรม *</div>
             <div className={styles.kysToggleRow}>
               <button
                 type="button"
                 className={`${styles.kysOption} ${jobType === 'internal' ? styles.kysOptionActiveOk : ''}`}
                 onClick={() => setJobType('internal')}
               >
-                <div className={styles.kysOptionTitle}>งานภายในคณะ (DIT)</div>
-                <div className={styles.kysOptionSub}>งานกิจกรรม ช่วยงานอาจารย์ หรือธุรการภายในวิทยาลัย</div>
+                <div className={styles.kysOptionTitle}>กิจกรรมภายในคณะ (DIT)</div>
+                <div className={styles.kysOptionSub}>กิจกรรม ช่วยงานอาจารย์ หรือธุรการภายในวิทยาลัย</div>
               </button>
 
               <button
@@ -629,8 +629,8 @@ export default function BookingModal({
                 className={`${styles.kysOption} ${jobType === 'external' ? styles.kysOptionActiveScope : ''}`}
                 onClick={() => setJobType('external')}
               >
-                <div className={styles.kysOptionTitle}>งานภายนอกคณะ</div>
-                <div className={styles.kysOptionSub}>งานกิจกรรมมหาวิทยาลัย คณะอื่น หรือหน่วยงานภายนอก</div>
+                <div className={styles.kysOptionTitle}>กิจกรรมภายนอกคณะ</div>
+                <div className={styles.kysOptionSub}>กิจกรรมมหาวิทยาลัย คณะอื่น หรือหน่วยงานภายนอก</div>
               </button>
             </div>
 
@@ -696,9 +696,9 @@ export default function BookingModal({
           <div className={styles.sectionBox}>
             <div className={styles.shiftsHeader}>
               <div>
-                <div className={styles.sectionTitle}>กำหนดรูปแบบงาน กะ / ช่วงเวลา และหน้าที่</div>
+                <div className={styles.sectionTitle}>กำหนดรูปแบบกิจกรรม กะ / ช่วงเวลา และหน้าที่</div>
                 <p className={styles.sectionSub}>
-                  เลือกรูปแบบที่เหมาะกับงาน: 1 กะเพิ่มได้หลายหน้าที่ หรือกำหนดเวลาเดียวทั้งงานแล้วเลือกตามหน้าที่โดยตรง
+                  เลือกรูปแบบที่เหมาะกับกิจกรรม • 1 กะเพิ่มได้หลายหน้าที่ หรือกำหนดเวลาเดียวทั้งกิจกรรมแล้วเลือกตามหน้าที่โดยตรง
                 </p>
               </div>
             </div>
@@ -720,7 +720,7 @@ export default function BookingModal({
                 className={`${styles.kysOption} ${shiftMode === 'roles' ? styles.kysOptionActiveScope : ''}`}
                 onClick={() => handleSwitchShiftMode('roles')}
               >
-                <div className={styles.kysOptionTitle}>ไม่แบ่งกะ (เวลาเดียวทั้งงาน)</div>
+                <div className={styles.kysOptionTitle}>ไม่แบ่งกะ (เวลาเดียวทั้งกิจกรรม)</div>
                 <div className={styles.kysOptionSub}>
                   ตั้งเวลาและ ชม.ทุนครั้งเดียว แล้วให้นักศึกษาเลือกตามตำแหน่ง/หน้าที่โดยตรง
                 </div>
@@ -745,7 +745,7 @@ export default function BookingModal({
 
                 <div className={styles.singleScheduleFields}>
                   <div className={styles.shiftColTime}>
-                    <label>เวลาปฏิบัติงานทั้งงาน *</label>
+                    <label>เวลาปฏิบัติกิจกรรม *</label>
                     <input
                       type="text"
                       value={shiftGroups[0].time_range}
@@ -857,7 +857,7 @@ export default function BookingModal({
 
           {!teacherPin && (
             <div className={styles.field}>
-              <label htmlFor="teacher-pin">รหัสผ่านอาจารย์ (เพื่อยืนยันการประกาศงาน 16 ตัวอักษร) *</label>
+              <label htmlFor="teacher-pin">รหัสผ่านอาจารย์ (เพื่อยืนยันการประกาศกิจกรรม 16 ตัวอักษร) *</label>
               <input
                 id="teacher-pin"
                 type="password"
@@ -880,8 +880,8 @@ export default function BookingModal({
               {loading
                 ? 'กำลังบันทึก...'
                 : isEditMode
-                ? 'บันทึกการแก้ไขงาน'
-                : 'ประกาศงานขึ้นปฏิทิน'}
+                ? 'บันทึกการแก้ไขกิจกรรม'
+                : 'ประกาศกิจกรรมขึ้นปฏิทิน'}
             </button>
           </div>
         </form>

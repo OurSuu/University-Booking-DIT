@@ -136,7 +136,7 @@ export default function DayDetailModal({
 
   const handleCopyParticipants = (job: JobAnnouncement) => {
     const lines: string[] = [];
-    lines.push(`รายชื่อผู้ลงทะเบียนงาน ${job.title}`);
+    lines.push(`รายชื่อผู้ลงทะเบียนกิจกรรม ${job.title}`);
     lines.push(`วันที่ ${formatThaiDate(job.date)}`);
     lines.push(`อาจารย์ผู้รับผิดชอบ ${job.teacher_name}`);
     if (job.teacher_contact) lines.push(`ช่องทางติดต่ออาจารย์ ${job.teacher_contact}`);
@@ -148,9 +148,9 @@ export default function DayDetailModal({
 
     for (const group of groups) {
       if (isRolesOnly || group.label === 'ตลอดงาน') {
-        lines.push(`\nช่วงเวลาทั้งงาน ${group.time_range} | ${group.hours} ชม.ทุน`);
+        lines.push(`\nช่วงเวลากิจกรรม ${group.time_range} | ${group.hours} ชม.`);
       } else {
-        lines.push(`\n${group.label} (${group.time_range}) | ${group.hours} ชม.ทุน`);
+        lines.push(`\n${group.label} (${group.time_range}) | ${group.hours} ชม.`);
       }
 
       for (const s of group.roles) {
@@ -241,7 +241,7 @@ export default function DayDetailModal({
     }
 
     if (activeJobPolicy === 'kys_only' && !isKysScholarship(scholarshipName)) {
-      setRegError('ขออภัย งานนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น กรุณาระบุชื่อทุนเป็น กยศ.');
+      setRegError('ขออภัย กิจกรรมนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น กรุณาระบุชื่อทุนเป็น กยศ.');
       return;
     }
 
@@ -265,7 +265,7 @@ export default function DayDetailModal({
     }
 
     if (isKysBlockedInForm) {
-      setRegError('งานนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกงานอื่นที่เปิดรับ กยศ.');
+      setRegError('กิจกรรมนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกกิจกรรมอื่นที่เปิดรับ กยศ.');
       return;
     }
 
@@ -315,7 +315,7 @@ export default function DayDetailModal({
     }
 
     if (activeShiftInfo.job.require_scholarship_name && !scholarshipName.trim()) {
-      setRegError('งานนี้กำหนดให้ต้องระบุชื่อทุน กรุณาระบุชื่อทุนของคุณ');
+      setRegError('กิจกรรมนี้กำหนดให้ต้องระบุชื่อทุน กรุณาระบุชื่อทุนของคุณ');
       return;
     }
 
@@ -354,7 +354,7 @@ export default function DayDetailModal({
         return;
       }
 
-      showToast('ลงทะเบียนรับงานสำเร็จแล้ว!', 'success');
+      showToast('ลงทะเบียนร่วมกิจกรรมสำเร็จแล้ว!', 'success');
       setActiveShiftInfo(null);
       setStudentId('');
       setStudentName('');
@@ -521,7 +521,7 @@ export default function DayDetailModal({
                   : `อีก ${daysUntil} วัน`}
               </span>
               <span className={styles.jobCountBadge}>
-                {jobs.length} งานที่ประกาศในวันนี้
+                {jobs.length} กิจกรรมที่ประกาศในวันนี้
               </span>
             </div>
             <h2 className={styles.title}>{formatThaiDate(dateStr)}</h2>
@@ -533,7 +533,7 @@ export default function DayDetailModal({
                 className={styles.createJobBtn}
                 onClick={() => onCreateJobForDate(dateStr)}
               >
-                + ประกาศงานวันนี้ {isTeacherMode ? '' : '(อาจารย์)'}
+                + ประกาศกิจกรรมวันนี้ {isTeacherMode ? '' : '(อาจารย์)'}
               </button>
             )}
             <button className={styles.closeBtn} onClick={onClose} aria-label="ปิด">
@@ -549,7 +549,7 @@ export default function DayDetailModal({
             <div className={styles.regFormCard}>
               <div className={styles.regFormHeader}>
                 <div>
-                  <span className={styles.regStepBadge}>ลงทะเบียนรับงานชั่วโมงทุน</span>
+                  <span className={styles.regStepBadge}>ลงทะเบียนร่วมกิจกรรมชั่วโมงทุน</span>
                   <h3>{activeShiftInfo.job.title}</h3>
                   <p className={styles.regSubInfo}>
                     {activeShiftInfo.job.shift_mode === 'roles' ||
@@ -571,7 +571,7 @@ export default function DayDetailModal({
                       </>
                     )}
                     {' '}• ได้รับ{' '}
-                    <strong>{activeShiftInfo.shift.hours} ชั่วโมงทุน</strong>
+                    <strong>{activeShiftInfo.shift.hours} ชม.</strong>
                     {liveShift && (
                       <>
                         {' '}• สถานะล่าสุด{' '}
@@ -595,19 +595,19 @@ export default function DayDetailModal({
 
               {activeJobPolicy === 'non_kys' && (
                 <div className={styles.kysWarningBanner}>
-                  <strong>ข้อกำหนดสำคัญ</strong> งานนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
+                  <strong>ข้อกำหนดสำคัญ</strong> กิจกรรมนี้ <u>ไม่รับนักศึกษาทุน กยศ.</u> (เฉพาะทุนประเภทอื่นเท่านั้น)
                 </div>
               )}
 
               {activeJobPolicy === 'kys_only' && (
                 <div className={styles.kysOnlyWarningBanner}>
-                  <strong>ข้อกำหนดสำคัญ</strong> งานนี้ <u>รับเฉพาะนักศึกษาทุน กยศ.</u> เท่านั้น
+                  <strong>ข้อกำหนดสำคัญ</strong> กิจกรรมนี้ <u>รับเฉพาะนักศึกษาทุน กยศ.</u> เท่านั้น
                 </div>
               )}
 
               {allowsOtherFacultyInForm && liveShiftAllowedMajors.length === 0 && (
                 <div className={styles.otherFacultyBanner}>
-                  <strong>เปิดรับคณะอื่นด้วย</strong> งานนี้เปิดรับนักศึกษาคณะ {DIT_FACULTY_LABEL} และนักศึกษาจากคณะอื่น (กรุณาเลือกคณะของคุณด้านล่าง)
+                  <strong>เปิดรับคณะอื่นด้วย</strong> กิจกรรมนี้เปิดรับนักศึกษาคณะ {DIT_FACULTY_LABEL} และนักศึกษาจากคณะอื่น (กรุณาเลือกคณะของคุณด้านล่าง)
                 </div>
               )}
 
@@ -621,7 +621,7 @@ export default function DayDetailModal({
                       : `หน้าที่ "${activeShiftInfo.shift.duty_name}" (${activeShiftInfo.shift.label})`
                     : activeShiftInfo.job.shift_mode === 'roles' ||
                       activeShiftInfo.shift.label === 'ตลอดงาน'
-                    ? 'งานนี้'
+                    ? 'กิจกรรมนี้'
                     : `ช่วงเวลา "${activeShiftInfo.shift.label}"`}{' '}
                   เปิดรับเฉพาะสาขา <strong>{liveShiftAllowedMajors.join(', ')}</strong> เท่านั้น
                 </div>
@@ -635,7 +635,7 @@ export default function DayDetailModal({
                       type="text"
                       value={studentId}
                       onChange={(e) => setStudentId(e.target.value)}
-                      placeholder="กรอกรหัสนักศึกษา เช่น 66010001"
+                      placeholder="กรอกรหัสนักศึกษา เช่น 6901234"
                       required
                       autoFocus
                     />
@@ -824,7 +824,7 @@ export default function DayDetailModal({
                       onChange={(e) => setScholarshipName(e.target.value)}
                       placeholder={
                         activeJobPolicy === 'kys_only'
-                          ? 'งานนี้รับเฉพาะ กยศ. กรุณาระบุ กยศ.'
+                          ? 'กิจกรรมนี้รับเฉพาะ กยศ. กรุณาระบุ กยศ.'
                           : activeShiftInfo.job.require_scholarship_name
                           ? 'ระบุชื่อทุนของคุณ เช่น ทุนเพชรประกาย, กยศ., ฯลฯ...'
                           : 'ระบุชื่อทุนของคุณ (ถ้ามี)...'
@@ -863,13 +863,13 @@ export default function DayDetailModal({
 
                 {isKysBlockedInForm && (
                   <div className={styles.errorBox}>
-                    ขออภัย งานนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกงานอื่นที่เปิดรับทุน กยศ.
+                    ขออภัย กิจกรรมนี้ไม่รับนักศึกษาทุน กยศ. กรุณาเลือกกิจกรรมอื่นที่เปิดรับทุน กยศ.
                   </div>
                 )}
 
                 {isNonKysBlockedForKysOnlyInForm && (
                   <div className={styles.errorBox}>
-                    ขออภัย งานนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น
+                    ขออภัย กิจกรรมนี้รับเฉพาะนักศึกษาทุน กยศ. เท่านั้น
                   </div>
                 )}
 
@@ -878,7 +878,7 @@ export default function DayDetailModal({
                 )}
 
                 <div className={styles.policyNote}>
-                  <strong>ข้อกำหนดสำคัญ</strong> เมื่อลงทะเบียนแล้ว <u>นักศึกษาจะไม่สามารถถอนชื่อได้ด้วยตนเอง</u> หากมีเหตุจำเป็นต้องถอนชื่อ โปรดแจ้งอาจารย์ผู้รับผิดชอบงานเพื่อถอนชื่อ
+                  <strong>ข้อกำหนดสำคัญ</strong> เมื่อลงทะเบียนแล้ว <u>นักศึกษาจะไม่สามารถถอนชื่อได้ด้วยตนเอง</u> หากมีเหตุจำเป็นต้องถอนชื่อ โปรดแจ้งอาจารย์ผู้รับผิดชอบกิจกรรมเพื่อถอนชื่อ
                 </div>
 
                 <div className={styles.regFormActions}>
@@ -908,14 +908,14 @@ export default function DayDetailModal({
                       ? 'กำลังบันทึก...'
                       : isLiveShiftFull
                       ? 'ตำแหน่งนี้เต็มแล้ว'
-                      : 'ลงทะเบียนรับงาน'}
+                      : 'ลงทะเบียนร่วมกิจกรรม'}
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Pop up ยืนยันการลงทะเบียนงาน */}
+          {/* Pop up ยืนยันการลงทะเบียนกิจกรรม */}
           {showRegConfirmPopup && activeShiftInfo && (
             <div
               className={styles.confirmBackdrop}
@@ -939,7 +939,7 @@ export default function DayDetailModal({
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
                 </div>
-                <h3 className={styles.confirmTitle}>ยืนยันการลงทะเบียนรับงาน</h3>
+                <h3 className={styles.confirmTitle}>ยืนยันการลงทะเบียนร่วมกิจกรรม</h3>
 
                 <div className={styles.confirmNoticeBox}>
                   หากลงทะเบียนเเล้ว ไม่สามารถถอนได้ โปรดเเจ้งอาจารย์ที่รับผิดชอบเพื่อถอนชื่อ
@@ -953,7 +953,7 @@ export default function DayDetailModal({
 
                 <div className={styles.confirmSummary}>
                   <p>
-                    <strong>ชื่องาน</strong> {activeShiftInfo.job.title}
+                    <strong>ชื่อกิจกรรม</strong> {activeShiftInfo.job.title}
                   </p>
                   {activeShiftInfo.shift.duty_name && (
                     <p>
@@ -964,9 +964,9 @@ export default function DayDetailModal({
                     <strong>ช่วงเวลา</strong>{' '}
                     {activeShiftInfo.job.shift_mode === 'roles' ||
                     activeShiftInfo.shift.label === 'ตลอดงาน'
-                      ? `${activeShiftInfo.shift.time_range} (ทั้งงาน)`
+                      ? `${activeShiftInfo.shift.time_range} (ทั้งกิจกรรม)`
                       : `${activeShiftInfo.shift.label} (${activeShiftInfo.shift.time_range})`}{' '}
-                    • {activeShiftInfo.shift.hours} ชม.ทุน
+                    • {activeShiftInfo.shift.hours} ชม.
                   </p>
                   <p>
                     <strong>ผู้ลงทะเบียน</strong> {studentName} (รหัส {studentId})
@@ -1025,7 +1025,7 @@ export default function DayDetailModal({
 
               <div className={styles.cancelDetails}>
                 <p>
-                  <strong>งาน</strong> {cancellingReg.job.title} (
+                  <strong>กิจกรรม</strong> {cancellingReg.job.title} (
                   {cancellingReg.job.shift_mode === 'roles' ||
                   cancellingReg.shift.label === 'ตลอดงาน'
                     ? cancellingReg.shift.time_range
@@ -1081,7 +1081,7 @@ export default function DayDetailModal({
           {!activeShiftInfo && !cancellingReg && (
             jobs.length === 0 ? (
               <div className={styles.emptyState}>
-                <h3>ยังไม่มีประกาศงานในวันนี้</h3>
+                <h3>ยังไม่มีประกาศกิจกรรมในวันนี้</h3>
                 {daysUntil >= 0 ? (
                   <>
                     <p>หากคุณเป็นอาจารย์ สามารถกดปุ่มด้านล่างเพื่อสร้างประกาศรับนักศึกษาช่วยงานได้ทันที</p>
@@ -1089,11 +1089,11 @@ export default function DayDetailModal({
                       className={styles.emptyCreateBtn}
                       onClick={() => onCreateJobForDate(dateStr)}
                     >
-                      + สร้างประกาศงานในวันนี้
+                      + สร้างประกาศกิจกรรมในวันนี้
                     </button>
                   </>
                 ) : (
-                  <p>วันที่ผ่านมาแล้ว ไม่สามารถสร้างประกาศงานย้อนหลังได้</p>
+                  <p>วันที่ผ่านมาแล้ว ไม่สามารถสร้างประกาศกิจกรรมย้อนหลังได้</p>
                 )}
               </div>
             ) : (
@@ -1118,7 +1118,7 @@ export default function DayDetailModal({
                                 : styles.badgeScopeInternal
                             }
                           >
-                            {job.job_type === 'external' ? 'งานภายนอกคณะ' : 'งานภายในคณะ'}
+                            {job.job_type === 'external' ? 'กิจกรรมภายนอกคณะ' : 'กิจกรรมภายในคณะ'}
                           </span>
                           {job.allow_other_faculty && (
                             <span className={styles.badgeOtherFaculty}>
@@ -1172,7 +1172,7 @@ export default function DayDetailModal({
                             type="button"
                             className={styles.editJobBtn}
                             onClick={() => onEditJob(job)}
-                            title="แก้ไขประกาศงาน (สำหรับอาจารย์)"
+                            title="แก้ไขประกาศกิจกรรม (สำหรับอาจารย์)"
                           >
                             แก้ไข
                           </button>
@@ -1180,7 +1180,7 @@ export default function DayDetailModal({
                             type="button"
                             className={styles.deleteJobBtn}
                             onClick={() => onDeleteJob(job)}
-                            title="ลบประกาศงาน (สำหรับอาจารย์)"
+                            title="ลบประกาศกิจกรรม (สำหรับอาจารย์)"
                           >
                             ลบ
                           </button>
@@ -1204,7 +1204,7 @@ export default function DayDetailModal({
                       )}
                       {job.shift_mode === 'roles' && job.shifts[0] && (
                         <span className={styles.jobScheduleBadge}>
-                          เวลา {job.shifts[0].time_range} • {job.shifts[0].hours} ชม.ทุน
+                          เวลา {job.shifts[0].time_range} • {job.shifts[0].hours} ชม.
                         </span>
                       )}
                     </div>
@@ -1240,7 +1240,7 @@ export default function DayDetailModal({
                                   <span className={styles.shiftName}>{group.label}</span>
                                   <span className={styles.shiftTime}>{group.time_range}</span>
                                   <span className={styles.shiftHours}>
-                                    {group.hours} ชม.ทุน
+                                    {group.hours} ชม.
                                   </span>
                                   {shiftAllowedMajors.length > 0 ? (
                                     <span
@@ -1321,7 +1321,7 @@ export default function DayDetailModal({
                                 </span>
                                 <span className={styles.shiftTime}>{group.time_range}</span>
                                 <span className={styles.shiftHours}>
-                                  {group.hours} ชม.ทุน
+                                  {group.hours} ชม.
                                 </span>
                                 <span className={styles.roleCountMeta}>
                                   {group.roles.length} หน้าที่
@@ -1361,7 +1361,7 @@ export default function DayDetailModal({
                                           หน้าที่ {roleIdx + 1}
                                         </span>
                                         <span className={styles.shiftDutyBadge}>
-                                          {shift.duty_name || 'ร่วมงานทั่วไป'}
+                                          {shift.duty_name || 'ร่วมกิจกรรมทั่วไป'}
                                         </span>
                                         {shiftAllowedMajors.length > 0 ? (
                                           <span
