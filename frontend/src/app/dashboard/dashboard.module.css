@@ -586,32 +586,6 @@
   cursor: pointer;
 }
 
-.teacherSelectedChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.32rem;
-  margin-top: 0.25rem;
-}
-
-.teacherSelectedChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.16rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--primary-border);
-  background: var(--primary-light);
-  color: var(--primary);
-  font-family: var(--font-heading);
-  font-size: 0.74rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.teacherSelectedChip:hover {
-  background: #fee2e2;
-}
-
 .teacherHideBtn {
   padding: 0.42rem 0.68rem;
   border-radius: 8px;

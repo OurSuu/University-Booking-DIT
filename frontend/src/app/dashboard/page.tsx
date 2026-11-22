@@ -1699,23 +1699,6 @@ function DashboardInner() {
                     )}
                   </button>
                 </div>
-
-                {selectedTeachers.length > 0 && (
-                  <div className={styles.teacherSelectedChips}>
-                    {selectedTeachers.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        className={styles.teacherSelectedChip}
-                        onClick={() => handleToggleSelectedTeacher(t)}
-                        title={`นำ "${t}" ออกจากตัวกรอง`}
-                      >
-                        <span>{t}</span>
-                        <span>✕</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
           </div>
