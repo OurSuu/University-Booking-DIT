@@ -571,7 +571,7 @@ export default function Calendar() {
             <strong className={styles.statValue}>{monthStats.totalJobs} กิจกรรม</strong>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>จำนวนที่นั่งว่างคงเหลือ</span>
+            <span className={styles.statLabel}>จำนวนที่ว่างคงเหลือ</span>
             <strong className={`${styles.statValue} ${styles.statSuccess}`}>
               {monthStats.availableSeats} ที่นั่ง
             </strong>
@@ -594,9 +594,9 @@ export default function Calendar() {
               setFilterKysStrictOnly(false);
               setFilterAvailableOnly(false);
             }}
-            title="คลิกเพื่อกรองเฉพาะกิจกรรมที่ไม่รับ กยศ."
+            title="คลิกเพื่อกรองเฉพาะกิจกรรมที่รองรับทุนเรียนดี"
           >
-            <span className={styles.statLabel}>กิจกรรมที่ไม่รับ กยศ. (เฉพาะทุน)</span>
+            <span className={styles.statLabel}>กิจกรรมที่รองรับทุนเรียนดี</span>
             <strong className={`${styles.statValue} ${styles.statDanger}`}>
               {monthStats.nonKysCount} กิจกรรม
             </strong>
@@ -690,7 +690,7 @@ export default function Calendar() {
                   setFilterKysStrictOnly(false);
                 }}
               >
-                ไม่รับ กยศ. (เฉพาะทุน)
+                ทุนเรียนดี
               </button>
             </div>
 

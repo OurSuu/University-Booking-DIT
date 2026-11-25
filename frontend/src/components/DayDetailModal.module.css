@@ -191,6 +191,11 @@
   margin-bottom: 0.35rem;
 }
 
+.regFormHeader > div {
+  min-width: 0;
+  flex: 1;
+}
+
 .regFormHeader h3,
 .cancelHeader h3 {
   font-family: var(--font-heading);
@@ -206,14 +211,45 @@
 }
 
 .backBtn {
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.48rem 0.95rem;
+  border-radius: 999px;
   border: 1px solid var(--border-strong);
   background: #ffffff;
-  color: var(--text-secondary);
+  color: var(--text-main);
   font-family: var(--font-heading);
-  font-size: 0.8rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.backBtn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.12);
+  transform: translateY(-1px);
+}
+
+.backBtn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.backBtn svg {
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.backBtn:hover svg {
+  transform: translateX(-2px);
 }
 
 .kysWarningBanner {
@@ -288,22 +324,29 @@
 }
 
 .field input,
+.field textarea,
 .selectInput {
   padding: 0.65rem 0.85rem;
   border: 1.5px solid var(--border-strong);
   border-radius: 10px;
   font-size: 0.92rem;
+  font-family: var(--font-body);
   background: #ffffff;
   color: var(--text-main);
   outline: none;
 }
 
+.field textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+
 .selectInput {
-  font-family: var(--font-body);
   cursor: pointer;
 }
 
 .field input:focus,
+.field textarea:focus,
 .selectInput:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(200, 30, 36, 0.14);
@@ -1177,6 +1220,16 @@
   border-radius: 4px;
   font-size: 0.78rem;
   font-weight: 600;
+}
+
+.participantTransferNote {
+  color: #6d28d9;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
 .pdpaProtectedBadge {

@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
       student_name,
       faculty,
       scholarship_name,
+      transfer_note,
       phone,
     } = body;
 
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
       student_name: String(student_name || ''),
       faculty: String(faculty || ''),
       scholarship_name: String(scholarship_name || ''),
+      transfer_note: String(transfer_note || ''),
       phone: String(phone || ''),
     });
 

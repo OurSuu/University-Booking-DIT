@@ -93,6 +93,7 @@ export default function DayDetailModal({
   const [customMajor, setCustomMajor] = useState('');
   const [phone, setPhone] = useState('');
   const [scholarshipName, setScholarshipName] = useState('');
+  const [transferNote, setTransferNote] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
   const [regLoading, setRegLoading] = useState(false);
   const [showRegConfirmPopup, setShowRegConfirmPopup] = useState(false);
@@ -121,6 +122,7 @@ export default function DayDetailModal({
     setCustomFaculty('');
     setCustomMajor('');
     setPhone('');
+    setTransferNote('');
     onRefresh();
   };
 
@@ -166,10 +168,11 @@ export default function DayDetailModal({
         } else {
           s.registrations.forEach((r, i) => {
             const facultyLabel = isDitMajor(r.faculty) ? `สาขา ${r.faculty}` : r.faculty;
+            const transferPart = r.transfer_note ? ` [โอนชั่วโมง ${r.transfer_note}]` : '';
             lines.push(
               `     ${i + 1}. ${r.student_id} - ${r.student_name} (${facultyLabel}${
                 r.phone ? ` • โทร ${r.phone}` : ''
-              })${r.scholarship_name ? ` [ทุน ${r.scholarship_name}]` : ''}`
+              })${r.scholarship_name ? ` [ทุน ${r.scholarship_name}]` : ''}${transferPart}`
             );
           });
         }
@@ -341,6 +344,7 @@ export default function DayDetailModal({
           student_name: studentName.trim(),
           faculty: resolvedFaculty,
           scholarship_name: scholarshipName.trim(),
+          transfer_note: transferNote.trim(),
           phone: cleanPhone,
         }),
       });
@@ -364,6 +368,7 @@ export default function DayDetailModal({
       setCustomMajor('');
       setPhone('');
       setScholarshipName('');
+      setTransferNote('');
       setRegLoading(false);
       onRefresh();
     } catch {
@@ -444,6 +449,11 @@ export default function DayDetailModal({
                 {reg.scholarship_name && (
                   <span className={styles.participantScholarship}>
                     ทุน {reg.scholarship_name}
+                  </span>
+                )}
+                {reg.transfer_note && (
+                  <span className={styles.participantTransferNote}>
+                    โอนชั่วโมง {reg.transfer_note}
                   </span>
                 )}
               </div>
@@ -589,7 +599,21 @@ export default function DayDetailModal({
                   className={styles.backBtn}
                   onClick={() => setActiveShiftInfo(null)}
                 >
-                  ย้อนกลับ
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M19 12H5" />
+                    <path d="m12 19-7-7 7-7" />
+                  </svg>
+                  <span>ย้อนกลับ</span>
                 </button>
               </div>
 
@@ -826,7 +850,7 @@ export default function DayDetailModal({
                         activeJobPolicy === 'kys_only'
                           ? 'กิจกรรมนี้รับเฉพาะ กยศ. กรุณาระบุ กยศ.'
                           : activeShiftInfo.job.require_scholarship_name
-                          ? 'ระบุชื่อทุนของคุณ เช่น ทุนเพชรประกาย, กยศ., ฯลฯ...'
+                          ? 'ระบุชื่อทุนของคุณ เช่น ทุน ดร.อรรถวิท 50%, กยศ., ฯลฯ...'
                           : 'ระบุชื่อทุนของคุณ (ถ้ามี)...'
                       }
                       required={
@@ -835,6 +859,19 @@ export default function DayDetailModal({
                       }
                     />
                   </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="student-transfer-note">
+                    เฉพาะทุนเรียนดี หากต้องการโอนชั่วโมงไปเทอมถัดไปกรุณาระบุเพิ่มเติม
+                  </label>
+                  <textarea
+                    id="student-transfer-note"
+                    rows={2}
+                    value={transferNote}
+                    onChange={(e) => setTransferNote(e.target.value)}
+                    placeholder="กรุณาระบุว่าต้องการโอนกี่ชั่วโมง เช่น ใช้เทอมนี้ 1 ชั่วโมง โอนไปเทอม 2/69 2ชั่วโมง หรือ โอนทั้งหมดไปเทอม 2/69 เป็นต้น"
+                  />
                 </div>
 
                 {isLiveShiftFull && (
@@ -980,6 +1017,11 @@ export default function DayDetailModal({
                   {scholarshipName && (
                     <p>
                       <strong>ทุนการศึกษา</strong> {scholarshipName}
+                    </p>
+                  )}
+                  {transferNote.trim() && (
+                    <p>
+                      <strong>โอนชั่วโมงเทอมถัดไป</strong> {transferNote.trim()}
                     </p>
                   )}
                 </div>

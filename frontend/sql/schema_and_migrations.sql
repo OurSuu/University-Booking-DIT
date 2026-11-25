@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS scholarship_registrations (
   student_name VARCHAR(150) NOT NULL,
   faculty VARCHAR(150) NOT NULL,
   scholarship_name VARCHAR(150) DEFAULT '',
+  transfer_note TEXT DEFAULT '',
   phone VARCHAR(50) DEFAULT '',
   registered_date VARCHAR(10) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS dashboard_hidden_teachers (
 -- 6. อัปเกรดคอลัมน์เพิ่มเติมสำหรับฐานข้อมูลเดิม (Safe Idempotent ALTER TABLE)
 -- ============================================================================
 ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';
+ALTER TABLE scholarship_registrations ADD COLUMN IF NOT EXISTS transfer_note TEXT DEFAULT '';
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'internal';
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS shift_mode VARCHAR(20) DEFAULT 'shifts';
 ALTER TABLE scholarship_jobs ADD COLUMN IF NOT EXISTS allow_other_faculty BOOLEAN DEFAULT FALSE;

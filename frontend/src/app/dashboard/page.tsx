@@ -634,6 +634,7 @@ function DashboardInner() {
       studentName: string;
       faculty: string;
       scholarshipName: string;
+      transferNote: string;
       phone: string;
       allowKys: boolean;
       jobPolicy: ScholarshipPolicy;
@@ -666,6 +667,7 @@ function DashboardInner() {
               studentName: reg.student_name,
               faculty: normFaculty || reg.faculty,
               scholarshipName: reg.scholarship_name,
+              transferNote: reg.transfer_note || '',
               phone: reg.phone || '',
               allowKys: job.allow_kys,
               jobPolicy: jPolicy,
@@ -990,7 +992,8 @@ function DashboardInner() {
           .toLowerCase()
           .includes(q) ||
         r.dutyName.toLowerCase().includes(q) ||
-        r.scholarshipName.toLowerCase().includes(q)
+        r.scholarshipName.toLowerCase().includes(q) ||
+        r.transferNote.toLowerCase().includes(q)
     );
   }, [filteredData.registrations, tableSearch, calendarSelectedDate]);
 
@@ -1036,8 +1039,9 @@ function DashboardInner() {
       const dutyPart = r.dutyName ? ` [หน้าที่ ${r.dutyName}]` : '';
       const phonePart = r.phone ? ` • โทร ${r.phone}` : '';
       const scholPart = r.scholarshipName ? ` [ทุน ${r.scholarshipName}]` : '';
+      const transferPart = r.transferNote ? ` [โอนชั่วโมง ${r.transferNote}]` : '';
       lines.push(
-        `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${shiftText}${dutyPart} | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart} | ${r.hours} ชม.`
+        `${idx + 1}. ${r.jobDate} | ${r.jobTitle} — ${shiftText}${dutyPart} | ${r.studentId} ${r.studentName} (${r.faculty})${phonePart}${scholPart}${transferPart} | ${r.hours} ชม.`
       );
     });
     return lines.join('\n');
@@ -2329,6 +2333,11 @@ function DashboardInner() {
                                         >
                                           {r.scholarshipName || 'ไม่ระบุ'}
                                         </span>
+                                        {r.transferNote && (
+                                          <div style={{ fontSize: '0.74rem', color: '#6d28d9', marginTop: '3px', whiteSpace: 'normal', maxWidth: '220px' }}>
+                                            โอนชั่วโมง {r.transferNote}
+                                          </div>
+                                        )}
                                       </td>
                                       <td>
                                         <strong>{r.hours}</strong>
@@ -2374,6 +2383,11 @@ function DashboardInner() {
                                     {r.dutyName && (
                                       <div style={{ marginTop: '4px' }}>
                                         <span className={styles.dutyTag}>หน้าที่ {r.dutyName}</span>
+                                      </div>
+                                    )}
+                                    {r.transferNote && (
+                                      <div style={{ fontSize: '0.76rem', color: '#6d28d9', marginTop: '4px' }}>
+                                        โอนชั่วโมง {r.transferNote}
                                       </div>
                                     )}
                                   </div>
