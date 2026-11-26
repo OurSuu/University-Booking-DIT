@@ -279,7 +279,7 @@ export default function Calendar() {
       if (filterAvailableOnly && !hasAvailable) return false;
       if (filterKysOnly && policy === 'non_kys') return false;
       if (filterKysStrictOnly && policy !== 'kys_only') return false;
-      if (filterNonKysOnly && policy !== 'non_kys') return false;
+      if (filterNonKysOnly && policy === 'kys_only') return false;
       return true;
     });
   }, [jobs, filterAvailableOnly, filterKysOnly, filterKysStrictOnly, filterNonKysOnly]);
@@ -329,13 +329,15 @@ export default function Calendar() {
     let totalSeats = 0;
     let totalRegistered = 0;
     let kysEligibleCount = 0;
-    let nonKysCount = 0;
+    let meritEligibleCount = 0;
 
     for (const j of monthJobs) {
-      if (getJobScholarshipPolicy(j) !== 'non_kys') {
+      const policy = getJobScholarshipPolicy(j);
+      if (policy !== 'non_kys') {
         kysEligibleCount++;
-      } else {
-        nonKysCount++;
+      }
+      if (policy !== 'kys_only') {
+        meritEligibleCount++;
       }
       for (const s of j.shifts) {
         totalSeats += s.capacity;
@@ -348,7 +350,7 @@ export default function Calendar() {
       availableSeats: Math.max(0, totalSeats - totalRegistered),
       totalRegistered,
       kysEligibleCount,
-      nonKysCount,
+      meritEligibleCount,
     };
   }, [jobs, monthPrefix]);
 
@@ -580,7 +582,16 @@ export default function Calendar() {
             <span className={styles.statLabel}>นักศึกษาลงทะเบียนแล้ว</span>
             <strong className={styles.statValue}>{monthStats.totalRegistered} คน</strong>
           </div>
-          <div className={styles.statCard}>
+          <div
+            className={`${styles.statCard} ${styles.statCardClickable}`}
+            onClick={() => {
+              setFilterKysOnly((prev) => !prev);
+              setFilterKysStrictOnly(false);
+              setFilterNonKysOnly(false);
+              setFilterAvailableOnly(false);
+            }}
+            title="คลิกเพื่อกรองกิจกรรมที่รองรับทุน กยศ."
+          >
             <span className={styles.statLabel}>กิจกรรมที่รองรับทุน กยศ.</span>
             <strong className={`${styles.statValue} ${styles.statPrimary}`}>
               {monthStats.kysEligibleCount} กิจกรรม
@@ -594,11 +605,11 @@ export default function Calendar() {
               setFilterKysStrictOnly(false);
               setFilterAvailableOnly(false);
             }}
-            title="คลิกเพื่อกรองเฉพาะกิจกรรมที่รองรับทุนเรียนดี"
+            title="คลิกเพื่อกรองกิจกรรมที่รองรับทุนเรียนดี"
           >
             <span className={styles.statLabel}>กิจกรรมที่รองรับทุนเรียนดี</span>
             <strong className={`${styles.statValue} ${styles.statDanger}`}>
-              {monthStats.nonKysCount} กิจกรรม
+              {monthStats.meritEligibleCount} กิจกรรม
             </strong>
           </div>
         </section>
@@ -633,7 +644,10 @@ export default function Calendar() {
             <div className={styles.filterTabs}>
               <button
                 className={`${styles.filterTab} ${
-                  !filterAvailableOnly && !filterKysOnly && !filterNonKysOnly
+                  !filterAvailableOnly &&
+                  !filterKysOnly &&
+                  !filterKysStrictOnly &&
+                  !filterNonKysOnly
                     ? styles.filterTabActive
                     : ''
                 }`}
